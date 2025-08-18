@@ -18,12 +18,12 @@ class InternshipController extends Controller
      */
     public function index()
     {
-        $kota     = request()->query('kota');
+        $kota = request()->query('kota');
         $provinsi = request()->query('provinsi');
-        $grade    = request()->query('grade');
-        $bidang   = request()->query('bidang');
-        $durasi   = request()->query('durasi');
-        $slug     = request()->query('slug');
+        $grade = request()->query('grade');
+        $bidang = request()->query('bidang');
+        $durasi = request()->query('durasi');
+        $slug = request()->query('slug');
 
         $internshipQuery = Internship::with('company', 'slugs');
 
@@ -101,7 +101,7 @@ class InternshipController extends Controller
 
                 $internshipQuery->where(function ($query) use ($durasiList) {
                     foreach ($durasiList as $d) {
-                        $query->orWhereRaw('TIMESTAMPDIFF(MONTH, start_date, end_date) BETWEEN ? AND ?', [(int)$d - 1, (int)$d]);
+                        $query->orWhereRaw('TIMESTAMPDIFF(MONTH, start_date, end_date) BETWEEN ? AND ?', [(int) $d - 1, (int) $d]);
                     }
                 });
             } else {
@@ -172,18 +172,17 @@ class InternshipController extends Controller
                 'message' => 'sukes',
                 'data' => $data
             ],
-
             200
         );
-
-        // return response()->json(['kontol'],200);
     }
 
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Internship $internship) {}
+    public function update(Request $request, Internship $internship)
+    {
+    }
 
     /**
      * Remove the specified resource from storage.

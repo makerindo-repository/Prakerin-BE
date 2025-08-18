@@ -22,6 +22,18 @@ class AuthController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
+    /**
+     * @OA\Get(
+     *  path="/login",
+     *  tags={"Auth"},
+     *  summary="Login user",
+     *  @OA\Response(
+     *      response=200,
+     *      description="Successful login",
+     *  )
+     *)
+     */
+
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -35,14 +47,14 @@ class AuthController extends Controller
             return response()->json(['error' => $validator->errors()], 422);
         }
 
-        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-            'secret' => config('services.nocaptcha.secret'),
-            'response' => $request->recaptcha_token,
-        ]);
+        // $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+        //     'secret' => config('services.nocaptcha.secret'),
+        //     'response' => $request->recaptcha_token,
+        // ]);
 
-        if (!$response->json('success')) {
-            return response()->json(['message' => 'Captcha failed', "data" => $request], 422);
-        }
+        // if (!$response->json('success')) {
+        //     return response()->json(['message' => 'Captcha failed', "data" => $request], 422);
+        // }
 
         if (Auth::attempt($request->only('email', 'password'))) {
             if (Auth::user()->role === "student") {
@@ -128,9 +140,10 @@ class AuthController extends Controller
 
             $data['user_id'] = $userCreate->id;
             $data['date_of_birth'] = "2000/1/2";
-            $create = $model::create($data);$create;
-            if($request->file('image')){
-              $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
+            $create = $model::create($data);
+            $create;
+            if ($request->file('image')) {
+                $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
                 ProfileImage::create([
                     'image' => $filename,
                     'user_id' => $create->id
@@ -163,6 +176,6 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'logout success'], 200);
+        return response()->json(['message' => 'Logout success'], 200);
     }
 }

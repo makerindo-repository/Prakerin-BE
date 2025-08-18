@@ -11,12 +11,16 @@ class SchoolController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(School $school)
+    public function index()
     {
-        return response()->json(["data" => $school::with('user')->get()]);
+        $schools = School::with('user')->get();
+
+        return response()->json(["data" => $schools], 200);
     }
 
-    public function school_name(){
+    public function schoolName()
+    {
+        School::get()->select('id', 'name');
         return response()->json(['data' => School::select('id', 'name')->get()]);
     }
 
@@ -55,14 +59,17 @@ class SchoolController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id,)
+    public function show(string $id, )
     {
-        if (School::with('user')->find($id) == null) {
+        $school = School::with('user')->find($id);
+
+        if (!$school) {
             return response()->json(["error" => "School not found"], 404);
         }
+
         return response()->json([
-            "data" => School::with('user')->find($id)
-        ]);
+            "data" => $school
+        ], 200);
     }
 
     /**
@@ -70,7 +77,9 @@ class SchoolController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        if (!$school = School::find($id)) {
+        $school = School::with('user')->find($id);
+
+        if (!$school) {
             return response()->json(["error" => "School not found"], 404);
         }
 
@@ -95,7 +104,10 @@ class SchoolController extends Controller
             return response()->json(["error" => $th], 500);
         }
 
-        return response()->json(null, 201);
+        return response()->json([
+            'message' => 'success update data',
+            'data' => $school
+        ], 201);
     }
 
     /**
