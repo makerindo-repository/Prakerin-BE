@@ -20,8 +20,8 @@ class SchoolController extends Controller
 
     public function schoolName()
     {
-        School::get()->select('id', 'name');
-        return response()->json(['data' => School::select('id', 'name')->get()]);
+        $schools = School::get(['id', 'name']);
+        return response()->json(['data' => $schools]);
     }
 
     /**

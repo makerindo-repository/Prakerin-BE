@@ -1,29 +1,397 @@
-openapi: 3.0.3
+# yaml-language-server: $schema=https://spec.openapis.org/oas/3.1/schema/2022-10-07
+openapi: 3.1.0
 info:
-  title: My Laravel API
+  title: PrakerinID API
+  description: Dokumentation API for PrakerinID application
   version: 1.0.0
+  contact:
+    name: PrakerinID Team
+    email: ranggadendi6@gmail.com
+
+servers:
+  - url: http://localhost:8000/api
+    description: Local development server
+
+tags:
+  - name: User
+    description: Operations related to user management
+  - name: School
+    description: Operations related to school management
+  - name: Internship
+    description: Operations related to internship management
+  - name: Company
+    description: Operations related to company management
+  - name: SuperAdminSchool
+    description: Operations related to super admin school management
 paths:
-  /api/users:
-    get:
-      summary: Get all users
+  # User
+  /register:
+    post:
+      summary: User registration
+      operationId: userRegister
       tags:
-        - Users
+        - User
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRegisterRequest'
       responses:
-        '200':
-          description: Successful operation
+        '201':
+          description: OK
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                      example: 1
-                    name:
-                      type: string
-                      example: Rangga
-                    email:
-                      type: string
-                      example: rangga@example.com
+                type: object
+                properties:
+                  token:
+                    type: string
+                  role:
+                    type: string
+                    enum: 
+                      - student
+                      - school
+                      - industry
+                      - super_admin
+  /login:
+    post:
+      summary: User login
+      operationId: userLogin
+      tags:
+        - User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLoginRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  role:
+                    type: string
+                    enum: 
+                      - student
+                      - school
+                      - industry
+                      - super_admin
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: string
+                    example: "Email or password wrong!"               
+  /logout:
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: User logout
+      operationId: userLogout
+      tags:
+        - User
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Logout successful"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /users:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: User Profile
+      operationId: userProfile
+      tags:
+        - User
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      username:
+                        type: string
+                      email:
+                        type: string
+                        format: email
+                      role:
+                        type: string
+                        enum: 
+                          - student
+                          - school
+                          - industry
+                          - super_admin
+                      email_verified_at:
+                        type: string
+                        format: date-time
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  
+  
+  # Student
+  /students:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get all students
+      operationId: getAllStudents
+      tags:
+        - Student
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        email:
+                          type: string
+                          format: email
+                        image:
+                          type: string
+                          format: uri
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Create a new student
+      operationId: createStudent
+      tags:
+        - Student
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StudentCreateRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Student created successfully"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /students/{id}:
+    patch:
+      security:
+        - SanctumBearerAuth: []
+      summary: Update a student
+      operationId: updateStudent
+      tags:
+        - Student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The ID of the student to update
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StudentUpdateRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Student updated successfully"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      
+
+components:
+  securitySchemes:
+    SanctumBearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Use the token provided after login to access protected routes.
+
+  responses:
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Unauthorized."
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Resource not found."
+
+  schemas:
+    # User
+    UserRegisterRequest:
+      type: object
+      required:
+        - username
+        - email
+        - password
+        - password_confirmation
+        - role
+        - recaptcha_token
+        - name
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        password_confirmation:
+          type: string
+        role:
+          type: string
+          enum: 
+            - "student"
+            - "school"
+            - "industry"
+        recaptcha_token:
+          type: string
+        name:
+          type: string
+        image:
+          type: string
+          format: binary
+        address:
+          type: string
+        school_id:
+          type: integer
+    UserLoginRequest:
+      type: object
+      required:
+        - email
+        - password
+        - recaptcha_token
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        recaptcha_token:
+          type: string
+          description: Token for reCAPTCHA verification
+
+    # Student
+    StudentCreateRequest:
+      type: object
+      required:
+        - username
+        - email
+        - password
+        - password_confirmation
+        - name
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        password_confirmation:
+          type: string
+        name:
+          type: string
+        image:
+          type: string
+          format: binary
+        school_id:
+          type: integer
+    StudentUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        date_of_birth:
+          type: string
+          format: date
+        gender:
+          type: string
+          enum:
+            - "male"
+            - "female"
+        address:
+          type: string
+        image:
+          type: string
+          format: binary
+        school_id:
+          type: integer
+
+    

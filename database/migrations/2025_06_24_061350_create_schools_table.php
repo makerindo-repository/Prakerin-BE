@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('schools', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->text('address')->nullable();
+            $table->text('address');
             $table->string('phone_number')->nullable();
             $table->boolean('is_verified')->default(false);
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
