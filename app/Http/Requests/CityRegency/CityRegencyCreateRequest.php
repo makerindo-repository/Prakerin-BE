@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Http\Requests\CityRegency;
+
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
+
+class CityRegencyCreateRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return $this->user() !== null;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        $rules = [
+            'name' => 'required|max:255|unique:provinces,name',
+            'province_id' => 'required|exists:provinces,id',
+        ];
+        if ($this->user()->tokenCan("admin-access")) {
+            $rules['is_accepted'] = 'required|boolean';
+        }
+        return $rules;
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response([
+            "errors" => $validator->getMessageBag()
+        ], 400));
+    }
+}

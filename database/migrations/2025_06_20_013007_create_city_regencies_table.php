@@ -15,7 +15,9 @@ return new class extends Migration {
             $table->uuid('province_id');
 
             $table->string('name');
-            
+            $table->boolean('is_accepted')->default(false);
+
+
             $table->foreign('province_id')->references('id')->on('provinces')->onDelete('cascade');
             $table->timestamps();
         });

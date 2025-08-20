@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CityRegencyController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\InternshipController;
 use App\Http\Controllers\ProvinceController;
@@ -43,7 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::controller(UserController::class)->group(function () {
         Route::prefix('/users')->group(function () {
             Route::apiResource('/', UserController::class);
-            Route::get('/logout', 'logout');
+            Route::post('/logout', 'logout');
             Route::withoutMiddleware('auth:sanctum')->group(function () {
                 Route::post('/login', 'login');
                 Route::post('/register', 'register');
@@ -70,6 +71,17 @@ Route::middleware('auth:sanctum')->group(function () {
         ->only(['update', 'destroy'])
         ->middleware('abilities:admin-access');
     Route::apiResource('provinces', ProvinceController::class)
+        ->only(['index'])
+        ->withoutMiddleware('auth:sanctum');
+
+    // City Regency
+    Route::apiResource('city-regencies', CityRegencyController::class)
+        ->only(['store'])
+        ->middleware('ability:admin-access,company-access');
+    Route::apiResource('city-regencies', CityRegencyController::class)
+        ->only(['update', 'destroy'])
+        ->middleware('abilities:admin-access');
+    Route::apiResource('city-regencies', CityRegencyController::class)
         ->only(['index'])
         ->withoutMiddleware('auth:sanctum');
 

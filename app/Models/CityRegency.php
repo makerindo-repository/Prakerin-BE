@@ -12,11 +12,14 @@ class CityRegency extends Model
 
     public $incrementing = false;
     protected $keyType = 'string';
-
+    protected $casts = [
+        'is_accepted' => 'boolean',
+    ];
     protected $fillable = [
         'id',
         'province_id',
         'name',
+        'is_accepted',
     ];
 
     protected static function booted()
@@ -27,4 +30,15 @@ class CityRegency extends Model
             }
         });
     }
+
+    public function companies()
+    {
+        return $this->hasMany(Company::class);
+    }
+
+    public function province()
+    {
+        return $this->belongsTo(Province::class);
+    }
+
 }

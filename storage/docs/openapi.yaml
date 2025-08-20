@@ -18,6 +18,8 @@ tags:
     description: Operations related to sector management
   - name: Province
     description: Operations related to province management
+  - name: City Regency
+    description: Operations related to city regency management
   - name: Student
     description: Operations related to student management
   - name: School
@@ -177,6 +179,8 @@ paths:
       responses:
         '200':
           description: OK
+        '403':
+          $ref: '#/components/responses/Forbidden'
     post:
       security:
         - SanctumBearerAuth: []
@@ -261,6 +265,8 @@ paths:
       responses:
         '200':
           description: OK
+        '403':
+          $ref: '#/components/responses/Forbidden'
     post:
       security:
         - SanctumBearerAuth: []
@@ -325,6 +331,89 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  # City Regency
+  /city-regencies:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get all city regencies
+      operationId: getAllCityRegencies
+      tags:
+        - City Regency
+      parameters:
+        - $ref: '#/components/parameters/SearchParam'
+        - $ref: '#/components/parameters/IsAcceptedParam'
+        - $ref: '#/components/parameters/ProvinceIdParam'
+      responses:
+        '200':
+          description: OK
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Create a new city regency
+      operationId: createCityRegency
+      tags:
+        - City Regency
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CityRegencyCreateRequest'
+      responses:
+        '201':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /city-regencies/{id}:
+    patch:
+      security:
+        - SanctumBearerAuth: []
+      summary: Update a city regency
+      operationId: updateCityRegency
+      tags:
+        - City Regency
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CityRegencyUpdateRequest'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      security:
+        - SanctumBearerAuth: []
+      summary: Delete a city regency
+      operationId: deleteCityRegency
+      tags:
+        - City Regency
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
 
   /students:
@@ -627,6 +716,14 @@ components:
       description: Filter for accepted status
       schema:
         type: boolean
+    ProvinceIdParam:
+      name: province_id
+      in: query
+      required: false
+      allowEmptyValue: true
+      description: Search by ID for filtering results
+      schema:
+        type: string
 
   responses:
     Unauthorized:
@@ -751,6 +848,30 @@ components:
           type: string
         is_accepted:
           type: boolean
+
+    # City Regency
+    CityRegencyCreateRequest:
+      type: object
+      required:
+        - name
+        - province_id
+      properties:
+        name:
+          type: string
+        province_id:
+          type: string
+        is_accepted:
+          type: boolean
+    CityRegencyUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        province_id:
+          type: string
+        is_accepted:
+          type: boolean
+          
 
     # Student
     StudentCreateRequest:

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Sector\SectorCreateRequest;
 use App\Http\Requests\Sector\SectorUpdateRequest;
 use App\Models\Sector;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -15,11 +16,13 @@ class SectorController extends Controller
      */
     public function index(Request $request)
     {
-        $is_accepted = true;
+        $is_accepted = filter_var($request->query('is_accepted', true), FILTER_VALIDATE_BOOLEAN);
         $search = $request->query('search', '');
 
-        if (Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
-            $is_accepted = filter_var($request->query('is_accepted', true), FILTER_VALIDATE_BOOLEAN);
+        if ($is_accepted === false && !Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
+            throw new HttpResponseException(response([
+                'errors' => 'Forbidden.',
+            ], 403));
         }
 
         $sectors = Sector::where('is_accepted', $is_accepted)->where('name', "like", "%$search%")->get();
@@ -57,9 +60,9 @@ class SectorController extends Controller
         $sector = Sector::find($id);
 
         if (!$sector) {
-            return response()->json([
+            throw new HttpResponseException(response([
                 'errors' => 'Sector not found',
-            ], 404);
+            ], 404));
         }
 
         $data = $request->validated();
@@ -83,9 +86,9 @@ class SectorController extends Controller
         $sector = Sector::find($id);
 
         if (!$sector) {
-            return response()->json([
+            throw new HttpResponseException(response([
                 'errors' => 'Sector not found',
-            ], 404);
+            ], 404));
         }
 
         $sector->delete();

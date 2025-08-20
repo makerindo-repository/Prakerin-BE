@@ -6,6 +6,7 @@ use App\Http\Requests\Province\ProvinceCreateRequest;
 use App\Http\Requests\Province\ProvinceUpdateRequest;
 use App\Models\Province;
 use Auth;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 
 class ProvinceController extends Controller
@@ -16,11 +17,13 @@ class ProvinceController extends Controller
     public function index(Request $request)
     {
 
-        $is_accepted = true;
+        $is_accepted = filter_var($request->query('is_accepted', true), FILTER_VALIDATE_BOOLEAN);
         $search = $request->query('search', '');
 
-        if (Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
-            $is_accepted = filter_var($request->query('is_accepted', true), FILTER_VALIDATE_BOOLEAN);
+        if ($is_accepted === false && !Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
+            throw new HttpResponseException(response([
+                'errors' => 'Forbidden.',
+            ], 403));
         }
 
         $provinces = Province::where('is_accepted', $is_accepted)->where('name', "like", "%$search%")->get();
@@ -58,9 +61,9 @@ class ProvinceController extends Controller
         $province = Province::find($id);
 
         if (!$province) {
-            return response()->json([
+            throw new HttpResponseException(response([
                 'errors' => 'Province not found',
-            ], 404);
+            ], 404));
         }
 
         $data = $request->validated();
@@ -83,9 +86,9 @@ class ProvinceController extends Controller
         $province = Province::find($id);
 
         if (!$province) {
-            return response()->json([
+            throw new HttpResponseException(response([
                 'errors' => 'Province not found',
-            ], 404);
+            ], 404));
         }
 
         $province->delete();
