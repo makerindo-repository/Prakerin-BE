@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Score extends Model
 {
-    /** @use HasFactory<\Database\Factories\ScoreFactory> */
+    use HasFactory;
+
     protected $fillable = [
         'application_id',
         'name',
         'value',
     ];
-    use HasFactory;
 }

@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Requests\Student;
+namespace App\Http\Requests\Sector;
 
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class StudentCreateRequest extends FormRequest
+class SectorCreateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,17 +24,11 @@ class StudentCreateRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'username' => 'required|unique:users,username|regex:/^[a-zA-Z0-9._]+$/u',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|confirmed',
-            'name' => 'required|string|max:255',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'name' => 'required|max:255|unique:sectors,name',
         ];
-
         if ($this->user()->tokenCan("admin-access")) {
-            $rules['school_id'] = 'required|max:36|exists:schools,id';
+            $rules['is_accepted'] = 'required|boolean';
         }
-
         return $rules;
     }
 

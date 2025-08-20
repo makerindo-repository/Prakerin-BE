@@ -11,7 +11,15 @@ class Sector extends Model
     use HasFactory;
     public $incrementing = false;
     protected $keyType = 'string';
-    protected $fillable = ['id', 'name', 'is_accepted'];
+    protected $casts = [
+        'is_accepted' => 'boolean',
+    ];
+    protected $fillable = [
+        'id',
+        'name',
+        'is_accepted'
+    ];
+
 
     protected static function booted()
     {

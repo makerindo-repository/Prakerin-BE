@@ -13,6 +13,10 @@ class School extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
+    protected $casts = [
+        'is_verified' => 'boolean',
+    ];
+
     protected $fillable = [
         'id',
         'user_id',
@@ -21,6 +25,8 @@ class School extends Model
         'phone_number',
         'is_verified',
     ];
+
+
 
     protected static function booted()
     {
@@ -31,9 +37,7 @@ class School extends Model
         });
     }
 
-    protected $casts = [
-        'is_verified' => 'boolean',
-    ];
+
 
     public function user()
     {

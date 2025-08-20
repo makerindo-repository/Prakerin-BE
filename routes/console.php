@@ -11,4 +11,4 @@ Artisan::command('inspire', function () {
 Schedule::command('app:delete-unverified-users')
     ->daily()
     ->runInBackground()
-    ->sendOutputTo(storage_path('logs/laravel.log'));
+    ->appendOutputTo(storage_path('logs/laravel.log'));

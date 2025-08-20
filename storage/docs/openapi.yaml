@@ -8,7 +8,7 @@ info:
     email: ranggadendi6@gmail.com
 
 servers:
-  - url: http://127.0.0.1:8000/api
+  - url: http://localhost:8000/api
     description: Local development server
 
 tags:
@@ -16,6 +16,8 @@ tags:
     description: Operations related to user management
   - name: Sector
     description: Operations related to sector management
+  - name: Province
+    description: Operations related to province management
   - name: Student
     description: Operations related to student management
   - name: School
@@ -163,23 +165,18 @@ paths:
   # Sector
   /sectors:
     get:
-      security:
-        - SanctumBearerAuth: []
       summary: Get all sectors
       operationId: getAllSectors
+      security:
+        - SanctumBearerAuth: []
       tags:
         - Sector
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/LimitParam'
         - $ref: '#/components/parameters/SearchParam'
+        - $ref: '#/components/parameters/IsAcceptedParam'
       responses:
         '200':
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
     post:
       security:
         - SanctumBearerAuth: []
@@ -192,12 +189,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                is_accepted:
-                  type: boolean
+              $ref: '#/components/schemas/SectorCreateRequest'
       responses:
         '201':
           description: OK
@@ -214,12 +206,7 @@ paths:
       tags:
         - Sector
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The ID of the sector to update
+        - $ref: '#/components/parameters/IdPath'
       requestBody:
         required: true
         content:
@@ -248,23 +235,10 @@ paths:
       tags:
         - Sector
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The ID of the sector to delete
+        - $ref: '#/components/parameters/IdPath'
       responses:
         '200':
           description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "OK"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -272,7 +246,87 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
   
-  # Student
+  # Province
+  /provinces:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get all provinces
+      operationId: getAllProvinces
+      tags:
+        - Province
+      parameters:
+        - $ref: '#/components/parameters/SearchParam'
+        - $ref: '#/components/parameters/IsAcceptedParam'
+      responses:
+        '200':
+          description: OK
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Create a new province
+      operationId: createProvince
+      tags:
+        - Province
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProvinceCreateRequest'
+      responses:
+        '201':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /provinces/{id}:
+    patch:
+      security:
+        - SanctumBearerAuth: []
+      summary: Update a province
+      operationId: updateProvince
+      tags:
+        - Province
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProvinceUpdateRequest'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      security:
+        - SanctumBearerAuth: []
+      summary: Delete a province
+      operationId: deleteProvince
+      tags:
+        - Province
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+
+
   /students:
     get:
       security:
@@ -521,6 +575,14 @@ components:
       description: Use the token provided after login to access protected routes.
 
   parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+      type: string
+      description: The ID of the resource
+
     PageParam:
       name: page
       in: query
@@ -555,6 +617,14 @@ components:
       required: false
       allowEmptyValue: true
       description: Filter for verified status
+      schema:
+        type: boolean
+    IsAcceptedParam:
+      name: is_accepted
+      in: query
+      required: false
+      allowEmptyValue: true
+      description: Filter for accepted status
       schema:
         type: boolean
 
@@ -645,6 +715,42 @@ components:
         recaptcha_token:
           type: string
           description: Token for reCAPTCHA verification
+
+    # Sector
+    SectorCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        is_accepted:
+          type: boolean
+    SectorUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        is_accepted:
+          type: boolean
+
+    # Province
+    ProvinceCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        is_accepted:
+          type: boolean
+    ProvinceUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        is_accepted:
+          type: boolean
 
     # Student
     StudentCreateRequest:

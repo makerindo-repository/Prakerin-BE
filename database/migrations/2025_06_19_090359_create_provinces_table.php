@@ -13,6 +13,7 @@ return new class extends Migration {
         Schema::create('provinces', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name');
+            $table->boolean('is_accepted')->default(false);
             $table->timestamps();
         });
     }

@@ -12,10 +12,13 @@ class Province extends Model
 
     public $incrementing = false;
     protected $keyType = 'string';
-
+    protected $casts = [
+        'is_accepted' => 'boolean',
+    ];
     protected $fillable = [
         'id',
         'name',
+        'is_accepted',
     ];
 
     protected static function booted()
@@ -25,5 +28,10 @@ class Province extends Model
                 $user->id = (string) Str::uuid();
             }
         });
+    }
+
+    public function cityRegencies()
+    {
+        return $this->hasMany(CityRegency::class);
     }
 }

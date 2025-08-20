@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\UserLoginRequest;
-use App\Http\Requests\UserRegisterRequest;
+use App\Http\Requests\User\UserLoginRequest;
+use App\Http\Requests\User\UserRegisterRequest;
 use App\Models\Company;
 use App\Models\School;
 use App\Models\Student;
@@ -78,7 +78,7 @@ class UserController extends Controller
         $user->username = $data['username'];
         $user->email = $data['email'];
         $user->role = $data['role'];
-        $user->password = Hash::make($data['password']);
+        $user->password = $data['password'];
 
         if ($request->file('image')) {
             $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
@@ -112,7 +112,7 @@ class UserController extends Controller
             $company->address = $data['address'];
             $company->user_id = $user->id;
             $company->save();
-            $token = $user->createToken('Auth Token', ['industry-access'])->plainTextToken;
+            $token = $user->createToken('Auth Token', ['company-access'])->plainTextToken;
 
         }
 
@@ -159,7 +159,7 @@ class UserController extends Controller
         } else if ($user->role === "school") {
             $token = $user->createToken('Auth Token', ['school-access'])->plainTextToken;
         } else if ($user->role === "industry") {
-            $token = $user->createToken('Auth Token', ['industry-access'])->plainTextToken;
+            $token = $user->createToken('Auth Token', ['company-access'])->plainTextToken;
         } else if ($user->role === "super_admin") {
             $token = $user->createToken('Auth Token', ['admin-access'])->plainTextToken;
         }

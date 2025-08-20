@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\User;
 
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -44,7 +44,7 @@ class UserRegisterRequest extends FormRequest
         $role = $this->input('role');
         switch ($role) {
             case 'student':
-                $rules['school_id'] = 'required|max:20|exists:schools,id';
+                $rules['school_id'] = 'required|max:36|exists:schools,id';
                 break;
             default:
                 $rules['address'] = 'required|string';

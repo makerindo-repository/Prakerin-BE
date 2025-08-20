@@ -1,19 +1,19 @@
 <?php
 
-namespace App\Http\Requests\Student;
+namespace App\Http\Requests\User;
 
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class StudentCreateRequest extends FormRequest
+class UserLoginRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return true;
     }
 
     /**
@@ -23,19 +23,11 @@ class StudentCreateRequest extends FormRequest
      */
     public function rules(): array
     {
-        $rules = [
-            'username' => 'required|unique:users,username|regex:/^[a-zA-Z0-9._]+$/u',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|confirmed',
-            'name' => 'required|string|max:255',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        return [
+            'email' => 'required|email',
+            'password' => 'required|string',
+            'recaptcha_token' => 'required',
         ];
-
-        if ($this->user()->tokenCan("admin-access")) {
-            $rules['school_id'] = 'required|max:36|exists:schools,id';
-        }
-
-        return $rules;
     }
 
     protected function failedValidation(Validator $validator)

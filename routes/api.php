@@ -4,7 +4,9 @@ use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\InternshipController;
+use App\Http\Controllers\ProvinceController;
 use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\SectorController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\UserController;
 use App\Models\School;
@@ -30,12 +32,6 @@ Route::get('/docs/openapi.yaml', function () {
 
 
 
-//Authentication routes
-Route::get('/unauthorized', [AuthController::class, 'unauthorized'])->name('login');
-
-
-
-
 // Route::get('/internships/{slug}', [InternshipController::class, 'getSlug']);
 // Route::get('internships', [InternshipController::class, 'index']);
 // Route::get('internships/show/{id}', [InternshipController::class, 'show']);
@@ -43,7 +39,7 @@ Route::get('/unauthorized', [AuthController::class, 'unauthorized'])->name('logi
 
 Route::middleware('auth:sanctum')->group(function () {
 
-    //User
+    // User
     Route::controller(UserController::class)->group(function () {
         Route::prefix('/users')->group(function () {
             Route::apiResource('/', UserController::class);
@@ -55,6 +51,27 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
+    // Sector
+    Route::apiResource('sectors', SectorController::class)
+        ->only(['store'])
+        ->middleware('ability:admin-access,company-access');
+    Route::apiResource('sectors', SectorController::class)
+        ->only(['update', 'destroy'])
+        ->middleware('abilities:admin-access');
+    Route::apiResource('sectors', SectorController::class)
+        ->only(['index'])
+        ->withoutMiddleware('auth:sanctum');
+
+    // Province
+    Route::apiResource('provinces', ProvinceController::class)
+        ->only(['store'])
+        ->middleware('ability:admin-access,company-access');
+    Route::apiResource('provinces', ProvinceController::class)
+        ->only(['update', 'destroy'])
+        ->middleware('abilities:admin-access');
+    Route::apiResource('provinces', ProvinceController::class)
+        ->only(['index'])
+        ->withoutMiddleware('auth:sanctum');
 
 
     Route::controller(StudentController::class)->group(function () {

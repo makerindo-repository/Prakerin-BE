@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Sector\SectorCreateRequest;
-use App\Http\Requests\Sector\SectorUpdateRequest;
-use App\Models\Sector;
+use App\Http\Requests\Province\ProvinceCreateRequest;
+use App\Http\Requests\Province\ProvinceUpdateRequest;
+use App\Models\Province;
+use Auth;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
-class SectorController extends Controller
+class ProvinceController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
+
         $is_accepted = true;
         $search = $request->query('search', '');
 
@@ -22,57 +23,56 @@ class SectorController extends Controller
             $is_accepted = filter_var($request->query('is_accepted', true), FILTER_VALIDATE_BOOLEAN);
         }
 
-        $sectors = Sector::where('is_accepted', $is_accepted)->where('name', "like", "%$search%")->get();
+        $provinces = Province::where('is_accepted', $is_accepted)->where('name', "like", "%$search%")->get();
 
         return response()->json([
-            'data' => $sectors,
+            'data' => $provinces,
         ], 200);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(SectorCreateRequest $request)
+    public function store(ProvinceCreateRequest $request)
     {
         $data = $request->validated();
 
-        $sector = new Sector();
-        $sector->name = $data['name'];
+        $province = new Province();
+        $province->name = $data['name'];
         if ($request->user()->tokenCan("admin-access")) {
-            $sector->is_accepted = $data['is_accepted'];
+            $province->is_accepted = $data['is_accepted'];
         }
 
-        $sector->save();
+        $province->save();
 
         return response()->json([
-            'data' => $sector,
+            'data' => $province,
         ], 201);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(SectorUpdateRequest $request, string $id)
+    public function update(ProvinceUpdateRequest $request, string $id)
     {
-        $sector = Sector::find($id);
+        $province = Province::find($id);
 
-        if (!$sector) {
+        if (!$province) {
             return response()->json([
-                'errors' => 'Sector not found',
+                'errors' => 'Province not found',
             ], 404);
         }
 
         $data = $request->validated();
 
-        $sector->name = $data['name'] ?? $sector->name;
-        $sector->is_accepted = $data['is_accepted'] ?? $sector->is_accepted;
+        $province->name = $data['name'] ?? $province->name;
+        $province->is_accepted = $data['is_accepted'] ?? $province->is_accepted;
 
-        $sector->save();
+        $province->save();
 
         return response()->json([
-            'data' => $sector,
+            'data' => $province,
         ], 200);
-
     }
 
     /**
@@ -80,18 +80,18 @@ class SectorController extends Controller
      */
     public function destroy(string $id)
     {
-        $sector = Sector::find($id);
+        $province = Province::find($id);
 
-        if (!$sector) {
+        if (!$province) {
             return response()->json([
-                'errors' => 'Sector not found',
+                'errors' => 'Province not found',
             ], 404);
         }
 
-        $sector->delete();
+        $province->delete();
 
         return response()->json([
-            'message' => 'Sector deleted successfully',
+            'message' => 'Province deleted successfully',
         ], 200);
     }
 }

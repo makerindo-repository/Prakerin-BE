@@ -24,6 +24,10 @@ class Company extends Model
         'is_verified',
     ];
 
+    protected $casts = [
+        'is_verified' => 'boolean',
+    ];
+
     protected static function booted()
     {
         static::creating(function ($user) {
@@ -33,10 +37,6 @@ class Company extends Model
         });
     }
 
-
-    protected $casts = [
-        'is_verified' => 'boolean',
-    ];
     public function user()
     {
         return $this->belongsTo(User::class);

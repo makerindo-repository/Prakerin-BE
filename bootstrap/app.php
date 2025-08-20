@@ -5,9 +5,12 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\Request;
 use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -24,6 +27,17 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+
+
+        $exceptions->render(function (RouteNotFoundException $e, $request) {
+            if ($request->is('api/*')) {
+
+                throw new HttpResponseException(response([
+                    "errors" => "Unauthorized."
+                ], 401));
+            }
+        });
+
         $exceptions->render(function (AuthenticationException $e, $request) {
             if ($request->is('api/*')) {
 
@@ -33,11 +47,20 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        $exceptions->render(function (AccessDeniedHttpException $e, $request) {
+        $exceptions->render(function (AccessDeniedHttpException $e, Request $request) {
             if ($request->is('api/*')) {
                 return response()->json([
                     "errors" => "Forbidden."
                 ], 403);
+            }
+        });
+
+        $exceptions->render(function (NotFoundHttpException $e, $request) {
+            if ($request->is('api/*')) {
+
+                throw new HttpResponseException(response([
+                    "errors" => "Not found."
+                ], 404));
             }
         });
 

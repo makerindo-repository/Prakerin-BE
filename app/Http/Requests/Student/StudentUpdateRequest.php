@@ -32,7 +32,7 @@ class StudentUpdateRequest extends FormRequest
         ];
 
         if ($this->user()->role === 'super_admin') {
-            $rules['school_id'] = 'max:20|exists:schools,id|nullable';
+            $rules['school_id'] = 'max:36|exists:schools,id|nullable';
         }
         return $rules;
     }
