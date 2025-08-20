@@ -1,0 +1,25 @@
+nah kalo email verife
+nanti kirim link lewat email
+
+Untuk tokennya mau pake cookies
+Untuk role access nanti dulu
+
+ada pagenation
+limit
+search
+type
+
+// Total Intership untuk sekolah
+// Total perusahaan kecuali company dan belum login
+Buat Distribusi Lowongan Aktif & Close
+#Total student dan student yang sedang magang
+!total Penghargaan untuk sekolah dan company
+Daftar siswa ada filter status magang, permohonan dari register untuk sekolah
+Untuk Daftar penempatan sama kayak Daftar siswa tapi dengan filer status sedanng magang
+menerima permohonan dari register untuk sekolah 
+//Buat siswa untuk sekolah
+Detail siswa
+// daftar perusahaan
+// detail perusahaan
+chat perusahaan
+Update Profile

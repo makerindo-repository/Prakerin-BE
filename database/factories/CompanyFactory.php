@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\CityRegency;
+use App\Models\Sector;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\User;
 
@@ -13,21 +15,13 @@ class CompanyFactory extends Factory
     public function definition(): array
     {
         return [
+            'user_id' => User::factory()->create(["role" => "company"]),
+            'city_regency_id' => CityRegency::inRandomOrder()->first()?->id ?? CityRegency::factory(),
+            'sector_id' => Sector::inRandomOrder()->first()?->id ?? Sector::factory(),
             'name' => $this->faker->company(),
             'address' => $this->faker->address(),
-            'kota' => $this->faker->randomElement(['bandung', 'jakarta', 'tangerang', 'bekasi']),
-            'provinsi' => $this->faker->randomElement(['jawa barat', 'jawa tengah', 'jawa selatan']),
             'phone_number' => $this->faker->phoneNumber(),
-            'user_id' => User::factory()->create(["role" => "industry"]),
             'is_verified' => $this->faker->boolean(),
-            'sector' => $this->faker->randomElement([
-                'Technology',
-                'Manufacturing',
-                'Finance',
-                'Healthcare',
-                'Education',
-                'Retail'
-            ]),
         ];
     }
 }

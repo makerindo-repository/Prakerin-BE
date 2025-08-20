@@ -15,11 +15,11 @@ class SchoolFactory extends Factory
         static $schoolNumber = 1;
 
         return [
-            'name' => 'School ' . $schoolNumber++, // ngurut school1, school2, jsb
+            'user_id' => User::factory()->create(["role" => "school"]),
+            'name' => 'School ' . $schoolNumber++,
             'address' => $this->faker->address(),
             'phone_number' => $this->faker->phoneNumber(),
-            'is_verified' => $this->faker->boolean(), // random true / false
-            'user_id' => User::factory()->create(["role" => "school"]), // otomatis nyieun user lamun henteu dipasihan
+            'is_verified' => $this->faker->boolean(),
         ];
     }
 }

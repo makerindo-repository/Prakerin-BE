@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('scores', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('application_id')->constrained()->onDelete('cascade');
-            $table->string('name');
-            $table->enum('value', ['A', 'B', 'C', 'D', 'E'])->default('E');
-            $table->timestamps();
-        });
+        // Schema::create('scores', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->foreignId('application_id')->constrained()->onDelete('cascade');
+        //     $table->string('name');
+        //     $table->enum('value', ['A', 'B', 'C', 'D', 'E'])->default('E');
+        //     $table->timestamps();
+        // });
     }
 
     /**

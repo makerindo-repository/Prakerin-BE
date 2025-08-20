@@ -10,17 +10,13 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('schools', function (Blueprint $table) {
+        Schema::create('city_regencies', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('user_id');
+            $table->uuid('province_id');
 
             $table->string('name');
-            $table->text('address');
-            $table->string('phone_number')->nullable();
-            $table->boolean('is_verified')->default(false);
-
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-
+            
+            $table->foreign('province_id')->references('id')->on('provinces')->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -30,6 +26,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('schools');
+        Schema::dropIfExists('city_regencies');
     }
 };

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
+use App\Models\User;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 
 class CompanyController extends Controller
@@ -12,15 +14,14 @@ class CompanyController extends Controller
      */
     public function index()
     {
-        //
-    }
+        $limit = request()->query('limit', 10);
+        $search = request()->query('search', '');
+        $companies = Company::where('name', 'like', "%$search%")->with(['user.profileImage'])->paginate($limit);
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        return response()->json(
+            $companies,
+            200
+        );
     }
 
     /**
@@ -34,23 +35,27 @@ class CompanyController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Company $company)
+    public function show(int $id)
     {
-        //
-    }
+        // $company = Company::with(['user.profileImage', 'internships'])->find($id);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Company $company)
-    {
-        //
+        // if (!$company) {
+        //     throw new HttpResponseException(
+        //         response()->json(['errors' => 'Company not found.'], 404)
+        //     );
+        // }
+
+
+        // return response()->json(['data' => $company->user->load('company.internships')], 200);
+
+        $company = Company::with(['user.profileImage', 'internships'])->find($id);
+        return response()->json(['data' => $company], 200);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Company $company)
+    public function update(Request $request, string $id)
     {
         //
     }
@@ -58,8 +63,16 @@ class CompanyController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Company $company)
+    public function destroy(string $id)
     {
         //
+    }
+
+    public function companyCount()
+    {
+        $companyCount = Company::count();
+        return response()->json([
+            'data' => $companyCount
+        ], 200);
     }
 }

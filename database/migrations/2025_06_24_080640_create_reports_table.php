@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('reports', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('application_id')->constrained()->onDelete('cascade');
-            $table->string('report_text');
-            $table->string('report_file');
-            $table->boolean('is_verified_by_school')->default(false);
-            $table->timestamps();
-        });
+        // Schema::create('reports', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->foreignId('application_id')->constrained()->onDelete('cascade');
+        //     $table->string('report_text');
+        //     $table->string('report_file');
+        //     $table->boolean('is_verified_by_school')->default(false);
+        //     $table->timestamps();
+        // });
     }
 
     /**

@@ -5,9 +5,9 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Certificate>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Sector>
  */
-class CertificateFactory extends Factory
+class SectorFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -17,7 +17,8 @@ class CertificateFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'name' => $this->faker->unique()->word(),
+            'is_accepted' => $this->faker->boolean(),
         ];
     }
 }

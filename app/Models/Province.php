@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Str;
 
-class School extends Model
+class Province extends Model
 {
     use HasFactory;
 
@@ -15,11 +15,7 @@ class School extends Model
 
     protected $fillable = [
         'id',
-        'user_id',
         'name',
-        'address',
-        'phone_number',
-        'is_verified',
     ];
 
     protected static function booted()
@@ -29,19 +25,5 @@ class School extends Model
                 $user->id = (string) Str::uuid();
             }
         });
-    }
-
-    protected $casts = [
-        'is_verified' => 'boolean',
-    ];
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    public function students()
-    {
-        return $this->hasMany(Student::class);
     }
 }

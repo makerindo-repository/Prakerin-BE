@@ -2,9 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\CityRegency;
 use App\Models\Company;
 use App\Models\Internship;
+use App\Models\Province;
 use App\Models\School;
+use App\Models\Sector;
 use App\Models\Student;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -17,26 +20,21 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
         User::factory()->create([
-            // 'name' => 'Test User',
             'email' => 'user@example.com',
             'role' => 'super_admin',
-            'password' => bcrypt('string')
         ]);
-        // User::factory()->create([
-        //     'name' => 'Test School',
-        //     'email' => 'testschool@example.com',
-        //     'role' => 'school',
-        //     'password' => bcrypt('#admin123')
-        // ]);
-        School::factory(5)->create();
+
+        School::factory(20)->create();
         Student::factory(10)->create();
-        Company::factory(15)->create();
-        // Internship::factory(20)->create();
-        $this->call([
-            InternshipSeeder::class,
-        ]);
+        Province::factory(5)->create();
+        CityRegency::factory(10)->create();
+        Sector::factory(5)->create();
+        Company::factory(10)->create();
+
+        // // Internship::factory(20)->create();
+        // $this->call([
+        //     InternshipSeeder::class,
+        // ]);
     }
 }

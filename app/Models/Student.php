@@ -4,18 +4,48 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Str;
 
 class Student extends Model
 {
-    /** @use HasFactory<\Database\Factories\StudentFactory> */
+    use HasFactory;
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
+        'id',
+        'user_id',
+        'school_id',
         'name',
         'date_of_birth',
         'gender',
         'phone_number',
         'address',
-        'school_id',
-        'user_id',
+        'is_accepted',
+
     ];
-    use HasFactory;
+
+
+    protected static function booted()
+    {
+        static::creating(function ($user) {
+            if (!$user->id) {
+                $user->id = (string) Str::uuid();
+            }
+        });
+    }
+
+    protected $casts = [
+        'is_accepted' => 'boolean',
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, );
+    }
+
+    public function school()
+    {
+        return $this->belongsTo(School::class, );
+    }
 }

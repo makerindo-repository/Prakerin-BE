@@ -4,19 +4,51 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Str;
 
 class Company extends Model
 {
-    /** @use HasFactory<\Database\Factories\CompanyFactory> */
+    use HasFactory;
+
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
+        'id',
+        'user_id',
+        'city_regency_id',
+        'sector_id',
         'name',
-        'kota',
-        'provinsi',
         'address',
         'phone_number',
-        'user_id',
         'is_verified',
-        'sector',
     ];
-    use HasFactory;
+
+    protected static function booted()
+    {
+        static::creating(function ($user) {
+            if (!$user->id) {
+                $user->id = (string) Str::uuid();
+            }
+        });
+    }
+
+
+    protected $casts = [
+        'is_verified' => 'boolean',
+    ];
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function internships()
+    {
+        return $this->hasMany(Internship::class);
+    }
+
+    public function sector()
+    {
+        return $this->belongsTo(Sector::class);
+    }
 }

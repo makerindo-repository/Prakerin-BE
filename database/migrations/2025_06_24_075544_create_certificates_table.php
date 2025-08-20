@@ -11,13 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('certificates', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('application_id')->constrained()->onDelete('cascade');
-            $table->string('file_path');
-            $table->dateTime('issued_at');
-            $table->timestamps();
-        });
+        // Schema::create('certificates', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->foreignId('application_id')->constrained()->onDelete('cascade');
+        //     $table->string('file_path');
+        //     $table->dateTime('issued_at');
+        //     $table->timestamps();
+        // });
+        
     }
 
     /**

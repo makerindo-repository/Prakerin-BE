@@ -14,13 +14,14 @@ class StudentFactory extends Factory
     public function definition(): array
     {
         return [
+            'school_id' => School::inRandomOrder()->first()?->id ?? School::factory(),
+            'user_id' => User::factory()->create(['role' => 'student']),
             'name' => $this->faker->name(),
-            'date_of_birth' => $this->faker->date('Y-m-d', '-18 years'), // umur kisaran 18 taun
+            'date_of_birth' => $this->faker->date('Y-m-d', '-18 years'),
             'gender' => $this->faker->randomElement(['male', 'female']),
             'phone_number' => $this->faker->phoneNumber(),
             'address' => $this->faker->address(),
-            'school_id' => School::inRandomOrder()->first()?->id ?? School::factory(), // otomatis nyieun school lamun henteu dipasihkeun
-            'user_id' => User::factory(),     // otomatis nyieun user
+            'is_accepted' => $this->faker->boolean(),
         ];
     }
 }

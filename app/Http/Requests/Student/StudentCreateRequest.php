@@ -31,7 +31,7 @@ class StudentCreateRequest extends FormRequest
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
 
-        if ($this->user()->role === 'super_admin') {
+        if ($this->user()->tokenCan("admin-access")) {
             $rules['school_id'] = 'required|max:20|exists:schools,id';
         }
 

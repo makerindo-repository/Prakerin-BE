@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tests', function (Blueprint $table) {
-            $table->id();
-            $table->string("title");
-            $table->text("dedscription");
-            $table->foreignId("internship_id")->constrained()->onDelete('cascade');
-            $table->enum('type', ['teori', 'praktik']);
-            $table->timestamps();
-        });
+        // Schema::create('tests', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->string("title");
+        //     $table->text("dedscription");
+        //     $table->foreignId("internship_id")->constrained()->onDelete('cascade');
+        //     $table->enum('type', ['teori', 'praktik']);
+        //     $table->timestamps();
+        // });
     }
 
     /**

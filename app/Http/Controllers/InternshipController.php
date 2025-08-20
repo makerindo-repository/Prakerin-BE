@@ -191,4 +191,17 @@ class InternshipController extends Controller
     {
         //
     }
+
+    public function getInternshipBySlug()
+    {
+
+    }
+
+    public function internshipCount()
+    {
+        $internshipCount = Internship::count();
+        return response()->json([
+            'data' => $internshipCount
+        ], 200);
+    }
 }

@@ -1,4 +1,3 @@
-# yaml-language-server: $schema=https://spec.openapis.org/oas/3.1/schema/2022-10-07
 openapi: 3.1.0
 info:
   title: PrakerinID API
@@ -15,14 +14,16 @@ servers:
 tags:
   - name: User
     description: Operations related to user management
+  - name: Sector
+    description: Operations related to sector management
+  - name: Student
+    description: Operations related to student management
   - name: School
     description: Operations related to school management
   - name: Internship
     description: Operations related to internship management
   - name: Company
     description: Operations related to company management
-  - name: SuperAdminSchool
-    description: Operations related to super admin school management
 paths:
   # User
   /register:
@@ -93,7 +94,7 @@ paths:
                   errors:
                     type: string
                     example: "Email or password wrong!"               
-  /logout:
+  /users/logout:
     post:
       security:
         - SanctumBearerAuth: []
@@ -159,6 +160,117 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
   
+  # Sector
+  /sectors:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get all sectors
+      operationId: getAllSectors
+      tags:
+        - Sector
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Create a new sector
+      operationId: createSector
+      tags:
+        - Sector
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                is_accepted:
+                  type: boolean
+      responses:
+        '201':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /sectors/{id}:
+    patch:
+      security:
+        - SanctumBearerAuth: []
+      summary: Update a sector
+      operationId: updateSector
+      tags:
+        - Sector
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the sector to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                is_accepted:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      security:
+        - SanctumBearerAuth: []
+      summary: Delete a sector
+      operationId: deleteSector
+      tags:
+        - Sector
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the sector to delete
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "OK"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   
   # Student
   /students:
@@ -169,35 +281,18 @@ paths:
       operationId: getAllStudents
       tags:
         - Student
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+        - $ref: '#/components/parameters/IsVerifiedParam'
       responses:
         '200':
           description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: integer
-                        name:
-                          type: string
-                        email:
-                          type: string
-                          format: email
-                        image:
-                          type: string
-                          format: uri
-                        created_at:
-                          type: string
-                          format: date-time
-                        updated_at:
-                          type: string
-                          format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
     post:
       security:
         - SanctumBearerAuth: []
@@ -214,18 +309,35 @@ paths:
       responses:
         '201':
           description: Created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Student created successfully"
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /students/{id}:
-    patch:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get a student
+      operationId: getStudent
+      tags:
+        - Student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The ID of the student to get
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
       security:
         - SanctumBearerAuth: []
       summary: Update a student
@@ -248,6 +360,29 @@ paths:
       responses:
         '200':
           description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      security: 
+        - SanctumBearerAuth: []
+      summary: Delete a student
+      operationId: deletetudent
+      tags:
+        - Student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The ID of the student to delete
+      responses:
+        '200':
+          description: OK
           content:
             application/json:
               schema:
@@ -255,12 +390,127 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Student updated successfully"
+                    example: "OK"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-      
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /students/count:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get total number of students
+      operationId: getStudentCount
+      tags:
+        - Student
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # Company
+  /companies:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get all companies
+      operationId: getAllCompanies
+      tags:
+        - Company
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /companies/{id}:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get a company
+      operationId: getCompany
+      tags:
+        - Company
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The ID of the company to get
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /companies/count:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get total number of companies
+      operationId: getCompanyCount
+      tags:
+        - Company
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+
+  # Internship
+  /internships/count:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get total number of internships
+      operationId: getInternshipCount
+      tags:
+        - Internship
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
 components:
   securitySchemes:
@@ -270,6 +520,44 @@ components:
       bearerFormat: JWT
       description: Use the token provided after login to access protected routes.
 
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      required: false
+      allowEmptyValue: false
+      description: Page number for pagination
+      schema:
+        type: integer
+        example: 1
+        minimum: 1   
+    LimitParam:
+      name: limit
+      in: query
+      required: false
+      allowEmptyValue: false
+      description: Number of items per page for pagination
+      schema:
+        type: integer
+        example: 10
+        minimum: 1
+    SearchParam:
+      name: search
+      in: query
+      required: false
+      allowEmptyValue: true
+      description: Search term for filtering results
+      schema:
+        type: string
+    IsVerifiedParam:
+      name: is_verified
+      in: query
+      required: false
+      allowEmptyValue: true
+      description: Filter for verified status
+      schema:
+        type: boolean
+
   responses:
     Unauthorized:
       description: Unauthorized
@@ -278,7 +566,7 @@ components:
           schema:
             type: object
             properties:
-              message:
+              errors:
                 type: string
                 example: "Unauthorized."
     NotFound:
@@ -288,11 +576,22 @@ components:
           schema:
             type: object
             properties:
-              message:
+              errors:
                 type: string
-                example: "Resource not found."
+                example: "Not found."
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              errors:
+                type: string
+                example: "Forbidden."
 
   schemas:
+    
     # User
     UserRegisterRequest:
       type: object
@@ -375,7 +674,14 @@ components:
           type: integer
     StudentUpdateRequest:
       type: object
+      required:
+        - _method
       properties:
+        _method:
+          type: string
+          enum: 
+          - "PUT" 
+          - "PATCH"
         name:
           type: string
         date_of_birth:
@@ -394,4 +700,6 @@ components:
         school_id:
           type: integer
 
-    
+    # Internship
+
+    # Company

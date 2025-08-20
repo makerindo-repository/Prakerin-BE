@@ -11,22 +11,52 @@ use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 
-use function Laravel\Prompts\error;
-use function Symfony\Component\Clock\now;
-
-class AuthController extends Controller
+class UserController extends Controller
 {
-    public function unauthorized()
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
     {
-        return response()->json(['errors' => 'Unauthorized'], 401);
+        $user = $request->user();
+        return response()->json([
+            'data' => $user,
+        ], 200);
     }
 
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        //
+    }
 
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        //
+    }
 
     public function register(UserRegisterRequest $request, User $user)
     {
@@ -99,4 +129,57 @@ class AuthController extends Controller
     }
 
 
+    public function login(UserLoginRequest $request)
+    {
+        $data = $request->validated();
+
+        // $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+        //     'secret' => config('services.nocaptcha.secret'),
+        //     'response' => $data['recaptcha_token'],
+        // ]);
+
+        // if (!$response->json('success')) {
+        //     throw new HttpResponseException(response([
+        //         "errors" => [
+        //             "message" => "Captcha failed"
+        //         ]
+        //     ], 422));
+        // }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($data['password'], $user->password)) {
+            throw new HttpResponseException(response([
+                "errors" => "Email or password wrong!"
+            ], 401));
+        }
+
+        $token = null;
+
+
+        if ($user->role === "student") {
+            $token = $user->createToken('Auth Token', ['student-access'])->plainTextToken;
+        } else if ($user->role === "school") {
+            $token = $user->createToken('Auth Token', ['school-access'])->plainTextToken;
+        } else if ($user->role === "industry") {
+            $token = $user->createToken('Auth Token', ['industry-access'])->plainTextToken;
+        } else if ($user->role === "super_admin") {
+            $token = $user->createToken('Auth Token', ['admin-access'])->plainTextToken;
+        }
+
+        if (!$token) {
+            throw new HttpResponseException(response([
+                "errors" => "Failed to create token"
+            ], 500));
+        }
+
+        return response()->json(['token' => $token, 'role' => $user->role], 200);
+
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+        return response()->json(['message' => 'Logout success'], 200);
+    }
 }

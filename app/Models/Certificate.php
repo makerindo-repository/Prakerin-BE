@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Certificate extends Model
 {
-    /** @use HasFactory<\Database\Factories\CertificateFactory> */
+    use HasFactory;
+
     protected $fillable = [
         'aplication_id',
         'file_path',
         'issued_at',
     ];
-    use HasFactory;
 }

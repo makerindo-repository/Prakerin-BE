@@ -28,7 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*')) {
 
                 throw new HttpResponseException(response([
-                    "errors" => "Unauthorized"
+                    "errors" => "Unauthorized."
                 ], 401));
             }
         });
@@ -36,7 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (AccessDeniedHttpException $e, $request) {
             if ($request->is('api/*')) {
                 return response()->json([
-                    "errors" => "Forbidden"
+                    "errors" => "Forbidden."
                 ], 403);
             }
         });
