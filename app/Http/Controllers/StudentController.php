@@ -51,16 +51,14 @@ class StudentController extends Controller
         $user->email = $data['email'];
         $user->role = 'student';
         $user->password = Hash::make($data['password']);
-        $user->save();
 
         if ($request->file('image')) {
             $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
-            ProfileImage::create([
-                'image' => $filename,
-                'user_id' => $user->id
-            ]);
+            $user->photo_profile = $filename;
             $request->file('image')->storeAs('profile', $filename);
         }
+        $user->save();
+
 
         $student = new Student();
         $student->name = $data['name'];

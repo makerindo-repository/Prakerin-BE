@@ -33,15 +33,15 @@ class User extends Authenticatable
 
     public function student()
     {
-        return $this->hasOne(Student::class, 'user_id');
+        return $this->hasOne(Student::class);
     }
     public function school()
     {
-        return $this->hasOne(School::class, 'user_id');
+        return $this->hasOne(School::class);
     }
     public function company()
     {
-        return $this->hasOne(Company::class, 'user_id');
+        return $this->hasOne(Company::class);
     }
 
     protected static function booted()

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UserLoginRequest;
 use App\Http\Requests\UserRegisterRequest;
 use App\Models\Company;
-use App\Models\ProfileImage;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
@@ -20,7 +19,7 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        $user = $request->user();
+        $user = $request->user()->with(['student', 'school', 'company'])->find($request->user()->id);
         return response()->json([
             'data' => $user,
         ], 200);
@@ -80,16 +79,14 @@ class UserController extends Controller
         $user->email = $data['email'];
         $user->role = $data['role'];
         $user->password = Hash::make($data['password']);
-        $user->save();
 
         if ($request->file('image')) {
             $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
-            ProfileImage::create([
-                'image' => $filename,
-                'user_id' => $user->id
-            ]);
+            $user->photo_profile = $filename;
             $request->file('image')->storeAs('profile', $filename);
         }
+        $user->save();
+
 
         $token = null;
 

@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Application extends Model
 {
-    /** @use HasFactory<\Database\Factories\ApplicationFactory> */
     protected $fillable = [
         'internship_id',
         'student_id',
@@ -15,6 +14,6 @@ class Application extends Model
         'cv',
         'step',
     ];
-    
+
     use HasFactory;
 }
