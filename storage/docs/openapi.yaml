@@ -14,20 +14,25 @@ servers:
 tags:
   - name: User
     description: Operations related to user management
+  - name: Company
+    description: Operations related to company management
   - name: Sector
     description: Operations related to sector management
   - name: Province
     description: Operations related to province management
   - name: City Regency
     description: Operations related to city regency management
+  - name: Field
+    description: Operations related to field management
+  - name: Job Opening
+    description: Operations related to company management
   - name: Student
     description: Operations related to student management
   - name: School
     description: Operations related to school management
   - name: Internship
     description: Operations related to internship management
-  - name: Company
-    description: Operations related to company management
+
 paths:
   # User
   /users/register:
@@ -164,6 +169,74 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
   
+# Company
+  /companies:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get all companies
+      operationId: getAllCompanies
+      tags:
+        - Company
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /companies/{id}:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get a company
+      operationId: getCompany
+      tags:
+        - Company
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The ID of the company to get
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /companies/count:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get total number of companies
+      operationId: getCompanyCount
+      tags:
+        - Company
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+
   # Sector
   /sectors:
     get:
@@ -415,6 +488,89 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  # Field
+  /fields:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get all fields
+      operationId: getAllFields
+      tags:
+        - Field
+      parameters:
+        - $ref: '#/components/parameters/SearchParam'
+        - $ref: '#/components/parameters/IsAcceptedParam'
+      responses:
+        '200':
+          description: OK
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Create a new field
+      operationId: createField
+      tags:
+        - Field
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FieldCreateRequest'
+      responses:
+        '201':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /fields/{id}:
+    patch:
+      security:
+        - SanctumBearerAuth: []
+      summary: Update a field
+      operationId: updateField
+      tags:
+        - Field
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FieldUpdateRequest'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      security:
+        - SanctumBearerAuth: []
+      summary: Delete a field
+      operationId: deleteField
+      tags:   
+        - Field 
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  
+  # Job Opening
+
 
   /students:
     get:
@@ -563,73 +719,6 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-  # Company
-  /companies:
-    get:
-      security:
-        - SanctumBearerAuth: []
-      summary: Get all companies
-      operationId: getAllCompanies
-      tags:
-        - Company
-      parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/LimitParam'
-        - $ref: '#/components/parameters/SearchParam'
-      responses:
-        '200':
-          description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  /companies/{id}:
-    get:
-      security:
-        - SanctumBearerAuth: []
-      summary: Get a company
-      operationId: getCompany
-      tags:
-        - Company
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-          description: The ID of the company to get
-      responses:
-        '200':
-          description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  /companies/count:
-    get:
-      security:
-        - SanctumBearerAuth: []
-      summary: Get total number of companies
-      operationId: getCompanyCount
-      tags:
-        - Company
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: integer
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
 
   # Internship
   /internships/count:
@@ -668,9 +757,9 @@ components:
       name: id
       in: path
       required: true
-      schema:
-      type: string
       description: The ID of the resource
+      schema:
+        type: string
 
     PageParam:
       name: page
@@ -872,6 +961,23 @@ components:
         is_accepted:
           type: boolean
           
+    # Field
+    FieldCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        is_accepted:
+          type: boolean
+    FieldUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        is_accepted:
+          type: boolean
 
     # Student
     StudentCreateRequest:

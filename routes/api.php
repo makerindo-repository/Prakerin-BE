@@ -4,6 +4,7 @@ use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CityRegencyController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\FieldController;
 use App\Http\Controllers\InternshipController;
 use App\Http\Controllers\ProvinceController;
 use App\Http\Controllers\SchoolController;
@@ -82,6 +83,17 @@ Route::middleware('auth:sanctum')->group(function () {
         ->only(['update', 'destroy'])
         ->middleware('abilities:admin-access');
     Route::apiResource('city-regencies', CityRegencyController::class)
+        ->only(['index'])
+        ->withoutMiddleware('auth:sanctum');
+
+    // Field
+    Route::apiResource('fields', FieldController::class)
+        ->only(['store'])
+        ->middleware('ability:admin-access,company-access');
+    Route::apiResource('fields', FieldController::class)
+        ->only(['update', 'destroy'])
+        ->middleware('abilities:admin-access');
+    Route::apiResource('fields', FieldController::class)
         ->only(['index'])
         ->withoutMiddleware('auth:sanctum');
 

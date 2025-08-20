@@ -126,4 +126,10 @@ class SchoolController extends Controller
             return response()->json(["error" => $th], 500);
         }
     }
+
+    public function schoolCount()
+    {
+        $count = School::count();
+        return response()->json(['data' => $count], 200);
+    }
 }
