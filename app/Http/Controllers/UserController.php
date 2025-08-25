@@ -107,6 +107,10 @@ class UserController extends Controller
             ], 404));
         }
 
+        if($user->role === 'company'){
+            $user->company->load('cityRegency', 'sector');
+        }
+
         return response()->json([
             'data' => $user,
         ], 200);
@@ -394,5 +398,16 @@ class UserController extends Controller
             'message' => 'User deleted successfully',
         ], 200);
 
+    }
+
+    public function count(Request $request)
+    {
+        $companyCount = User::where('role', 'company')->count();
+
+        return response()->json([
+            'data' => [
+                'company_count' => $companyCount
+            ],
+        ], 200);
     }
 }

@@ -19,6 +19,7 @@ class Company extends Model
         'city_regency_id',
         'sector_id',
         'name',
+        'description',
         'address',
         'phone_number',
         'is_verified',

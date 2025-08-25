@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Task;
+use App\Models\JobOpening;
+use App\Models\SaveJobOpening;
 use Illuminate\Http\Request;
 
-class TaskController extends Controller
+class JobOpeningController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -14,17 +15,14 @@ class TaskController extends Controller
     {
         $limit = request()->query('limit', 10);
         $search = request()->query('search', '');
-        $status = request()->query('status', '');
+        $province_id = request()->query('province_id', '');
+        $city_regency_id = request()->query('city_regency_id', '');
+        $grade = request()->query('grade', '');
+        $field_id = request()->query('field_id', '');
+        $duration_id = request()->query('duration_id', '');
+        $jobOpenings = JobOpening::with('company.user', 'saveJobOpening')->paginate($limit);
 
-        // $user = auth()->user()->student()->;
-
-        $tasks = Task::where('title', 'like', "%$search%")
-            ->when($status === 'pending' || $status === 'in_progress' || $status === 'completed' || $status === 'cancelled', function ($query) use ($status) {
-                $query->where('status', $status);
-            })
-            ->paginate($limit);
-
-        return response()->json($tasks);
+        return response()->json($jobOpenings);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Company;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,10 +18,10 @@ class TestFactory extends Factory
     public function definition(): array
     {
         return [
+            'company_id' => Company::inRandomOrder()->first()->id ?? Company::factory(),
             'title' => $this->faker->sentence(3),
             'test' => $this->faker->paragraph(2),
-            'duration' => $this->faker->numberBetween(30, 120), // dalam menit
-            'passing_score' => $this->faker->numberBetween(50, 100),
+            'type' => $this->faker->randomElement(['theory', 'practice']),
         ];
     }
 }

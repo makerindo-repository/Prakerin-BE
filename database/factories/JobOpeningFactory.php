@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Company;
+use App\Models\Duration;
 use App\Models\Field;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -25,10 +26,10 @@ class JobOpeningFactory extends Factory
             'field_id' => Field::inRandomOrder()->first()?->id ?? Field::factory(),
             'title' => $this->faker->jobTitle(),
             'description' => $this->faker->paragraph(3),
-            'duration' => $this->faker->numberBetween(1, 12),
+            'duration_id' => Duration::inRandomOrder()->first()?->id ?? Duration::factory(),
             'is_paid' => $this->faker->boolean(),
-            'grade' => $this->faker->randomElement(['SMK', 'Mahasiswa', 'all']),
-            'type' => $this->faker->randomElement(['wfh', 'full time', 'hybrid']),
+            'grade' => $this->faker->randomElement(['smk', 'mahasiswa', 'all']),
+            'type' => $this->faker->randomElement(['wfh', 'full_time', 'hybrid']),
             'qouta' => $this->faker->numberBetween(1, 10),
             'is_available' => $this->faker->boolean(),
         ];

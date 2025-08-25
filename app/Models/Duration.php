@@ -6,17 +6,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class SaveJobOpening extends Model
+class Duration extends Model
 {
     use HasFactory;
 
     public $incrementing = false;
     protected $keyType = 'string';
-
+    protected $casts = [
+        'is_accepted' => 'boolean',
+    ];
     protected $fillable = [
         'id',
-        'user_id',
-        'job_opening_id',
+        'duration_value',
+        'duration_unit',
+        'is_accepted',
     ];
 
     protected static function booted()
@@ -28,13 +31,8 @@ class SaveJobOpening extends Model
         });
     }
 
-    public function user()
+    public function jobOpenings()
     {
-        return $this->belongsTo(User::class);
-    }
-
-    public function jobOpening()
-    {
-        return $this->belongsTo(JobOpening::class);
+        return $this->hasMany(JobOpening::class, );
     }
 }

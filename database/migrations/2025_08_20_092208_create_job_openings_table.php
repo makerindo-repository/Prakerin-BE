@@ -14,18 +14,19 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->uuid('company_id');
             $table->uuid('field_id');
+            $table->uuid('duration_id');
 
             $table->string('title');
             $table->text('description');
-            $table->string('duration');
             $table->enum('grade', ['smk', 'mahasiswa', 'all'])->default('all');
-            $table->enum('type', ['wfh', 'full time', 'hybrid']);
+            $table->enum('type', ['wfh', 'full_time', 'hybrid']);
             $table->integer('qouta')->default(1);
             $table->boolean('is_paid');
             $table->boolean('is_available');
 
             $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->foreign('field_id')->references('id')->on('fields')->onDelete('cascade');
+            $table->foreign('duration_id')->references('id')->on('durations')->onDelete('cascade');
 
             $table->timestamps();
         });

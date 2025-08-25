@@ -5,16 +5,19 @@ namespace Database\Seeders;
 use App\Models\CityRegency;
 use App\Models\Company;
 use App\Models\CurriculumVitae;
+use App\Models\Duration;
 use App\Models\Field;
 use App\Models\Internship;
 use App\Models\InternshipApplication;
 use App\Models\InternshipApplicationTest;
 use App\Models\JobOpening;
 use App\Models\Province;
+use App\Models\Report;
 use App\Models\SaveJobOpening;
 use App\Models\School;
 use App\Models\Sector;
 use App\Models\Student;
+use App\Models\Task;
 use App\Models\Test;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -31,7 +34,7 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'email' => 'user@example.com',
             'role' => 'super_admin',
-        ]);
+        ], );
 
         School::factory(20)->create();
 
@@ -45,6 +48,8 @@ class DatabaseSeeder extends Seeder
         Field::factory(5)->create();
         CurriculumVitae::factory(20)->create();
 
+        Duration::factory(5)->create();
+
         JobOpening::factory(20)->create();
         InternshipApplication::factory(20)->create();
 
@@ -55,6 +60,8 @@ class DatabaseSeeder extends Seeder
 
         SaveJobOpening::factory(20)->create();
 
+        Task::factory(20)->create();
+        Report::factory(20)->create();
 
     }
 }

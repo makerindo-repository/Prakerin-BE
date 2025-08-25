@@ -19,6 +19,7 @@ class CompanyFactory extends Factory
             'city_regency_id' => CityRegency::inRandomOrder()->first()?->id ?? CityRegency::factory(),
             'sector_id' => Sector::inRandomOrder()->first()?->id ?? Sector::factory(),
             'name' => $this->faker->company(),
+            'description' => $this->faker->paragraph(),
             'address' => $this->faker->address(),
             'phone_number' => $this->faker->phoneNumber(),
             'is_verified' => $this->faker->boolean(),

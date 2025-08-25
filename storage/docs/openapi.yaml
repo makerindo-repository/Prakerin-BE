@@ -16,6 +16,8 @@ tags:
     description: Operations related to user management
   - name: Curriculum Vitae
     description: Operations related to curriculum vitae management
+  - name: Internship Application
+    description: Operations related to internship application management
   - name: Company
     description: Operations related to company management
   - name: Sector
@@ -311,24 +313,6 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
   /curriculum-vitaes/{id}:
-    get:
-      security:
-        - SanctumBearerAuth: []
-      summary: Get a curriculum vitae by ID
-      operationId: getCurriculumVitaeById
-      tags:
-        - Curriculum Vitae
-      parameters:
-        - $ref: '#/components/parameters/IdPath'
-      responses:
-        '200':
-          description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
     post:
       security:
         - SanctumBearerAuth: []
@@ -371,7 +355,31 @@ paths:
           $ref: '#/components/responses/NotFound'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /curriculum-vitaes/download/{id}:
+  /curriculum-vitaes/{id}/preview:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Preview a curriculum vitae by ID
+      operationId: previewCurriculumVitaeById
+      tags:
+        - Curriculum Vitae
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /curriculum-vitaes/{id}/download:
     get:
       security:
         - SanctumBearerAuth: []
@@ -396,7 +404,25 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-
+  #Internship Application
+  /internship-applications:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get all internship applications
+      operationId: getAllInternshipApplications
+      tags:
+        - Internship Application
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   # Company
   /companies/count:

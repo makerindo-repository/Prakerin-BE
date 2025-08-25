@@ -1,19 +1,17 @@
 <?php
 
-use App\Http\Controllers\ApplicationController;
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CityRegencyController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CurriculumVitaeController;
 use App\Http\Controllers\FieldController;
-use App\Http\Controllers\InternshipController;
+use App\Http\Controllers\InternshipApplicationController;
+use App\Http\Controllers\JobOpeningController;
 use App\Http\Controllers\ProvinceController;
-use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\SaveJobOpeningController;
 use App\Http\Controllers\SectorController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
-use App\Models\School;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -70,12 +68,128 @@ Route::prefix('v1')->group(function () {
             Route::middleware('abilities:student-access')->group(function () {
                 Route::get('/', 'index');
                 Route::post('/', 'store');
-                Route::get('/{id}', 'show');
                 Route::patch('/{id}', 'update');
                 Route::delete('/{id}', 'destroy');
+                Route::get('/{id}/preview', 'preview');
                 Route::get('/{id}/download', 'download');
+
             });
         });
+
+    Route::prefix('/internship-applications')
+        ->controller(InternshipApplicationController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
+
+            Route::middleware('abilities:student-access')->group(function () {
+                Route::get('/', 'index');
+                Route::get('/count', 'count');
+            });
+
+        });
+
+    Route::prefix('/job-openings')
+        ->controller(JobOpeningController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
+            Route::middleware('ability:company-access,student-access')->group(function () {
+                Route::get('/', 'index');
+            });
+        });
+
+    Route::prefix('/save-job-openings')
+        ->controller(SaveJobOpeningController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
+            Route::middleware('ability:student-access')->group(function () {
+                Route::get('/', 'index');
+                Route::post('/', 'store');
+                Route::delete('/{id}', 'destroy');
+            });
+        });
+
+    Route::prefix('/task')
+        ->controller(TaskController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
+            Route::middleware('ability:student-access')->group(function () {
+                Route::get('/', 'index');
+            });
+        });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     Route::middleware('auth:sanctum')->group(function () {

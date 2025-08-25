@@ -15,6 +15,7 @@ class JobOpening extends Model
         'id',
         'company_id',
         'field_id',
+        'duration_id',
         'title',
         'description',
         'duration',
@@ -35,8 +36,18 @@ class JobOpening extends Model
         return $this->belongsTo(Field::class);
     }
 
+    public function duration()
+    {
+        return $this->belongsTo(Duration::class);
+    }
+
     public function internshipApplications()
     {
         return $this->hasMany(InternshipApplication::class);
+    }
+
+    public function saveJobOpening($data)
+    {
+        return $this->hasMany(SaveJobOpening::class);
     }
 }

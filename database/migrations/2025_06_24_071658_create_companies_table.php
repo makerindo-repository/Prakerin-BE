@@ -17,9 +17,10 @@ return new class extends Migration {
             $table->uuid('user_id');
             $table->uuid('city_regency_id')->nullable();
             $table->uuid('sector_id')->nullable();
-            
+
             $table->string('name');
             $table->text('address');
+            $table->text('description')->nullable();
             $table->string('phone_number')->nullable();
             $table->boolean('is_verified')->default(false);
 

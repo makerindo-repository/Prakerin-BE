@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class SaveJobOpening extends Model
+class Report extends Model
 {
     use HasFactory;
 
@@ -15,26 +15,23 @@ class SaveJobOpening extends Model
 
     protected $fillable = [
         'id',
-        'user_id',
-        'job_opening_id',
+        'task_id',
+        'company_id',
+        'student_id',
+        'report',
     ];
 
     protected static function booted()
     {
-        static::creating(function ($user) {
-            if (!$user->id) {
-                $user->id = (string) Str::uuid();
+        static::creating(function ($sector) {
+            if (!$sector->id) {
+                $sector->id = (string) Str::uuid();
             }
         });
     }
 
-    public function user()
+    public function task()
     {
-        return $this->belongsTo(User::class);
-    }
-
-    public function jobOpening()
-    {
-        return $this->belongsTo(JobOpening::class);
+        return $this->belongsTo(Task::class);
     }
 }

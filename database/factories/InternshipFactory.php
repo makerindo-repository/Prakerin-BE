@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Company;
+use App\Models\InternshipApplication;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -23,15 +24,11 @@ class InternshipFactory extends Factory
 
         return [
             'id' => (string) Str::uuid(),
-            'title' => $this->faker->sentence(3),
-            'description' => $this->faker->paragraph(4),
+            'internship_application_id' => InternshipApplication::inRandomOrder()->first()->id ?? InternshipApplication::factory(),
             'start_date' => $start,
             'end_date' => $end,
-            'grade' => $this->faker->randomElement(['SMK', 'Mahasiswa', 'all']),
-            'bidang' => $this->faker->randomElement(['IT', 'Embedding', 'Other']),
-            'type' => $this->faker->randomElement(['wfh', 'full time', 'hybrid']),
-            'company_id' => Company::inRandomOrder()->first()?->id ?? Company::factory(),
-            'kuota' => $this->faker->numberBetween(1, 10),
+            'is_completed' => $this->faker->boolean(),
+            'role' => $this->faker->jobTitle(),
         ];
     }
 }

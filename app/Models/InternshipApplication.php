@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class InternshipApplication extends Model
 {
@@ -18,6 +19,15 @@ class InternshipApplication extends Model
         'status',
         'step',
     ];
+
+    protected static function booted()
+    {
+        static::creating(function ($user) {
+            if (!$user->id) {
+                $user->id = (string) Str::uuid();
+            }
+        });
+    }
 
     public function curriculumVitae()
     {

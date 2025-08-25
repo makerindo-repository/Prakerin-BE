@@ -2,7 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\CurriculumVitae;
 use App\Models\InternshipApplication;
+use App\Models\JobOpening;
 use App\Models\Test;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -19,12 +21,10 @@ class InternshipApplicationFactory extends Factory
     public function definition(): array
     {
         return [
-            'internship_application_id' => InternshipApplication::inRandomOrder()->first()?->id ?? InternshipApplication::factory(),
-            'test_id' => Test::inRandomOrder()->first()?->id ?? Test::factory(),
-            'score' => $this->faker->numberBetween(0, 100),
-            'status' => $this->faker->randomElement(['pending', 'passed', 'failed']),
-            'taken_at' => $this->faker->dateTimeBetween('-1 month', 'now'),
-
+            'curriculum_vitae_id' => CurriculumVitae::inRandomOrder()->first()?->id ?? CurriculumVitae::factory(),
+            'job_opening_id' => JobOpening::inRandomOrder()->first()?->id ?? JobOpening::factory(),
+            'status' => $this->faker->randomElement(['pending', 'in_progress', 'accepted', 'rejected']),
+            'step' => $this->faker->randomElement(['cv_submitted', 'theory_test', 'practice_test']),
         ];
     }
 }
