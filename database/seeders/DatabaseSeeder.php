@@ -7,13 +7,19 @@ use App\Models\Company;
 use App\Models\CurriculumVitae;
 use App\Models\Field;
 use App\Models\Internship;
+use App\Models\InternshipApplication;
+use App\Models\InternshipApplicationTest;
+use App\Models\JobOpening;
 use App\Models\Province;
+use App\Models\SaveJobOpening;
 use App\Models\School;
 use App\Models\Sector;
 use App\Models\Student;
+use App\Models\Test;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Queue\Jobs\Job;
 
 class DatabaseSeeder extends Seeder
 {
@@ -38,9 +44,17 @@ class DatabaseSeeder extends Seeder
 
         Field::factory(5)->create();
         CurriculumVitae::factory(20)->create();
-        // // Internship::factory(20)->create();
-        // $this->call([
-        //     InternshipSeeder::class,
-        // ]);
+
+        JobOpening::factory(20)->create();
+        InternshipApplication::factory(20)->create();
+
+        Test::factory(10)->create();
+        InternshipApplicationTest::factory(20)->create();
+
+        Internship::factory(10)->create();
+
+        SaveJobOpening::factory(20)->create();
+
+
     }
 }

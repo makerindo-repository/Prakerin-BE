@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -14,17 +13,19 @@ return new class extends Migration
         Schema::create('job_openings', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('company_id');
-            $table->uuid('field');
+            $table->uuid('field_id');
 
             $table->string('title');
             $table->text('description');
-            $table->dateTime('start_date');
-            $table->dateTime('end_date');
+            $table->string('duration');
             $table->enum('grade', ['smk', 'mahasiswa', 'all'])->default('all');
             $table->enum('type', ['wfh', 'full time', 'hybrid']);
-            $table->integer('quota')->default(1);
+            $table->integer('qouta')->default(1);
             $table->boolean('is_paid');
             $table->boolean('is_available');
+
+            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
+            $table->foreign('field_id')->references('id')->on('fields')->onDelete('cascade');
 
             $table->timestamps();
         });

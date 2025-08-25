@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\JobOpening;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,7 +19,8 @@ class SaveJobOpeningFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'user_id' => User::inRandomOrder()->first()?->id ?? User::factory(),
+            'job_opening_id' => JobOpening::inRandomOrder()->first()?->id ?? JobOpening::factory(),
         ];
     }
 }
