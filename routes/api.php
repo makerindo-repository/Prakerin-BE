@@ -35,11 +35,6 @@ Route::get('/docs/openapi.yaml', function () {
 
 
 
-// Route::get('/internships/{slug}', [InternshipController::class, 'getSlug']);
-// Route::get('internships', [InternshipController::class, 'index']);
-// Route::get('internships/show/{id}', [InternshipController::class, 'show']);
-// Route::get('/schools/name', [SchoolController::class, 'schoolName']);
-
 Route::prefix('v1')->group(function () {
 
     // User
@@ -135,32 +130,15 @@ Route::prefix('v1')->group(function () {
         Route::controller(StudentController::class)->group(function () {
             Route::get('/students/count', 'studentCount');
         });
-        // Route::apiResource('school', SchoolController::class);
 
-        // Route::middleware('ability:admin-access,school-access')->group(function () {
-
-        // });
-
-
-
-        Route::controller(InternshipController::class)->group(function () {
-            Route::get('/internships/count', 'internshipCount');
-        });
-
-        // Route::middleware('ability:admin-access,school-access, ')->group(function () {
 
         Route::controller(CompanyController::class)->group(function () {
             Route::get('/companies/count', 'companyCount');
         });
 
-        // });
-
         Route::apiResource('students', StudentController::class);
         Route::apiResource('companies', CompanyController::class)->except(['store', 'update', 'destroy']);
 
-
-        // Route::apiResource('applications', ApplicationController::class)->middleware('abilities:student:access');
-        // Route::apiResource('internships', InternshipController::class)->except('index', 'show');
 
     });
 

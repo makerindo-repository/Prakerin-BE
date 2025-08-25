@@ -42,13 +42,19 @@ class Company extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function internships()
-    {
-        return $this->hasMany(Internship::class);
-    }
 
     public function sector()
     {
         return $this->belongsTo(Sector::class);
+    }
+
+    public function cityRegency()
+    {
+        return $this->belongsTo(CityRegency::class);
+    }
+
+    public function tests()
+    {
+        return $this->hasMany(Test::class);
     }
 }

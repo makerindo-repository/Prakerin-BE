@@ -5,33 +5,26 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class InternshipApplication extends Model
+class SaveJobOpening extends Model
 {
     use HasFactory;
+
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
         'id',
-        'curriculum_vitae_id',
+        'user_id',
         'job_opening_id',
-        'status',
-        'step',
     ];
 
-    public function curriculumVitae()
+    public function user()
     {
-        return $this->belongsTo(CurriculumVitae::class);
+        return $this->belongsTo(User::class);
     }
 
     public function jobOpening()
     {
         return $this->belongsTo(JobOpening::class);
     }
-
-    public function internshipApplicationTests()
-    {
-        return $this->hasMany(InternshipApplicationTest::class);
-    }
-
 }

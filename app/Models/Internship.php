@@ -6,28 +6,29 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class InternshipApplicationTest extends Model
+class Internship extends Model
 {
     use HasFactory;
     public $incrementing = false;
     protected $keyType = 'string';
     protected $casts = [
-        'is_passed' => 'boolean',
+        'is_completed' => 'boolean',
     ];
-
 
     protected $fillable = [
         'id',
         'internship_application_id',
-        'test_id',
-        'is_passed',
+        'start_date',
+        'end_date',
+        'is_completed',
+        'role',
     ];
 
     protected static function booted()
     {
-        static::creating(function ($sector) {
-            if (!$sector->id) {
-                $sector->id = (string) Str::uuid();
+        static::creating(function ($user) {
+            if (!$user->id) {
+                $user->id = (string) Str::uuid();
             }
         });
     }
@@ -35,11 +36,6 @@ class InternshipApplicationTest extends Model
     public function internshipApplication()
     {
         return $this->belongsTo(InternshipApplication::class);
-    }
-
-    public function test()
-    {
-        return $this->belongsTo(Test::class);
     }
 
 
