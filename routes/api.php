@@ -60,7 +60,7 @@ Route::prefix('v1')->group(function () {
 
         });
 
-    // Curriculum Vitae
+    // Curriculum Vitae Done
     Route::prefix('/curriculum-vitaes')
         ->controller(CurriculumVitaeController::class)
         ->middleware('auth:sanctum')
@@ -68,6 +68,7 @@ Route::prefix('v1')->group(function () {
             Route::middleware('abilities:student-access')->group(function () {
                 Route::get('/', 'index');
                 Route::post('/', 'store');
+                Route::get('/{id}', 'show');
                 Route::patch('/{id}', 'update');
                 Route::delete('/{id}', 'destroy');
                 Route::get('/{id}/preview', 'preview');

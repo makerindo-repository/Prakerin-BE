@@ -313,6 +313,24 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
   /curriculum-vitaes/{id}:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get a curriculum vitae by ID
+      operationId: getCurriculumVitaeById
+      tags:
+        - Curriculum Vitae
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
     post:
       security:
         - SanctumBearerAuth: []

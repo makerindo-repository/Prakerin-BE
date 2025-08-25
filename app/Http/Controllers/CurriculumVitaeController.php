@@ -48,6 +48,32 @@ class CurriculumVitaeController extends Controller
 
 
     /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        $curriculumVitae = CurriculumVitae::find($id);
+
+        if (!$curriculumVitae) {
+            return throw new HttpResponseException(response([
+                "errors" => "Curriculum Vitae not found."
+            ], 404));
+        }
+
+        if ($curriculumVitae->student_id !== request()->user()->student->id) {
+            return throw new HttpResponseException(response([
+                "errors" => "Forbidden."
+            ], 401));
+        }
+
+        return response()->json(
+            ['data' => $curriculumVitae],
+            200
+        );
+    }
+
+
+    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $id)
