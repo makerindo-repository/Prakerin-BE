@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\CityRegency;
 use App\Models\Company;
+use App\Models\CurriculumVitae;
 use App\Models\Field;
 use App\Models\Internship;
 use App\Models\Province;
@@ -36,6 +37,7 @@ class DatabaseSeeder extends Seeder
         Company::factory(10)->create();
 
         Field::factory(5)->create();
+        CurriculumVitae::factory(20)->create();
         // // Internship::factory(20)->create();
         // $this->call([
         //     InternshipSeeder::class,

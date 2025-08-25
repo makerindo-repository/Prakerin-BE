@@ -6,15 +6,14 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-
-class UserRegisterRequest extends FormRequest
+class UserCreateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user() !== null;
     }
 
     /**
@@ -28,9 +27,7 @@ class UserRegisterRequest extends FormRequest
             'username' => 'required|unique:users,username|regex:/^[a-zA-Z0-9._]+$/u',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|confirmed',
-            'role' => 'required|in:student,school,company',
-            'recaptcha_token' => 'required',
-            'name' => 'required|string|max:255',
+            'role' => 'required|in:student,school,company,super_admin',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
 
@@ -44,9 +41,13 @@ class UserRegisterRequest extends FormRequest
         $role = $this->input('role');
         switch ($role) {
             case 'student':
+                $rules['name'] = 'required|string|max:255';
                 $rules['school_id'] = 'required|max:36|exists:schools,id';
                 break;
+            case 'super_admin':
+                break;
             default:
+                $rules['name'] = 'required|string|max:255';
                 $rules['address'] = 'required|string';
                 break;
         }

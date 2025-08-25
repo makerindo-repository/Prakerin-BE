@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\User\UserCreateRequest;
 use App\Http\Requests\User\UserLoginRequest;
 use App\Http\Requests\User\UserRegisterRequest;
+use App\Http\Requests\User\UserUpdateProfileRequest;
+use App\Http\Requests\User\UserUpdateRequest;
 use App\Models\Company;
 use App\Models\School;
 use App\Models\Student;
@@ -11,6 +14,7 @@ use App\Models\User;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
@@ -19,18 +23,76 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        $user = $request->user()->with(['student', 'school', 'company'])->find($request->user()->id);
-        return response()->json([
-            'data' => $user,
-        ], 200);
+        $isVerified = filter_var($request->query('is_verified', true), FILTER_VALIDATE_BOOLEAN);
+        $search = $request->query('search', '');
+        $limit = request()->query('limit', 10);
+        $role = $request->query('role', null);
+
+
+        $users = User::with(['student', 'school', 'company'])
+            ->when($role, function ($query, $role) {
+                return $query->where('role', $role);
+            })
+            ->when(isset($isVerified), function ($query) use ($isVerified) {
+                $query->where(function ($q) use ($isVerified) {
+                    $q->whereHas('student', fn($q2) => $q2->where('is_verified', $isVerified))
+                        ->orWhereHas('school', fn($q2) => $q2->where('is_verified', $isVerified))
+                        ->orWhereHas('company', fn($q2) => $q2->where('is_verified', $isVerified));
+                });
+            })
+            ->paginate($limit);
+
+        return response()->json($users, 200);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(UserCreateRequest $request)
     {
-        //
+        $data = $request->validated();
+
+        $user = new User();
+        $user->username = $data['username'];
+        $user->email = $data['email'];
+        $user->role = $data['role'];
+        $user->password = $data['password'];
+
+        if ($request->file('image')) {
+            $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
+            $user->photo_profile = $filename;
+            $request->file('image')->storeAs('profile', $filename);
+        }
+        $user->save();
+
+
+        if ($user->role === "student") {
+            $student = new Student();
+            $student->name = $data['name'];
+            $student->school_id = $data['school_id'];
+            $student->user_id = $user->id;
+            $student->save();
+
+        } else if ($user->role === "school") {
+            $school = new School();
+            $school->name = $data['name'];
+            $school->address = $data['address'];
+            $school->user_id = $user->id;
+            $school->save();
+
+        } else if ($user->role === "company") {
+            $company = new Company();
+            $company->name = $data['name'];
+            $company->address = $data['address'];
+            $company->user_id = $user->id;
+            $company->save();
+
+        }
+
+
+        return response()->json([
+            'data' => $user->load('student', 'school', 'company')
+        ], 201);
     }
 
     /**
@@ -38,15 +100,80 @@ class UserController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $user = User::with(['student', 'school', 'company'])->find($id);
+        if (!$user) {
+            throw new HttpResponseException(response([
+                "errors" => "User not found."
+            ], 404));
+        }
+
+        return response()->json([
+            'data' => $user,
+        ], 200);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, UserUpdateRequest $userUpdateRequest, string $id)
     {
-        //
+        $user = User::with(['student', 'school', 'company'])->find($id);
+        if (!$user) {
+            throw new HttpResponseException(response([
+                "errors" => "User not found."
+            ], 404));
+        }
+
+        $validator = Validator::make($request->all(), $userUpdateRequest->rules());
+
+
+        $data = $validator->validated();
+
+        $user->username = $data['username'] ?? $user->username;
+        $user->email = $data['email'] ?? $user->email;
+        $user->password = $data['password'] ?? $user->password;
+
+        if (!$data['email']) {
+            $user->email_verified_at = null;
+        }
+
+        if ($request->file('image')) {
+            $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
+            $user->photo_profile = $filename;
+            $request->file('image')->storeAs('profile', $filename);
+        }
+
+
+        if ($user->role === 'student') {
+            $student = $user->student;
+            $student->name = $data['name'] ?? $student->name;
+            $student->address = $data['address'] ?? $student->address;
+            $student->phone_number = $data['phone_number'] ?? $student->phone_number;
+            $student->name = $data['name'] ?? $student->name;
+            $student->school_id = $data['school_id'] ?? $student->school_id;
+            $student->date_of_birth = $data['date_of_birth'] ?? $student->date_of_birth;
+            $student->save();
+        } else if ($user->role === 'school') {
+            $school = $user->school;
+            $school->name = $data['name'] ?? $school->name;
+            $school->address = $data['address'] ?? $school->address;
+            $school->phone_number = $data['phone_number'] ?? $school->phone_number;
+            $school->save();
+        } else if ($user->role === 'company') {
+            $company = $user->company;
+            $company->name = $data['name'] ?? $company->name;
+            $company->address = $data['address'] ?? $company->address;
+            $company->city_regency_id = $data['city_regency_id'] ?? $company->city_regency_id;
+            $company->sector_id = $data['sector_id'] ?? $company->sector_id;
+            $company->save();
+        }
+
+        $user->save();
+
+        return response()->json([
+            'data' => $user->load(['student', 'school', 'company']),
+        ], 200);
+
     }
 
     /**
@@ -54,7 +181,18 @@ class UserController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $user = User::find($id);
+        if (!$user) {
+            throw new HttpResponseException(response([
+                "errors" => "User not found."
+            ], 404));
+        }
+
+        $user->delete();
+
+        return response()->json([
+            'message' => 'User deleted successfully',
+        ], 200);
     }
 
     public function register(UserRegisterRequest $request, User $user)
@@ -106,7 +244,7 @@ class UserController extends Controller
             $school->save();
             $token = $user->createToken('Auth Token', ['school-access'])->plainTextToken;
 
-        } else if ($user->role === "industry") {
+        } else if ($user->role === "company") {
             $company = new Company();
             $company->name = $data['name'];
             $company->address = $data['address'];
@@ -158,7 +296,7 @@ class UserController extends Controller
             $token = $user->createToken('Auth Token', ['student-access'])->plainTextToken;
         } else if ($user->role === "school") {
             $token = $user->createToken('Auth Token', ['school-access'])->plainTextToken;
-        } else if ($user->role === "industry") {
+        } else if ($user->role === "company") {
             $token = $user->createToken('Auth Token', ['company-access'])->plainTextToken;
         } else if ($user->role === "super_admin") {
             $token = $user->createToken('Auth Token', ['admin-access'])->plainTextToken;
@@ -178,5 +316,83 @@ class UserController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Logout success'], 200);
+    }
+
+    public function profile(Request $request)
+    {
+        $user = $request->user()->with(['student', 'school', 'company'])->find($request->user()->id);
+        return response()->json([
+            'data' => $user,
+        ], 200);
+    }
+
+    public function updateProfile(UserUpdateProfileRequest $request)
+    {
+        $data = $request->validated();
+
+        $user = $request->user();
+        $user->username = $data['username'] ?? $user->username;
+        $user->email = $data['email'] ?? $user->email;
+        $user->password = $data['password'] ?? $user->password;
+
+        if (!$data['email']) {
+            $user->email_verified_at = null;
+        }
+
+        if ($request->file('image')) {
+            $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
+            $user->photo_profile = $filename;
+            $request->file('image')->storeAs('profile', $filename);
+        }
+
+        if ($user->tokenCant('admin-access')) {
+            $user->name = $data['name'] ?? $user->name;
+            $user->address = $data['address'] ?? $user->address;
+            $user->phone_number = $data['phone_number'] ?? $user->phone_number;
+        }
+
+
+        if ($user->tokenCan('student-access')) {
+            $student = $user->student;
+            $student->name = $data['name'] ?? $student->name;
+            $student->address = $data['address'] ?? $student->address;
+            $student->phone_number = $data['phone_number'] ?? $student->phone_number;
+            $student->school_id = $data['school_id'] ?? $student->school_id;
+            $student->date_of_birth = $data['date_of_birth'] ?? $student->date_of_birth;
+            $student->gender = $data['gender'] ?? $student->gender;
+            $student->save();
+        } else if ($user->tokenCan('school-access')) {
+            $school = $user->school;
+            $school->name = $data['name'] ?? $school->name;
+            $school->address = $data['address'] ?? $school->address;
+            $school->phone_number = $data['phone_number'] ?? $school->phone_number;
+            $school->save();
+        } else if ($user->tokenCan('company-access')) {
+            $company = $user->company;
+            $user->name = $data['name'] ?? $user->name;
+            $company->address = $data['address'] ?? $company->address;
+            $company->phone_number = $data['phone_number'] ?? $company->phone_number;
+            $company->city_regency_id = $data['city_regency_id'] ?? $company->city_regency_id;
+            $company->sector_id = $data['sector_id'] ?? $company->sector_id;
+            $company->save();
+        }
+
+        $user->save();
+
+
+        return response()->json([
+            'data' => $user->load(['student', 'school', 'company']),
+        ], 200);
+    }
+
+    public function deleteProfile(Request $request)
+    {
+        $user = $request->user();
+        $user->delete();
+
+        return response()->json([
+            'message' => 'User deleted successfully',
+        ], 200);
+
     }
 }

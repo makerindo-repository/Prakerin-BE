@@ -21,17 +21,17 @@ class StudentController extends Controller
         // dd(Student::where('school_id', $request->user()->school->id)->get());
         $limit = $request->query('limit', 10);
         $search = $request->query('search', '');
-        $isAccepted = filter_var($request->query('is_accepted', true), FILTER_VALIDATE_BOOLEAN);
+        $isAccepted = filter_var($request->query('is_verified', true), FILTER_VALIDATE_BOOLEAN);
 
         $students = [];
         if ($request->user()->tokenCan('school-access')) {
             $students = Student::where('school_id', $request->user()->school->id)
-                ->where('is_accepted', $isAccepted)
+                ->where('is_verified', $isAccepted)
                 ->where('name', 'like', "%$search%")
                 ->paginate($limit);
         } else {
             $students = Student::where('name', 'like', "%$search%")
-                ->where('is_accepted', $isAccepted)
+                ->where('is_verified', $isAccepted)
                 ->paginate($limit);
         }
 
@@ -65,7 +65,7 @@ class StudentController extends Controller
 
         if ($request->user()->tokenCan('school-access')) {
             $student->school_id = $request->user()->school->id;
-            $student->is_accepted = true;
+            $student->is_verified = true;
         } else {
             $student->school_id = $data['school_id'];
         }

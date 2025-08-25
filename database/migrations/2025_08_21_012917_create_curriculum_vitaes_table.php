@@ -10,14 +10,14 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('tests', function (Blueprint $table) {
+        Schema::create('curriculum_vitaes', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('company_id');
-            $table->string('title');
-            $table->text('test');
-            $table->enum('type', ['theory', 'practice']);
+            $table->uuid('student_id');
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
+            $table->string('name');
+            $table->string('file');
+
+            $table->foreign('student_id')->references('id')->on('students')->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -27,6 +27,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('tests');
+        Schema::dropIfExists('curriculum_vitaes');
     }
 };

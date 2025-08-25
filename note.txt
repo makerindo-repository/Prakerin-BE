@@ -1,5 +1,5 @@
-nah kalo email verife
-nanti kirim link lewat email
+nah kalo email verife masih belum
+nanti kirim link lewat email masih belum
 
 Untuk tokennya mau pake cookies
 Untuk role access nanti dulu

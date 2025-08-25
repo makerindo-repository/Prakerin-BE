@@ -8,12 +8,14 @@ info:
     email: ranggadendi6@gmail.com
 
 servers:
-  - url: http://localhost:8000/api
+  - url: http://localhost:8000/api/v1
     description: Local development server
 
 tags:
   - name: User
     description: Operations related to user management
+  - name: Curriculum Vitae
+    description: Operations related to curriculum vitae management
   - name: Company
     description: Operations related to company management
   - name: Sector
@@ -62,7 +64,7 @@ paths:
                     enum: 
                       - student
                       - school
-                      - industry
+                      - company
                       - super_admin
   /users/login:
     post:
@@ -91,7 +93,7 @@ paths:
                     enum: 
                       - student
                       - school
-                      - industry
+                      - company
                       - super_admin
         '401':
           description: Unauthorized
@@ -128,6 +130,106 @@ paths:
     get:
       security:
         - SanctumBearerAuth: []
+      summary: Get All User 
+      operationId: userGetAll
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+        - $ref: '#/components/parameters/IsVerifiedParam'
+        - $ref: '#/components/parameters/RoleParam'
+      tags:
+        - User
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Create User 
+      operationId: createUser
+      tags:
+        - User
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+      responses:
+        '201':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /users/{id}:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get User by ID
+      operationId: userGetById
+      tags:
+        - User
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Update User by ID
+      operationId: userUpdateById
+      tags:
+        - User
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      security:
+        - SanctumBearerAuth: []
+      summary: Delete User by ID
+      operationId: userDeleteById
+      tags:
+        - User
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /users/profile:
+    get:
+      security:
+        - SanctumBearerAuth: []
       summary: User Profile
       operationId: userProfile
       tags:
@@ -135,49 +237,48 @@ paths:
       responses:
         '200':
           description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                      username:
-                        type: string
-                      email:
-                        type: string
-                        format: email
-                      role:
-                        type: string
-                        enum: 
-                          - student
-                          - school
-                          - industry
-                          - super_admin
-                      email_verified_at:
-                        type: string
-                        format: date-time
-                      created_at:
-                        type: string
-                        format: date-time
-                      updated_at:
-                        type: string
-                        format: date-time
         '401':
           $ref: '#/components/responses/Unauthorized'
-  
-# Company
-  /companies:
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Update User Profile
+      operationId: updateUserProfile
+      tags:
+        - User
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      security:
+        - SanctumBearerAuth: []
+      summary: Delete User Profile
+      operationId: deleteUserProfile
+      tags:
+        - User
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # Curriculum Vitae
+  /curriculum-vitaes:
     get:
       security:
         - SanctumBearerAuth: []
-      summary: Get all companies
-      operationId: getAllCompanies
+      summary: Get all curriculum vitaes
+      operationId: getAllCurriculumVitaes
       tags:
-        - Company
+        - Curriculum Vitae
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/LimitParam'
@@ -189,21 +290,36 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /companies/{id}:
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Create a new curriculum vitae
+      operationId: createCurriculumVitae
+      tags:
+        - Curriculum Vitae
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CurriculumVitaeCreateRequest'
+      responses:
+        '201':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /curriculum-vitaes/{id}:
     get:
       security:
         - SanctumBearerAuth: []
-      summary: Get a company
-      operationId: getCompany
+      summary: Get a curriculum vitae by ID
+      operationId: getCurriculumVitaeById
       tags:
-        - Company
+        - Curriculum Vitae
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-          description: The ID of the company to get
+        - $ref: '#/components/parameters/IdPath'
       responses:
         '200':
           description: OK
@@ -213,6 +329,76 @@ paths:
           $ref: '#/components/responses/NotFound'
         '403':
           $ref: '#/components/responses/Forbidden'
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Update a curriculum vitae by ID
+      operationId: updateCurriculumVitaeById
+      tags:
+        - Curriculum Vitae
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CurriculumVitaeUpdateRequest'
+      responses:
+        '200':  
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      security:
+        - SanctumBearerAuth: []
+      summary: Delete a curriculum vitae by ID
+      operationId: deleteCurriculumVitaeById
+      tags:
+        - Curriculum Vitae
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /curriculum-vitaes/download/{id}:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Download a curriculum vitae by ID
+      operationId: downloadCurriculumVitaeById
+      tags:
+        - Curriculum Vitae
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+
+
+  # Company
   /companies/count:
     get:
       security:
@@ -235,7 +421,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-
 
   # Sector
   /sectors:
@@ -570,132 +755,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
   
   # Job Opening
-
-
-  /students:
-    get:
-      security:
-        - SanctumBearerAuth: []
-      summary: Get all students
-      operationId: getAllStudents
-      tags:
-        - Student
-      parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/LimitParam'
-        - $ref: '#/components/parameters/SearchParam'
-        - $ref: '#/components/parameters/IsVerifiedParam'
-      responses:
-        '200':
-          description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-    post:
-      security:
-        - SanctumBearerAuth: []
-      summary: Create a new student
-      operationId: createStudent
-      tags:
-        - Student
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/StudentCreateRequest'
-      responses:
-        '201':
-          description: Created
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  /students/{id}:
-    get:
-      security:
-        - SanctumBearerAuth: []
-      summary: Get a student
-      operationId: getStudent
-      tags:
-        - Student
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-          description: The ID of the student to get
-      responses:
-        '200':
-          description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-    post:
-      security:
-        - SanctumBearerAuth: []
-      summary: Update a student
-      operationId: updateStudent
-      tags:
-        - Student
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-          description: The ID of the student to update
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/StudentUpdateRequest'
-      responses:
-        '200':
-          description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-    delete:
-      security: 
-        - SanctumBearerAuth: []
-      summary: Delete a student
-      operationId: deletetudent
-      tags:
-        - Student
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-          description: The ID of the student to delete
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "OK"
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
   /students/count:
     get:
       security:
@@ -813,6 +872,19 @@ components:
       description: Search by ID for filtering results
       schema:
         type: string
+    RoleParam:
+      name: role
+      in: query
+      required: false
+      allowEmptyValue: true
+      description: Filter by user role
+      schema:
+        type: string
+        enum:
+          - student
+          - school
+          - company
+          - super_admin
 
   responses:
     Unauthorized:
@@ -874,7 +946,7 @@ components:
           enum: 
             - "student"
             - "school"
-            - "industry"
+            - "company"
         recaptcha_token:
           type: string
         name:
@@ -901,6 +973,87 @@ components:
         recaptcha_token:
           type: string
           description: Token for reCAPTCHA verification
+    UserUpdateRequest:
+      type: object
+      required:
+        - _method
+      properties:
+        _method:
+          type: string
+          enum: 
+            - "PATCH"
+        username:
+          type: string
+          pattern: '^[a-zA-Z0-9._]+$'
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        password_confirmation:
+          type: string
+        image:
+          type: string
+          format: binary
+        name:
+          type: string
+          maxLength: 255
+        address:
+          type: string
+        phone_number:
+          type: string
+          pattern: '^(?:\+62|0)[0-9]{9,13}$'
+        school_id:
+          type: string
+          format: uuid
+        date_of_birth:
+          type: string
+          format: date
+        gender:
+          type: string
+          enum:
+            - "male"
+            - "female"
+        city_regency_id:
+          type: string
+          format: uuid
+        sector_id:
+          type: string
+          format: uuid
+    UserCreateRequest:
+      type: object
+      required:
+        - username
+        - email
+        - password
+        - password_confirmation
+        - role
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        password_confirmation:
+          type: string
+        role:
+          type: string
+          enum: 
+            - "student"
+            - "school"
+            - "company"
+            - "super_admin"
+        name:
+          type: string
+        image:
+          type: string
+          format: binary
+        address:
+          type: string
+        school_id:
+          type: integer
 
     # Sector
     SectorCreateRequest:
@@ -979,33 +1132,24 @@ components:
         is_accepted:
           type: boolean
 
-    # Student
-    StudentCreateRequest:
+   
+    # Internship
+
+    # Company
+
+    # Curriculum Vitae
+    CurriculumVitaeCreateRequest:
       type: object
       required:
-        - username
-        - email
-        - password
-        - password_confirmation
         - name
+        - file
       properties:
-        username:
-          type: string
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-        password_confirmation:
-          type: string
         name:
           type: string
-        image:
+        file:
           type: string
           format: binary
-        school_id:
-          type: integer
-    StudentUpdateRequest:
+    CurriculumVitaeUpdateRequest:
       type: object
       required:
         - _method
@@ -1013,26 +1157,10 @@ components:
         _method:
           type: string
           enum: 
-          - "PUT" 
-          - "PATCH"
+            - "PATCH"
         name:
           type: string
-        date_of_birth:
-          type: string
-          format: date
-        gender:
-          type: string
-          enum:
-            - "male"
-            - "female"
-        address:
-          type: string
-        image:
+        file:
           type: string
           format: binary
-        school_id:
-          type: integer
 
-    # Internship
-
-    # Company

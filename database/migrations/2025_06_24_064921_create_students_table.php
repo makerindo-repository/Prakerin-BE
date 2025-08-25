@@ -20,7 +20,7 @@ return new class extends Migration {
             $table->enum('gender', ['male', 'female'])->nullable();
             $table->string('phone_number')->nullable();
             $table->text('address')->nullable();
-            $table->boolean('is_accepted')->default(false);
+            $table->boolean('is_verified')->default(false);
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('school_id')->references('id')->on('schools')->onDelete("set null");

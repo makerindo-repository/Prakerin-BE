@@ -6,15 +6,14 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-
-class UserRegisterRequest extends FormRequest
+class UserUpdateProfileRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user() !== null;
     }
 
     /**
@@ -25,29 +24,37 @@ class UserRegisterRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'username' => 'required|unique:users,username|regex:/^[a-zA-Z0-9._]+$/u',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|confirmed',
-            'role' => 'required|in:student,school,company',
-            'recaptcha_token' => 'required',
-            'name' => 'required|string|max:255',
+            'username' => 'nullable|unique:users,username|regex:/^[a-zA-Z0-9._]+$/u',
+            'email' => 'nullable|email|unique:users,email',
+            'password' => 'nullable|string|confirmed',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
 
-        $this->addConditionalRule($rules);
+        if ($this->user()->tokenCant('admin-access')) {
+            $this->addConditionalRule($rules);
+        }
 
         return $rules;
     }
 
     private function addConditionalRule(&$rules)
     {
-        $role = $this->input('role');
+        $role = $this->user()->role;
+
+        $rules['name'] = 'nullable|string|max:255';
+        $rules['address'] = 'nullable|string';
+        $rules['phone_number'] = 'nullable|string|regex:/^(?:\+62|0)[0-9]{9,13}$/';
         switch ($role) {
             case 'student':
-                $rules['school_id'] = 'required|max:36|exists:schools,id';
+                $rules['school_id'] = 'nullable|uuid:4|exists:schools,id';
+                $rules['date_of_birth'] = 'nullable|date_format:Y-m-d';
+                $rules['gender'] = 'nullable|in:male,female';
+                break;
+            case 'company':
+                $rules['city_regency_id'] = 'nullable|uuid:4|exist:city_regencies,id';
+                $rules['sector_id'] = 'nullable|uuid:4|exists:sectors,id';
                 break;
             default:
-                $rules['address'] = 'required|string';
                 break;
         }
     }

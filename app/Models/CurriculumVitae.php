@@ -6,25 +6,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class Student extends Model
+class CurriculumVitae extends Model
 {
     use HasFactory;
+
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
         'id',
-        'user_id',
-        'school_id',
+        'student_id',
         'name',
-        'date_of_birth',
-        'gender',
-        'phone_number',
-        'address',
-        'is_verified',
-
+        'file',
     ];
-
 
     protected static function booted()
     {
@@ -35,17 +29,8 @@ class Student extends Model
         });
     }
 
-    protected $casts = [
-        'is_verified' => 'boolean',
-    ];
-
-    public function user()
+    public function student()
     {
-        return $this->belongsTo(User::class, );
-    }
-
-    public function school()
-    {
-        return $this->belongsTo(School::class, );
+        return $this->belongsTo(Student::class);
     }
 }

@@ -5,13 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Certificate extends Model
+class InternshipApplicationTest extends Model
 {
+    /** @use HasFactory<\Database\Factories\InternshipApplicationTestFactory> */
     use HasFactory;
-
-    protected $fillable = [
-        'aplication_id',
-        'file_path',
-        'issued_at',
-    ];
 }
