@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MessageSent;
 use App\Models\ReportTask;
 use App\Models\ReportTaskMessage;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Validator;
 
 class ReportTaskController extends Controller
@@ -47,7 +49,7 @@ class ReportTaskController extends Controller
             ->company_id;
 
         if ($studentId !== auth()->user()?->student->id) {
-            if ($companyId !== auth()->user()->company->id) {
+            if ($companyId !== auth()->user()?->company->id) {
                 throw new HttpResponseException(response()->json(
                     [
                         'errors' => 'Forbidden'
@@ -84,6 +86,8 @@ class ReportTaskController extends Controller
         }
         $reportTaskMessage->message = $data['message'];
         $reportTaskMessage->save();
+
+        Broadcast(new MessageSent('aa','aa'));
 
         return response()->json([
             'data' => $reportTaskMessage

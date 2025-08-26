@@ -7,6 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Certificate extends Model
 {
-    /** @use HasFactory<\Database\Factories\CertificateFactory> */
+    /** @use HasFactory<\Databasek\Factories\CertificateFactory> */
     use HasFactory;
 }

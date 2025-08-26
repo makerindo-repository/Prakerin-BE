@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Certificate;
 use Illuminate\Http\Request;
 
 class CertificateController extends Controller
@@ -9,9 +10,15 @@ class CertificateController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $user = $request->user();
+        $limit = $request->query('limit', 10);
+
+        $certificates = Certificate::where('student_id', $user->id)
+            ->paginate($limit);
+
+        return response()->json($certificates);
     }
 
     /**
