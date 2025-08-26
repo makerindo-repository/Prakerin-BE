@@ -18,6 +18,18 @@ tags:
     description: Operations related to curriculum vitae management
   - name: Internship Application
     description: Operations related to internship application management
+  - name: Job Opening
+    description: Operations related to company management
+  - name: Save Job Opening
+    description: Operations related to save job opening management
+  - name: Task
+    description: Operations related to task management
+  - name: Report Task
+    description: Operations related to report task management
+  - name: Feedback
+    description: Operations related to feedback management
+  - name: Certificate
+    description: Operations related to certificate management
   - name: Company
     description: Operations related to company management
   - name: Sector
@@ -28,8 +40,6 @@ tags:
     description: Operations related to city regency management
   - name: Field
     description: Operations related to field management
-  - name: Job Opening
-    description: Operations related to company management
   - name: Student
     description: Operations related to student management
   - name: School
@@ -422,6 +432,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+# Create
   #Internship Application
   /internship-applications:
     get:
@@ -441,7 +452,343 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Create a new internship application
+      operationId: createInternshipApplication
+      tags:
+        - Internship Application
+      # requestBody:
+      #   required: true
+      #   content:
+      #     application/json:
+      #       schema:
+      #         $ref: '#/components/schemas/InternshipApplicationCreateRequest'
+      responses:
+        '201':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /internship-applications/count:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get total number of internship applications
+      operationId: getInternshipApplicationCount
+      tags:
+        - Internship Application
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
+# Get
+  # Job Opening
+  /job-openings:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get all job openings
+      operationId: getAllJobOpenings
+      tags:
+        - Job Opening
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # Save Job Opening
+  /save-job-openings:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get all saved job openings for the authenticated user
+      operationId: getAllSavedJobOpenings
+      tags:
+        - Save Job Opening
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Save a job opening for the authenticated user
+      operationId: saveJobOpening
+      tags:
+        - Save Job Opening
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_opening_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /save-job-openings/{id}:
+    delete:
+      security:
+        - SanctumBearerAuth: []
+      summary: Remove a saved job opening by ID for the authenticated user
+      operationId: removeSavedJobOpening
+      tags:
+        - Save Job Opening
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # Task
+  /tasks:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get all tasks
+      operationId: getAllTasks
+      tags:
+        - Task
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /tasks/{id}:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get a task by ID
+      operationId: getTaskById
+      tags:
+        - Task
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    patch:
+      security:
+        - SanctumBearerAuth: []
+      summary: Update a task by ID
+      operationId: updateTaskById
+      tags:
+        - Task
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - pending
+                    - in_progress
+                    - completed
+                    - cancelled
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # Report Task
+  /report-tasks/{id}:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get a report task by ID
+      operationId: getReportTaskById
+      tags:
+        - Report Task
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Update a report task by ID
+      operationId: updateReportTaskById
+      tags:
+        - Report Task
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # Feedback
+  /feedbacks:
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Create feedback
+      operationId: createFeedback
+      tags:
+        - Feedback
+      # requestBody:
+      #   required: true
+      #   content:
+      #     application/json:
+      #       schema:
+      #         feedback:
+      #           type: string
+      responses:
+        '201':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  
+  # Certificate
+  /certificates:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get all certificates
+      operationId: getAllCertificates
+      tags:
+        - Certificate
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /certificates/{id}/preview:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Preview a certificate by ID
+      operationId: previewCertificateById
+      tags:
+        - Certificate
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /certificates/{id}/download:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Download a certificate by ID
+      operationId: downloadCertificateById
+      tags:
+        - Certificate
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  
   # Company
   /companies/count:
     get:
@@ -798,7 +1145,6 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
   
-  # Job Opening
   /students/count:
     get:
       security:
@@ -821,7 +1167,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-
 
   # Internship
   /internships/count:
@@ -929,6 +1274,26 @@ components:
           - school
           - company
           - super_admin
+    CityRegencyIdParam:
+      name: city_regency_id
+      in: query
+      required: false
+      allowEmptyValue: true
+      description: Filter by city regency ID
+      schema:
+        type: string
+    TypeOfEducationParam:
+      name: type
+      in: query
+      required: false
+      allowEmptyValue: true
+      description: Filter by type
+      schema:
+        type: string
+        enum:
+          - internship
+          - job_opening
+          - both
 
   responses:
     Unauthorized:

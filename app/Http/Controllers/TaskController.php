@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Task;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class TaskController extends Controller
 {
@@ -16,12 +18,16 @@ class TaskController extends Controller
         $search = request()->query('search', '');
         $status = request()->query('status', '');
 
-        // $user = auth()->user()->student()->;
+        $studentId = auth()->user()->student->id;
 
-        $tasks = Task::where('title', 'like', "%$search%")
+        $tasks = Task::whereHas('internship.internshipApplication.curriculumVitae', function ($query) use ($studentId) {
+            $query->where('student_id', $studentId);
+        })
+            ->where('title', 'like', "%$search%")
             ->when($status === 'pending' || $status === 'in_progress' || $status === 'completed' || $status === 'cancelled', function ($query) use ($status) {
                 $query->where('status', $status);
             })
+            ->select(['id', 'title', 'status', 'due_date'])
             ->paginate($limit);
 
         return response()->json($tasks);
@@ -40,7 +46,29 @@ class TaskController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $task = Task::find($id);
+
+        if (!$task) {
+            throw new HttpResponseException(response()->json([
+                'message' => 'Task not found.'
+            ], 404));
+        }
+
+        $studentId = $task->internship
+            ->internshipApplication
+            ->curriculumVitae
+            ->student_id;
+
+        if ($studentId !== auth()->user()->student->id) {
+            throw new HttpResponseException(response()->json([
+                'message' => 'Forbidden.'
+            ], 403));
+        }
+
+        $task->makeHidden(['internship']);
+
+
+        return response()->json(['data' => $task], 200);
     }
 
     /**
@@ -48,7 +76,41 @@ class TaskController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $task = Task::find($id);
+
+        if (!$task) {
+            throw new HttpResponseException(response()->json([
+                'message' => 'Task not found.'
+            ], 404));
+        }
+
+        $studentId = $task->internship
+            ->internshipApplication
+            ->curriculumVitae
+            ->student_id;
+
+        if ($studentId !== auth()->user()->student->id) {
+            throw new HttpResponseException(response()->json([
+                'message' => 'Forbidden.'
+            ], 403));
+        }
+
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|in:pending,in_progress,completed,cancelled',
+        ]);
+
+        if ($validator->fails()) {
+            throw new HttpResponseException(response()->json([
+                'errors' => $validator->errors()
+            ], 422));
+        }
+
+        $task->update($validator->validated());
+        $task->save();
+        $task->makeHidden(['internship']);
+
+
+        return response()->json(['data' => $task], 200);
     }
 
     /**

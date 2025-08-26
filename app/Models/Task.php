@@ -38,4 +38,9 @@ class Task extends Model
     {
         return $this->hasMany(Report::class);
     }
+
+    public function reportTasks()
+    {
+        return $this->hasMany(ReportTask::class);
+    }
 }

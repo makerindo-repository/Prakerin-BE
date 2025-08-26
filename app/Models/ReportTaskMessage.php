@@ -6,25 +6,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class Student extends Model
+class ReportTaskMessage extends Model
 {
     use HasFactory;
+
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
         'id',
-        'user_id',
-        'school_id',
-        'name',
-        'date_of_birth',
-        'gender',
-        'phone_number',
-        'address',
-        'is_verified',
-
+        'report_task_id',
+        'student_id',
+        'company_id',
+        'message',
     ];
-
 
     protected static function booted()
     {
@@ -35,22 +30,18 @@ class Student extends Model
         });
     }
 
-    protected $casts = [
-        'is_verified' => 'boolean',
-    ];
-
-    public function user()
+    public function reportTask()
     {
-        return $this->belongsTo(User::class, );
+        return $this->belongsTo(ReportTask::class);
     }
 
-    public function school()
+    public function student()
     {
-        return $this->belongsTo(School::class, );
+        return $this->belongsTo(Student::class);
     }
 
-    public function reportTaskMessages()
+    public function company()
     {
-        return $this->hasMany(ReportTaskMessage::class);
+        return $this->belongsTo(Company::class);
     }
 }

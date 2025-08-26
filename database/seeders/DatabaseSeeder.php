@@ -13,6 +13,8 @@ use App\Models\InternshipApplicationTest;
 use App\Models\JobOpening;
 use App\Models\Province;
 use App\Models\Report;
+use App\Models\ReportTask;
+use App\Models\ReportTaskMessage;
 use App\Models\SaveJobOpening;
 use App\Models\School;
 use App\Models\Sector;
@@ -60,8 +62,10 @@ class DatabaseSeeder extends Seeder
 
         SaveJobOpening::factory(20)->create();
 
-        Task::factory(20)->create();
-        Report::factory(20)->create();
+        Task::factory(5)->create();
+        // Report::factory(20)->create();
+        ReportTask::factory(5)->create();
+        ReportTaskMessage::factory(20)->create();
 
     }
 }

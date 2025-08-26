@@ -20,7 +20,9 @@ class JobOpeningController extends Controller
         $grade = request()->query('grade', '');
         $field_id = request()->query('field_id', '');
         $duration_id = request()->query('duration_id', '');
-        $jobOpenings = JobOpening::with('company.user', 'saveJobOpening')->paginate($limit);
+        $jobOpenings = JobOpening::with('company.user')
+            ->paginate(10);
+
 
         return response()->json($jobOpenings);
     }

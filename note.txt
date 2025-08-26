@@ -25,3 +25,7 @@ chat perusahaan
 Update Profile
 
 open api internshipapplication count
+
+perhatikan untuk role student yang company
+
+save_job_openings beres

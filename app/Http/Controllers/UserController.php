@@ -11,6 +11,7 @@ use App\Models\Company;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
+use Http;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -107,7 +108,7 @@ class UserController extends Controller
             ], 404));
         }
 
-        if($user->role === 'company'){
+        if ($user->role === 'company') {
             $user->company->load('cityRegency', 'sector');
         }
 
@@ -203,18 +204,18 @@ class UserController extends Controller
     {
         $data = $request->validated();
 
-        // $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-        //     'secret' => config('services.nocaptcha.secret'),
-        //     'response' => $data['recaptcha_token'],
-        // ]);
+        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+            'secret' => config('services.nocaptcha.secret'),
+            'response' => $data['recaptcha_token'],
+        ]);
 
-        // if (!$response->json('success')) {
-        //     throw new HttpResponseException(response([
-        //         "errors" => [
-        //             "message" => "Captcha failed"
-        //         ]
-        //     ], 422));
-        // }
+        if (!$response->json('success')) {
+            throw new HttpResponseException(response([
+                "errors" => [
+                    "message" => "Captcha failed"
+                ]
+            ], 422));
+        }
 
         $user = new User();
         $user->username = $data['username'];
@@ -272,18 +273,18 @@ class UserController extends Controller
     {
         $data = $request->validated();
 
-        // $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-        //     'secret' => config('services.nocaptcha.secret'),
-        //     'response' => $data['recaptcha_token'],
-        // ]);
+        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+            'secret' => config('services.nocaptcha.secret'),
+            'response' => $data['recaptcha_token'],
+        ]);
 
-        // if (!$response->json('success')) {
-        //     throw new HttpResponseException(response([
-        //         "errors" => [
-        //             "message" => "Captcha failed"
-        //         ]
-        //     ], 422));
-        // }
+        if (!$response->json('success')) {
+            throw new HttpResponseException(response([
+                "errors" => [
+                    "message" => "Captcha failed"
+                ]
+            ], 422));
+        }
 
         $user = User::where('email', $request->email)->first();
 

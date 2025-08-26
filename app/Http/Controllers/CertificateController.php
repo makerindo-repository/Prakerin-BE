@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Certificate;
 use Illuminate\Http\Request;
 
 class CertificateController extends Controller
@@ -11,14 +10,6 @@ class CertificateController extends Controller
      * Display a listing of the resource.
      */
     public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
     {
         //
     }
@@ -34,15 +25,7 @@ class CertificateController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Certificate $certificate)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Certificate $certificate)
+    public function show(string $id)
     {
         //
     }
@@ -50,7 +33,7 @@ class CertificateController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Certificate $certificate)
+    public function update(Request $request, string $id)
     {
         //
     }
@@ -58,8 +41,18 @@ class CertificateController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Certificate $certificate)
+    public function destroy(string $id)
     {
         //
+    }
+
+    public function preview(string $id)
+    {
+
+    }
+
+    public function download(string $id)
+    {
+
     }
 }

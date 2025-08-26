@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CityRegencyController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CurriculumVitaeController;
@@ -7,11 +8,13 @@ use App\Http\Controllers\FieldController;
 use App\Http\Controllers\InternshipApplicationController;
 use App\Http\Controllers\JobOpeningController;
 use App\Http\Controllers\ProvinceController;
+use App\Http\Controllers\ReportTaskController;
 use App\Http\Controllers\SaveJobOpeningController;
 use App\Http\Controllers\SectorController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
+use Illuminate\Console\Application;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -37,7 +40,8 @@ Route::prefix('v1')->group(function () {
 
     // User
     Route::prefix('/users')
-        ->controller(UserController::class)->group(function () {
+        ->controller(UserController::class)
+        ->group(function () {
             Route::post('/login', 'login');
             Route::post('/register', 'register');
 
@@ -77,6 +81,7 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+    // Internship Application
     Route::prefix('/internship-applications')
         ->controller(InternshipApplicationController::class)
         ->middleware('auth:sanctum')
@@ -89,6 +94,7 @@ Route::prefix('v1')->group(function () {
 
         });
 
+    // Job Opening 
     Route::prefix('/job-openings')
         ->controller(JobOpeningController::class)
         ->middleware('auth:sanctum')
@@ -98,6 +104,7 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+    // Save Job Opening
     Route::prefix('/save-job-openings')
         ->controller(SaveJobOpeningController::class)
         ->middleware('auth:sanctum')
@@ -109,15 +116,42 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-    Route::prefix('/task')
+    // Task
+    Route::prefix('/tasks')
         ->controller(TaskController::class)
         ->middleware('auth:sanctum')
         ->group(function () {
             Route::middleware('ability:student-access')->group(function () {
                 Route::get('/', 'index');
+                Route::get('/{id}', 'show');
+                Route::patch('/{id}', 'update');
             });
         });
 
+    // Report Task
+    Route::prefix('/report-tasks')
+        ->controller(ReportTaskController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
+            Route::middleware('ability:student-access,company-access')->group(function () {
+                Route::get('/{id}', 'show');
+                Route::post('/{id}', 'store');
+            });
+        });
+
+
+
+    // Certificate
+    Route::prefix('/certificates')
+        ->controller(CertificateController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
+            Route::middleware('ability:student-access')->group(function () {
+                Route::get('/', 'index');
+                Route::get('/{id}/preview', 'preview');
+                Route::get('/{id}/download', 'download');
+            });
+        });
 
 
 

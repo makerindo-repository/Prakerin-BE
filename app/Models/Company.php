@@ -58,4 +58,9 @@ class Company extends Model
     {
         return $this->hasMany(Test::class);
     }
+
+    public function reportTaskMessages()
+    {
+        return $this->hasMany(ReportTaskMessage::class);
+    }   
 }

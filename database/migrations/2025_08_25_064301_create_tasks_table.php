@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->uuid('internship_id');
             $table->string('title');
-            $table->string('description');
+            $table->text('description');
             $table->enum('status', ['pending', 'in_progress', 'completed', 'cancelled'])->default('pending');
             $table->date('due_date');
             $table->foreign('internship_id')->references('id')->on('internships')->onDelete('cascade');
