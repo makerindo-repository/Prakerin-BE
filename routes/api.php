@@ -4,6 +4,7 @@ use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CityRegencyController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CurriculumVitaeController;
+use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FieldController;
 use App\Http\Controllers\InternshipApplicationController;
 use App\Http\Controllers\JobOpeningController;
@@ -26,7 +27,7 @@ Route::get('/', function () {
 });
 
 
-Route::get('/docs/openapi.yaml', function () {
+Route::get('/docs/openapi', function () {
     $path = storage_path('docs/openapi.yaml');
     if (!File::exists($path)) {
         abort(404);
@@ -89,9 +90,14 @@ Route::prefix('v1')->group(function () {
 
             Route::middleware('abilities:student-access')->group(function () {
                 Route::get('/', 'index');
+                Route::post('/', 'store');
                 Route::get('/count', 'count');
             });
 
+            Route::middleware('abilities:company-access')->group(function () {
+                Route::get('/{id}', 'show');
+                Route::patch('/{id}', 'update');
+            });
         });
 
     // Job Opening 
@@ -153,8 +159,17 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-
-
+    // Feedback
+    Route::prefix('/feedbacks')
+        ->controller(FeedbackController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
+            Route::get('/', 'index');
+            Route::post('/', 'store');
+            Route::delete('/{id}', 'destroy');
+            Route::get('/check', 'check');
+            Route::get('/rating', 'rating');
+        });
 
 
 

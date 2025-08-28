@@ -109,7 +109,13 @@ class UserController extends Controller
         }
 
         if ($user->role === 'company') {
-            $user->company->load('cityRegency', 'sector');
+            $user->company->load([
+                'cityRegency.province',
+                'sector',
+                'jobOpenings' => function ($q) {
+                    $q->where('is_available', true) ->orderBy('created_at', 'desc'); // filter di sini
+                }
+            ]);
         }
 
         return response()->json([

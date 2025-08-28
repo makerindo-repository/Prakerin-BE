@@ -44,6 +44,17 @@ class User extends Authenticatable
         return $this->hasOne(Company::class);
     }
 
+    public function feedbacksGiven()
+    {
+        return $this->hasMany(Feedback::class, 'from_user_id');
+    }
+
+    public function feedbacksReceived()
+    {
+        return $this->hasMany(Feedback::class, 'to_user_id');
+    }
+
+
     protected static function booted()
     {
         static::creating(function ($user) {

@@ -23,8 +23,8 @@ class InternshipApplicationFactory extends Factory
         return [
             'curriculum_vitae_id' => CurriculumVitae::inRandomOrder()->first()?->id ?? CurriculumVitae::factory(),
             'job_opening_id' => JobOpening::inRandomOrder()->first()?->id ?? JobOpening::factory(),
-            'status' => $this->faker->randomElement(['pending', 'in_progress', 'accepted', 'rejected']),
-            'step' => $this->faker->randomElement(['cv_submitted', 'theory_test', 'practice_test']),
+            'status' => $this->faker->randomElement(['in_progress', 'accepted', 'rejected']),
+            'cover_letter' => $this->faker->text(),
         ];
     }
 }

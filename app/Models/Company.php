@@ -62,5 +62,11 @@ class Company extends Model
     public function reportTaskMessages()
     {
         return $this->hasMany(ReportTaskMessage::class);
-    }   
+    }
+
+    public function jobOpenings()
+    {
+        return $this->hasMany(JobOpening::class);
+    }
+
 }

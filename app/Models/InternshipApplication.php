@@ -17,7 +17,7 @@ class InternshipApplication extends Model
         'curriculum_vitae_id',
         'job_opening_id',
         'status',
-        'step',
+        'cover_letter',
     ];
 
     protected static function booted()

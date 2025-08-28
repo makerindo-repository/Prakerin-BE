@@ -15,8 +15,8 @@ return new class extends Migration {
             $table->uuid('curriculum_vitae_id');
             $table->uuid('job_opening_id');
 
-            $table->enum('status', ['pending', 'in_progress', 'accepted', 'rejected'])->default('pending');
-            $table->enum('step', ['cv_submitted', 'theory_test', 'practice_test']);
+            $table->enum('status', ['in_progress', 'accepted', 'rejected'])->default('in_progress');
+            $table->text('cover_letter');
 
             $table->foreign('curriculum_vitae_id')->references('id')->on('curriculum_vitaes')->onDelete('cascade');
             $table->foreign('job_opening_id')->references('id')->on('job_openings')->onDelete('cascade');

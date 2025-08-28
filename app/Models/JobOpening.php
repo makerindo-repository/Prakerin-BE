@@ -10,7 +10,10 @@ class JobOpening extends Model
     use HasFactory;
     public $incrementing = false;
     protected $keyType = 'string';
-
+    protected $casts = [
+        'is_paid' => 'boolean',
+        'is_available' => 'boolean',
+    ];
     protected $fillable = [
         'id',
         'company_id',
@@ -24,7 +27,9 @@ class JobOpening extends Model
         'type',
         'qouta',
         'is_available',
+        'role'
     ];
+
 
     public function company()
     {

@@ -459,12 +459,25 @@ paths:
       operationId: createInternshipApplication
       tags:
         - Internship Application
-      # requestBody:
-      #   required: true
-      #   content:
-      #     application/json:
-      #       schema:
-      #         $ref: '#/components/schemas/InternshipApplicationCreateRequest'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - job_opening_id
+                - curriculum_vitae_id
+                - cover_letter
+              properties:
+                job_opening_id:
+                  type: string
+                  format: uuid
+                curriculum_vitae_id:
+                  type: string
+                  format: uuid
+                cover_letter:
+                  type: string
       responses:
         '201':
           description: OK
@@ -472,6 +485,38 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /internship-applications/{id}:
+    patch:
+      security:
+        - SanctumBearerAuth: []
+      summary: Update an internship application by ID
+      operationId: updateInternshipApplicationById
+      tags:
+        -  Internship Application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - in_progress
+                    - accepted
+                    - rejected
+        responses:
+          '200':
+            description: OK
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+          '404':
+            $ref: '#/components/responses/NotFound'
+          '403':
+            $ref: '#/components/responses/Forbidden'
+
+
   /internship-applications/count:
     get:
       security:
@@ -487,7 +532,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-
 # Get
   # Job Opening
   /job-openings:
@@ -502,6 +546,12 @@ paths:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/LimitParam'
         - $ref: '#/components/parameters/SearchParam'
+        - $ref: '#/components/parameters/ProvinceIdParam'
+        - $ref: '#/components/parameters/CityRegencyIdParam'
+        - $ref: '#/components/parameters/TypeOfEducationParam'
+        - $ref: '#/components/parameters/FieldIdParam'
+        - $ref: '#/components/parameters/DurationIdParam'
+        
       responses:
         '200':
           description: OK
@@ -699,6 +749,24 @@ paths:
 
   # Feedback
   /feedbacks:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get all feedbacks
+      operationId: getAllFeedbacks
+      tags:
+        - Feedback
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
     post:
       security:
         - SanctumBearerAuth: []
@@ -706,13 +774,12 @@ paths:
       operationId: createFeedback
       tags:
         - Feedback
-      # requestBody:
-      #   required: true
-      #   content:
-      #     application/json:
-      #       schema:
-      #         feedback:
-      #           type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackCreateRequest'
       responses:
         '201':
           description: OK
@@ -720,7 +787,59 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  
+  /feedbacks/{id}:  
+    delete:
+      security:
+        - SanctumBearerAuth: []
+      summary: Delete feedback by ID
+      operationId: deleteFeedbackById
+      tags:
+        - Feedback
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /feedbacks/check:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Check feedback status
+      operationId: checkFeedbackStatus
+      tags:
+        - Feedback
+      parameters:
+        - name: to_user_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /feedbacks/rating:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get feedback ratings
+      operationId: getFeedbackRatings
+      tags:
+        - Feedback
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   # Certificate
   /certificates:
     get:
@@ -1192,6 +1311,9 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+
+
+
 components:
   securitySchemes:
     SanctumBearerAuth:
@@ -1208,7 +1330,6 @@ components:
       description: The ID of the resource
       schema:
         type: string
-
     PageParam:
       name: page
       in: query
@@ -1283,7 +1404,7 @@ components:
       schema:
         type: string
     TypeOfEducationParam:
-      name: type
+      name: grade
       in: query
       required: false
       allowEmptyValue: true
@@ -1291,9 +1412,25 @@ components:
       schema:
         type: string
         enum:
-          - internship
-          - job_opening
-          - both
+          - smk
+          - mahasiswa
+          - all
+    FieldIdParam:
+      name: field_id
+      in: query
+      required: false
+      allowEmptyValue: true
+      description: Filter by field ID
+      schema:
+        type: string
+    DurationIdParam:
+      name: duration_id
+      in: query
+      required: false
+      allowEmptyValue: true
+      description: Filter by duration ID
+      schema:
+        type: string
 
   responses:
     Unauthorized:
@@ -1573,3 +1710,28 @@ components:
           type: string
           format: binary
 
+    # Feedback
+    FeedbackCreateRequest:
+      type: object
+      required:
+        - to_user_id
+        - to_type
+        - rating
+        - text
+      properties:
+        to_user_id:
+          type: string
+          format: uuid
+        to_type:
+          type: string
+          enum:
+            - "student"
+            - "company"
+            - "school"
+            - "super_admin"
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        text:
+          type: string

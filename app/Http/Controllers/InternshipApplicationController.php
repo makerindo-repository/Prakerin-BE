@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\InternshipApplication;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class InternshipApplicationController extends Controller
 {
@@ -24,7 +26,7 @@ class InternshipApplicationController extends Controller
                 'curriculum_vitae_id' => $app->curriculum_vitae_id,
                 'job_opening_id' => $app->job_opening_id,
                 'status' => $app->status,
-                'step' => $app->step,
+                'cover_letter' => $app->cover_letter,
                 'created_at' => $app->created_at,
                 'updated_at' => $app->updated_at,
 
@@ -67,7 +69,26 @@ class InternshipApplicationController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'curriculum_vitae_id' => 'required|exists:curriculum_vitaes,id',
+            'job_opening_id' => 'required|exists:job_openings,id',
+            'cover_letter' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => $validator->errors()],
+                400
+            ));
+        }
+
+        $data = $validator->validated();
+
+        InternshipApplication::create($data);
+
+        return response()->json([
+            'data' => $data
+        ], 201);
     }
 
     /**
