@@ -52,13 +52,18 @@ Route::prefix('v1')->group(function () {
                 Route::get('/profile', 'profile');
                 Route::patch('/profile', 'updateProfile');
                 Route::delete('/profile', 'deleteProfile');
+                Route::get('/', 'index');
+
 
                 Route::middleware('abilities:admin-access')->group(function () {
-                    Route::get('/', 'index');
                     Route::post('/', 'store');
                     Route::get('/{id}', 'show');
                     Route::patch('/{id}', 'update');
                     Route::delete('/{id}', 'destroy');
+                });
+
+                Route::middleware('abilities:school-access')->group(function () {
+                    Route::get('/student/summary', 'studentSummary');
                 });
 
             });
@@ -107,6 +112,7 @@ Route::prefix('v1')->group(function () {
         ->group(function () {
             Route::middleware('ability:company-access,student-access')->group(function () {
                 Route::get('/', 'index');
+                Route::get('/{id}', 'show');
             });
         });
 

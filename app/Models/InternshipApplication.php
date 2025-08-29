@@ -44,4 +44,8 @@ class InternshipApplication extends Model
         return $this->hasMany(InternshipApplicationTest::class);
     }
 
+    public function internship()
+    {
+        return $this->hasOne(Internship::class);
+    }
 }

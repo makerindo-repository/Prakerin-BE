@@ -53,4 +53,9 @@ class Student extends Model
     {
         return $this->hasMany(ReportTaskMessage::class);
     }
+
+    public function curriculumVitae()
+    {
+        return $this->hasMany(CurriculumVitae::class);
+    }
 }

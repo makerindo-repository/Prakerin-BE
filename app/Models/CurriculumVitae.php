@@ -33,4 +33,8 @@ class CurriculumVitae extends Model
     {
         return $this->belongsTo(Student::class);
     }
+
+    public function internshipApplications(){
+        return $this->hasMany(InternshipApplication::class);
+    }
 }

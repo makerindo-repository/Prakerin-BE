@@ -38,14 +38,14 @@ class DatabaseSeeder extends Seeder
             'role' => 'super_admin',
         ], );
 
-        School::factory(20)->create();
+        School::factory(5)->create();
 
-        Student::factory(10)->create();
+        Student::factory(100)->create();
 
         Province::factory(5)->create();
         CityRegency::factory(10)->create();
         Sector::factory(5)->create();
-        Company::factory(10)->create();
+        Company::factory(5)->create();
 
         Field::factory(5)->create();
         CurriculumVitae::factory(20)->create();

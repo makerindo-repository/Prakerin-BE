@@ -150,6 +150,7 @@ paths:
         - $ref: '#/components/parameters/SearchParam'
         - $ref: '#/components/parameters/IsVerifiedParam'
         - $ref: '#/components/parameters/RoleParam'
+        - $ref: '#/components/parameters/StatusInternshipParam'
       tags:
         - User
       responses:
@@ -281,6 +282,22 @@ paths:
           description: OK
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /users/student/summary:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get Student Summary (for school user)
+      operationId: getStudentSummary
+      tags:
+        - User
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
 
   # Curriculum Vitae
   /curriculum-vitaes:
@@ -557,6 +574,25 @@ paths:
           description: OK
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /job-openings/{id}:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get a job opening by ID
+      operationId: getJobOpeningById
+      tags:
+        - Job Opening
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '403':
           $ref: '#/components/responses/Forbidden'
 
@@ -1431,6 +1467,18 @@ components:
       description: Filter by duration ID
       schema:
         type: string
+    StatusInternshipParam:
+      name: status
+      in: query
+      required: false
+      allowEmptyValue: true
+      description: Filter by internship status
+      schema:
+        type: string
+        enum:
+          - not_started
+          - ongoing
+          - completed
 
   responses:
     Unauthorized:

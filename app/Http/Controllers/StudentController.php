@@ -152,11 +152,12 @@ class StudentController extends Controller
     public function studentCount(Request $request)
     {
 
-        $studentCount = Student::where('school_id', $request->user()->school->id)
+        $studentCount = Student::where('school_id', $request->user()?->school?->id)
             ->where('is_verified', true)
             ->count();
         return response()->json([
             'data' => $studentCount
         ], 200);
     }
+
 }

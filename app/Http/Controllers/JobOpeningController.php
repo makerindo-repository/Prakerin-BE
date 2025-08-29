@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\JobOpening;
 use App\Models\SaveJobOpening;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 
 class JobOpeningController extends Controller
@@ -20,7 +21,14 @@ class JobOpeningController extends Controller
         $grade = request()->query('grade', '');
         $field_id = request()->query('field_id', '');
         $duration_id = request()->query('duration_id', '');
-        $jobOpenings = JobOpening::with('company.user')
+        $jobOpenings = JobOpening::with(
+            [
+                'company.user',
+                'saveJobOpening' => function ($query) {
+                    $query->where('student_id', auth()->user()?->student->id);
+                }
+            ]
+        )
             ->whereHas('company', function ($query) use ($province_id, $city_regency_id) {
                 if ($province_id && !$city_regency_id) {
                     $query->whereHas('cityRegency', function ($query) use ($province_id) {
@@ -64,7 +72,23 @@ class JobOpeningController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $jobOpening = JobOpening::with(
+            [
+                'company.user',
+                'saveJobOpening' => function ($query) {
+                    $query->where('student_id', auth()->user()?->student->id);
+                }
+            ]
+        )->find($id);
+
+        if (!$jobOpening) {
+            throw new HttpResponseException(response()->json(['errors' => 'Job opening not found'], 404));
+        }
+
+
+        return response()->json([
+            'data' => $jobOpening,
+        ]);
     }
 
     /**

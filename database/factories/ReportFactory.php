@@ -29,7 +29,7 @@ class ReportFactory extends Factory
         if ($task) {
             if ($forCompany) {
                 // ambil company lewat chain relasi task -> internship -> internship_application -> job_opening -> company
-                $companyId = optional($task->internship?->internshipApplication?->jobOpening?->company)->id;
+                $companyId = optional($task->internship?->internshipApplications?->jobOpening?->company)->id;
             } else {
                 // ambil student lewat chain task -> internship -> curriculum_vitae -> student
                 $studentId = optional($task->internship?->curriculumVitae?->student)->id;

@@ -20,7 +20,7 @@ class TaskController extends Controller
 
         $studentId = auth()->user()->student->id;
 
-        $tasks = Task::whereHas('internship.internshipApplication.curriculumVitae', function ($query) use ($studentId) {
+        $tasks = Task::whereHas('internship.internshipApplications.curriculumVitae', function ($query) use ($studentId) {
             $query->where('student_id', $studentId);
         })
             ->where('title', 'like', "%$search%")
@@ -55,7 +55,7 @@ class TaskController extends Controller
         }
 
         $studentId = $task->internship
-            ->internshipApplication
+            ->internshipApplications
             ->curriculumVitae
             ->student_id;
 
@@ -85,7 +85,7 @@ class TaskController extends Controller
         }
 
         $studentId = $task->internship
-            ->internshipApplication
+            ->internshipApplications
             ->curriculumVitae
             ->student_id;
 

@@ -38,13 +38,13 @@ class ReportTaskController extends Controller
         $studentId = $reportTask
             ->task
             ->internship
-            ->internshipApplication
+            ->internshipApplications
             ->curriculumVitae
             ->student_id;
         $companyId = $reportTask
             ->task
             ->internship
-            ->internshipApplication
+            ->internshipApplications
             ->jobOpening
             ->company_id;
 
@@ -87,7 +87,7 @@ class ReportTaskController extends Controller
         $reportTaskMessage->message = $data['message'];
         $reportTaskMessage->save();
 
-        Broadcast(new MessageSent('aa','aa'));
+        Broadcast(new MessageSent('aa', 'aa'));
 
         return response()->json([
             'data' => $reportTaskMessage
@@ -112,13 +112,13 @@ class ReportTaskController extends Controller
         $studentId = $reportTask
             ->task
             ->internship
-            ->internshipApplication
+            ->internshipApplications
             ->curriculumVitae
             ->student_id;
         $companyId = $reportTask
             ->task
             ->internship
-            ->internshipApplication
+            ->internshipApplications
             ->jobOpening
             ->company_id;
 

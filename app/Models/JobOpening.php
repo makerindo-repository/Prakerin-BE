@@ -51,7 +51,7 @@ class JobOpening extends Model
         return $this->hasMany(InternshipApplication::class);
     }
 
-    public function saveJobOpening($data)
+    public function saveJobOpening()
     {
         return $this->hasMany(SaveJobOpening::class);
     }

@@ -30,21 +30,95 @@ class UserController extends Controller
         $role = $request->query('role', null);
 
 
-        $users = User::with(['student', 'school', 'company'])
-            ->when($role, function ($query, $role) {
-                return $query->where('role', $role);
-            })
-            ->when(isset($isVerified), function ($query) use ($isVerified) {
-                $query->where(function ($q) use ($isVerified) {
-                    $q->whereHas('student', fn($q2) => $q2->where('is_verified', $isVerified))
-                        ->orWhereHas('school', fn($q2) => $q2->where('is_verified', $isVerified))
-                        ->orWhereHas('company', fn($q2) => $q2->where('is_verified', $isVerified));
-                });
-            })
-            ->paginate($limit);
+        if (auth()->user()->tokenCan('school-access') && ($role === 'student')) {
 
-        return response()->json($users, 200);
+            $status = $request->query('status', null);
+
+            $users = User::with(
+                'student.curriculumVitae.internshipApplications.jobOpening.company.user',
+                'student.curriculumVitae.internshipApplications.jobOpening.company.cityRegency.province'
+            )
+                ->where('role', 'student')
+                ->whereHas('student', function ($q) use ($search) {
+                    $q->where('is_verified', true);
+                    $q->where('name', 'like', "%$search%");
+                    $q->where('school_id', auth()->user()->school->id);
+                })
+                ->when(in_array($status, ['ongoing', 'completed']), function ($q) use ($status) {
+                    $q->whereHas('student.curriculumVitae.internshipApplications', function ($q) use ($status) {
+                        $q->whereHas('internship', function ($q) use ($status) {
+                            $q->where('id', function ($sub) {
+                                $sub->selectRaw('MAX(id)')
+                                    ->from('internships as i2')
+                                    ->whereColumn('i2.internship_application_id', 'internships.internship_application_id');
+                            });
+
+                            if ($status === 'ongoing') {
+                                $q->where('is_completed', false);
+                            } elseif ($status === 'completed') {
+                                $q->where('is_completed', true);
+                            }
+                        });
+                    });
+                })
+                ->when($status === 'not_started', function ($q) {
+                    $q->whereDoesntHave('student.curriculumVitae.internshipApplications.internship');
+                })
+                ->paginate($limit);
+
+            $users->getCollection()->transform(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'student' => [
+                        'id' => $user->student?->id,
+                        'name' => $user->student?->name,
+                        'company' => $user->student?->curriculumVitae
+                            ->flatMap->internshipApplications
+                            ->map->jobOpening
+                            ->map->company
+                            ->unique('id')
+                            ->map(function ($company) {
+                                $data = $company->toArray();
+                                $data['user'] = $company->user?->toArray();
+                                $data['city_regency'] = $company->cityRegency?->toArray();
+                                $data['province'] = $company->cityRegency?->province?->toArray();
+                                return $data;
+                            })
+                            ->values(),
+                    ],
+                ];
+            });
+
+
+            return response()->json($users, 200);
+        } else if ((auth()->user()->tokenCan('school-access') || auth()->user()->tokenCan('student-access')) && ($role === 'company')) {
+            dd('a');
+        } else if (auth()->user()->tokenCan('admin-access')) {
+            $users = User::with(['student', 'school', 'company'])
+                ->when($role, function ($query, $role) {
+                    return $query->where('role', $role);
+                })
+                ->when(isset($isVerified), function ($query) use ($isVerified) {
+                    $query->where(function ($q) use ($isVerified) {
+                        $q->whereHas('student', fn($q2) => $q2->where('is_verified', $isVerified))
+                            ->orWhereHas('school', fn($q2) => $q2->where('is_verified', $isVerified))
+                            ->orWhereHas('company', fn($q2) => $q2->where('is_verified', $isVerified));
+                    });
+                })
+                ->paginate($limit);
+
+            return response()->json($users, 200);
+        } else {
+            throw new HttpResponseException(response([
+                "errors" => "Forbidden."
+            ], 403));
+        }
     }
+
+
 
     /**
      * Store a newly created resource in storage.
@@ -113,7 +187,7 @@ class UserController extends Controller
                 'cityRegency.province',
                 'sector',
                 'jobOpenings' => function ($q) {
-                    $q->where('is_available', true) ->orderBy('created_at', 'desc'); // filter di sini
+                    $q->where('is_available', true)->orderBy('created_at', 'desc'); // filter di sini
                 }
             ]);
         }
@@ -414,6 +488,38 @@ class UserController extends Controller
         return response()->json([
             'data' => [
                 'company_count' => $companyCount
+            ],
+        ], 200);
+    }
+
+    public function studentSummary(Request $request)
+    {
+        $studentQuery = Student::where('school_id', $request->user()?->school?->id)
+            ->where('is_verified', true);
+
+        // total semua student
+        $studentCount = $studentQuery->count();
+
+        // student tanpa internship
+        $totalStudentWithoutInternship = $studentQuery->doesntHave('curriculumVitae.internshipApplications.internship')->count();
+
+        // student dengan internship tapi belum selesai
+        $totalStudentInternship = $studentQuery->whereHas('curriculumVitae.internshipApplications.internship', function ($q) {
+            $q->where('is_completed', false);
+        })->count();
+
+        // student dengan internship selesai
+        $totalStudentWithInternship = $studentQuery->whereHas('curriculumVitae.internshipApplications.internship', function ($q) {
+            $q->where('is_completed', true);
+        })->count();
+
+
+        return response()->json([
+            'data' => [
+                'student_count' => $studentCount,
+                'total_student_without_internship' => $totalStudentWithoutInternship,
+                'total_student_internship' => $totalStudentInternship,
+                'total_student_with_internship' => $totalStudentWithInternship,
             ],
         ], 200);
     }

@@ -29,7 +29,7 @@ class ReportTaskMessageFactory extends Factory
         if ($reportTask) {
             if ($forCompany) {
                 // ambil company lewat chain relasi reportTask -> internship -> internship_application -> job_opening -> company
-                $companyId = optional($reportTask->task->internship?->internshipApplication?->jobOpening?->company)->id;
+                $companyId = optional($reportTask->task->internship?->internshipApplications?->jobOpening?->company)->id;
             } else {
                 // ambil student lewat chain reportTask -> internship -> curriculum_vitae -> student
                 $studentId = optional($reportTask->task->internship?->internshipApplication->curriculumVitae?->student)->id;
