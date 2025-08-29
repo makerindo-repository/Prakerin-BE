@@ -42,7 +42,9 @@ class UserCreateRequest extends FormRequest
         switch ($role) {
             case 'student':
                 $rules['name'] = 'required|string|max:255';
-                $rules['school_id'] = 'required|max:36|exists:schools,id';
+                if (auth()->user()->tokenCant('school-access')) {
+                    $rules['school_id'] = 'required|max:36|exists:schools,id';
+                }
                 break;
             case 'super_admin':
                 break;

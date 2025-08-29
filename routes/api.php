@@ -3,7 +3,9 @@
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CityRegencyController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\ContactUsController;
 use App\Http\Controllers\CurriculumVitaeController;
+use App\Http\Controllers\DurationController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FieldController;
 use App\Http\Controllers\InternshipApplicationController;
@@ -27,7 +29,7 @@ Route::get('/', function () {
 });
 
 
-Route::get('/docs/openapi', function () {
+Route::get('/docs/openapi.yaml', function () {
     $path = storage_path('docs/openapi.yaml');
     if (!File::exists($path)) {
         abort(404);
@@ -38,6 +40,22 @@ Route::get('/docs/openapi', function () {
 
 
 Route::prefix('v1')->group(function () {
+
+    //Contact us    
+    Route::prefix('/contact-us')
+        ->controller(ContactUsController::class)
+        ->group(function () {
+            Route::post('/', 'store');
+
+            Route::middleware('auth:sanctum')->group(function () {
+                Route::middleware('abilities:admin-access')->group(function () {
+                    Route::get('/', 'index');
+                    Route::patch('/{id}', 'update');
+                    Route::delete('/{id}', 'destroy');
+                });
+            });
+        });
+
 
     // User
     Route::prefix('/users')
@@ -56,8 +74,6 @@ Route::prefix('v1')->group(function () {
 
 
                 Route::middleware('abilities:admin-access')->group(function () {
-                    Route::post('/', 'store');
-                    Route::get('/{id}', 'show');
                     Route::patch('/{id}', 'update');
                     Route::delete('/{id}', 'destroy');
                 });
@@ -66,6 +82,14 @@ Route::prefix('v1')->group(function () {
                     Route::get('/student/summary', 'studentSummary');
                 });
 
+                Route::middleware('ability:admin-access,school-access')->group(function () {
+                    Route::post('/', 'store');
+
+                });
+
+                Route::middleware('ability:admin-access,student-access,school-access')->group(function () {
+                    Route::get('/{id}', 'show');
+                });
             });
 
         });
@@ -110,6 +134,10 @@ Route::prefix('v1')->group(function () {
         ->controller(JobOpeningController::class)
         ->middleware('auth:sanctum')
         ->group(function () {
+            Route::middleware('abilities:company-access')->group(function () {
+                Route::post('/', 'store');
+            });
+
             Route::middleware('ability:company-access,student-access')->group(function () {
                 Route::get('/', 'index');
                 Route::get('/{id}', 'show');
@@ -178,7 +206,26 @@ Route::prefix('v1')->group(function () {
         });
 
 
+    Route::prefix('/durations')
+        ->controller(DurationController::class)
+        ->group(function () {
 
+            Route::get('/', 'index');
+
+            Route::middleware("auth:sanctum")->group(function () {
+                Route::middleware('ability:admin-access,company-access')->group(function () {
+
+                    Route::post('/', 'store');
+                });
+
+                Route::middleware('abilities:admin-access')->group(function () {
+                    Route::delete('/{id}', 'destroy');
+                    Route::patch('/{id}', 'update');
+                });
+            });
+
+
+        });
 
 
 

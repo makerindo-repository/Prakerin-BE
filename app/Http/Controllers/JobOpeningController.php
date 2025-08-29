@@ -6,6 +6,7 @@ use App\Models\JobOpening;
 use App\Models\SaveJobOpening;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class JobOpeningController extends Controller
 {
@@ -64,7 +65,30 @@ class JobOpeningController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'field_id' => 'required|exists:fields,id',
+            'duration_id' => 'required|exists:durations,id',
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'is_paid' => 'required|boolean',
+            'grade' => 'required|in:smk,mahasiswa,all',
+            'type' => 'required|in:wfh,fulltime,hybrid',
+            'qouta' => 'required|integer|min:1',
+            'is_available' => 'required|boolean'
+        ]);
+
+        if ($validator->fails()) {
+            throw new HttpResponseException(response()->json(['errors' => $validator->errors()], 400));
+        }
+
+        $data = $validator->validated();
+        $data['company_id'] = auth()->user()->company->id;
+
+        $jobOpening = JobOpening::create($data);
+
+        return response()->json([
+            'data' => $jobOpening
+        ], 201);
     }
 
     /**

@@ -11,6 +11,7 @@ use App\Models\Internship;
 use App\Models\InternshipApplication;
 use App\Models\InternshipApplicationTest;
 use App\Models\JobOpening;
+use App\Models\Major;
 use App\Models\Province;
 use App\Models\Report;
 use App\Models\ReportTask;
@@ -38,9 +39,9 @@ class DatabaseSeeder extends Seeder
             'role' => 'super_admin',
         ], );
 
-        School::factory(5)->create();
+        School::factory(1)->create();
 
-        Student::factory(100)->create();
+        Student::factory(10)->create();
 
         Province::factory(5)->create();
         CityRegency::factory(10)->create();
@@ -57,7 +58,7 @@ class DatabaseSeeder extends Seeder
 
         Test::factory(10)->create();
         InternshipApplicationTest::factory(20)->create();
-
+        
         Internship::factory(10)->create();
 
         SaveJobOpening::factory(20)->create();
@@ -67,5 +68,8 @@ class DatabaseSeeder extends Seeder
         ReportTask::factory(5)->create();
         ReportTaskMessage::factory(20)->create();
 
+
+
+        Major::factory(10)->create();
     }
 }

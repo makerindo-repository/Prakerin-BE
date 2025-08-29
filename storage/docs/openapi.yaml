@@ -40,12 +40,16 @@ tags:
     description: Operations related to city regency management
   - name: Field
     description: Operations related to field management
+  - name: Duration
+    description: Operations related to duration management
   - name: Student
     description: Operations related to student management
   - name: School
     description: Operations related to school management
   - name: Internship
     description: Operations related to internship management
+  - name: Contact Us
+    description: Operations related to contact us management
 
 paths:
   # User
@@ -567,8 +571,7 @@ paths:
         - $ref: '#/components/parameters/CityRegencyIdParam'
         - $ref: '#/components/parameters/TypeOfEducationParam'
         - $ref: '#/components/parameters/FieldIdParam'
-        - $ref: '#/components/parameters/DurationIdParam'
-        
+        - $ref: '#/components/parameters/DurationIdParam'  
       responses:
         '200':
           description: OK
@@ -576,6 +579,71 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Create a new job opening
+      operationId: createJobOpening
+      tags:
+        - Job Opening
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - field_id
+                - duration_id
+                - title
+                - description
+                - is_paid
+                - grade
+                - type
+                - qouta
+                - is_available
+              properties:
+                field_id:
+                  type: string
+                  format: uuid
+                duration_id:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                description:
+                  type: string
+                is_paid:
+                  type: boolean
+                grade:
+                  type: string
+                  enum:
+                    - smk
+                    - mahasiswa
+                    - all
+                type:
+                  type: string
+                  enum:
+                    - wfh
+                    - fulltime
+                    - hybrid
+                qouta:
+                  type: integer
+                  minimum: 1
+                is_available:
+                  type: boolean
+      responses:
+        '201':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+      
+      
   /job-openings/{id}:
     get:
       security:
@@ -1300,6 +1368,138 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
   
+  # Duration
+  /durations:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get all durations
+      operationId: getAllDurations
+      tags:
+        - Duration
+      parameters:
+        - $ref: '#/components/parameters/IsAcceptedParam'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Create a new duration
+      operationId: createDuration
+      tags:
+        - Duration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - duration_value
+                - duration_unit
+              properties:
+                duration_value:
+                  type: integer
+                  minimum: 1
+                duration_unit:
+                  type: string
+                  enum: 
+                    - day 
+                    - month 
+                    - year
+                is_accepted:
+                  type: boolean
+                  example: true
+      responses:
+        '201':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /durations/{id}:
+    patch:
+      security:
+        - SanctumBearerAuth: []
+      summary: Update a duration
+      operationId: updateDuration
+      tags:
+        - Duration
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                duration_value:
+                  type: integer
+                  minimum: 1
+                duration_unit:
+                  type: string
+                  enum: 
+                    - day 
+                    - month 
+                    - year
+                is_accepted:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      security:
+        - SanctumBearerAuth: []
+      summary: Delete a duration
+      operationId: deleteDuration
+      tags:
+        - Duration
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   /students/count:
     get:
       security:
@@ -1347,8 +1547,108 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-
-
+  # Contact Us
+  /contact-us:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get all contact us messages
+      operationId: getAllContactUsMessages
+      tags:
+        - Contact Us
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+        - name: is_read
+          in: query
+          required: false
+          allowEmptyValue: false
+          description: Filter by read status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'      
+    post:
+      summary: Create a new contact us message
+      operationId: createContactUsMessage
+      tags:
+        - Contact Us
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - message
+                - recaptcha_token
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                message:
+                  type: string
+                recaptcha_token:
+                  type: string
+      responses:
+        '201':
+          description: OK
+  /contact-us/{id}:
+    patch:
+      security:
+        - SanctumBearerAuth: []
+      summary: Update a contact us message
+      operationId: updateContactUsMessage
+      tags:
+         - Contact Us
+      parameters:
+         - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+           application/json:
+            schema:
+              type: object
+              properties:
+                is_read:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      security:
+        - SanctumBearerAuth: []
+      summary: Delete a contact us message
+      operationId: deleteContactUsMessage
+      tags:
+        - Contact Us
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
 components:
   securitySchemes:

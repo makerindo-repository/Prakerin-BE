@@ -16,12 +16,17 @@ class Student extends Model
         'id',
         'user_id',
         'school_id',
+        'major_id',
         'name',
         'date_of_birth',
         'gender',
         'phone_number',
         'address',
         'is_verified',
+        'class',
+        'skill',
+        'portofolio_link',
+        'social_media_link'
 
     ];
 

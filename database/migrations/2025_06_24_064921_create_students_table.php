@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->uuid('user_id');
             $table->uuid('school_id')->nullable();
+            $table->uuid('major_id')->nullable();
 
             $table->string('name');
             $table->date('date_of_birth')->nullable();
@@ -21,9 +22,14 @@ return new class extends Migration {
             $table->string('phone_number')->nullable();
             $table->text('address')->nullable();
             $table->boolean('is_verified')->default(false);
+            $table->enum('class', ['10', '11', '12', 'college'])->nullable();
+            $table->string('skill')->nullable();
+            $table->string('portofolio_link')->nullable();
+            $table->string('social_media_link')->nullable();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('school_id')->references('id')->on('schools')->onDelete("set null");
+            $table->foreign('major_id')->references('id')->on('majors')->onDelete('set null');
             $table->timestamps();
         });
     }

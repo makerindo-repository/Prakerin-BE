@@ -95,7 +95,15 @@ class UserController extends Controller
 
             return response()->json($users, 200);
         } else if ((auth()->user()->tokenCan('school-access') || auth()->user()->tokenCan('student-access')) && ($role === 'company')) {
-            dd('a');
+            $users = User::with(['company.cityRegency.province'])
+                ->where('role', 'company')
+                ->whereHas('company', function ($q) use ($search) {
+                    $q->where('is_verified', true);
+                    $q->where('name', 'like', "%$search%");
+                })
+                ->paginate($limit);
+
+            return response()->json($users, 200);
         } else if (auth()->user()->tokenCan('admin-access')) {
             $users = User::with(['student', 'school', 'company'])
                 ->when($role, function ($query, $role) {
@@ -125,7 +133,15 @@ class UserController extends Controller
      */
     public function store(UserCreateRequest $request)
     {
+
         $data = $request->validated();
+
+        if (auth()->user()->tokenCan('school-access') && $data['role'] !== 'student') {
+            throw new HttpResponseException(response([
+                "errors" => "Forbidden."
+            ], 400));
+        }
+
 
         $user = new User();
         $user->username = $data['username'];
@@ -144,7 +160,12 @@ class UserController extends Controller
         if ($user->role === "student") {
             $student = new Student();
             $student->name = $data['name'];
-            $student->school_id = $data['school_id'];
+            if (auth()->user()->tokenCan('school-access')) {
+                $student->school_id = auth()->user()->school->id;
+                $student->is_verified = true;
+            } else {
+                $student->school_id = $data['school_id'];
+            }
             $student->user_id = $user->id;
             $student->save();
 
@@ -294,7 +315,7 @@ class UserController extends Controller
                 "errors" => [
                     "message" => "Captcha failed"
                 ]
-            ], 422));
+            ], 400));
         }
 
         $user = new User();
@@ -363,7 +384,7 @@ class UserController extends Controller
                 "errors" => [
                     "message" => "Captcha failed"
                 ]
-            ], 422));
+            ], 400));
         }
 
         $user = User::where('email', $request->email)->first();
@@ -371,7 +392,7 @@ class UserController extends Controller
         if (!$user || !Hash::check($data['password'], $user->password)) {
             throw new HttpResponseException(response([
                 "errors" => "Email or password wrong!"
-            ], 401));
+            ], 400));
         }
 
         $token = null;
@@ -445,6 +466,11 @@ class UserController extends Controller
             $student->school_id = $data['school_id'] ?? $student->school_id;
             $student->date_of_birth = $data['date_of_birth'] ?? $student->date_of_birth;
             $student->gender = $data['gender'] ?? $student->gender;
+            $student->class = $data['class'] ?? $student->class;
+            $student->skill = $data['skill'] ?? $student->skill;
+            $student->portofolio_link = $data['portofolio_link'] ?? $student->portofolio_link;
+            $student->social_media_link = $data['social_media_link'] ?? $student->social_media_link;
+            $student->major_id = $data['major_id'] ?? $student->major_id;
             $student->save();
         } else if ($user->tokenCan('school-access')) {
             $school = $user->school;
