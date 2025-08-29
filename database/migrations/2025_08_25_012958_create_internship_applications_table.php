@@ -17,6 +17,7 @@ return new class extends Migration {
 
             $table->enum('status', ['in_progress', 'accepted', 'rejected'])->default('in_progress');
             $table->text('cover_letter');
+            $table->text('message_rejected')->nullable();
 
             $table->foreign('curriculum_vitae_id')->references('id')->on('curriculum_vitaes')->onDelete('cascade');
             $table->foreign('job_opening_id')->references('id')->on('job_openings')->onDelete('cascade');

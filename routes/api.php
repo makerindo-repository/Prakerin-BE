@@ -118,7 +118,6 @@ Route::prefix('v1')->group(function () {
         ->group(function () {
 
             Route::middleware('abilities:student-access')->group(function () {
-                Route::get('/', 'index');
                 Route::post('/', 'store');
                 Route::get('/count', 'count');
             });
@@ -126,6 +125,11 @@ Route::prefix('v1')->group(function () {
             Route::middleware('abilities:company-access')->group(function () {
                 Route::get('/{id}', 'show');
                 Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'delete');
+            });
+
+            Route::middleware('ability:student-access,company-access')->group(function () {
+                Route::get('/', 'index');
             });
         });
 
@@ -165,6 +169,10 @@ Route::prefix('v1')->group(function () {
                 Route::get('/', 'index');
                 Route::get('/{id}', 'show');
                 Route::patch('/{id}', 'update');
+            });
+
+            Route::middleware('ability:company-access')->group(function () {
+                Route::post('/', 'store');
             });
         });
 

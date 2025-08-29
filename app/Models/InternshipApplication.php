@@ -18,13 +18,14 @@ class InternshipApplication extends Model
         'job_opening_id',
         'status',
         'cover_letter',
+        'message_rejected',
     ];
 
     protected static function booted()
     {
-        static::creating(function ($user) {
-            if (!$user->id) {
-                $user->id = (string) Str::uuid();
+        static::creating(function ($internshipApplication) {
+            if (!$internshipApplication->id) {
+                $internshipApplication->id = (string) Str::uuid();
             }
         });
     }

@@ -22,7 +22,7 @@ class CompanyFactory extends Factory
             'description' => $this->faker->paragraph(),
             'address' => $this->faker->address(),
             'phone_number' => $this->faker->phoneNumber(),
-            'is_verified' => $this->faker->boolean(),
+            'is_verified' => true,
         ];
     }
 }

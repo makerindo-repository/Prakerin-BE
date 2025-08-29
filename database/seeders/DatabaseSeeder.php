@@ -34,42 +34,52 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory()->create([
-            'email' => 'user@example.com',
-            'role' => 'super_admin',
-        ], );
-
-        School::factory(1)->create();
-
-        Student::factory(10)->create();
 
         Province::factory(5)->create();
         CityRegency::factory(10)->create();
         Sector::factory(5)->create();
-        Company::factory(5)->create();
+        Major::factory(10)->create();
+
+
+        User::factory()->create([
+            'email' => 'user@example.com',
+            'role' => 'super_admin',
+        ]);
+
+        School::factory()->create([
+        ]);
+
+        Company::factory()->create([
+        ]);
+
+        Student::factory()->create([
+
+        ]);
+
+
+
+
 
         Field::factory(5)->create();
-        CurriculumVitae::factory(20)->create();
+        // CurriculumVitae::factory(2)->create();
 
         Duration::factory(5)->create();
 
         JobOpening::factory(20)->create();
-        InternshipApplication::factory(20)->create();
+        // InternshipApplication::factory(20)->create();
 
-        Test::factory(10)->create();
-        InternshipApplicationTest::factory(20)->create();
-        
-        Internship::factory(10)->create();
+        // Test::factory(10)->create();
+        // InternshipApplicationTest::factory(20)->create();
 
-        SaveJobOpening::factory(20)->create();
+        // Internship::factory(10)->create();
 
-        Task::factory(5)->create();
-        // Report::factory(20)->create();
-        ReportTask::factory(5)->create();
-        ReportTaskMessage::factory(20)->create();
+        SaveJobOpening::factory(10)->create();
 
+        // Task::factory(5)->create();
+        // ReportTask::factory(5)->create();
+        // ReportTaskMessage::factory(20)->create();
 
 
-        Major::factory(10)->create();
+
     }
 }

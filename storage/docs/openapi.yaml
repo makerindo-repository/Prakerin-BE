@@ -506,6 +506,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+          
   /internship-applications/{id}:
     patch:
       security:
@@ -514,6 +515,8 @@ paths:
       operationId: updateInternshipApplicationById
       tags:
         -  Internship Application
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
       requestBody:
         required: true
         content:
@@ -527,15 +530,15 @@ paths:
                     - in_progress
                     - accepted
                     - rejected
-        responses:
-          '200':
-            description: OK
-          '401':
-            $ref: '#/components/responses/Unauthorized'
-          '404':
-            $ref: '#/components/responses/NotFound'
-          '403':
-            $ref: '#/components/responses/Forbidden'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
 
   /internship-applications/count:
@@ -747,6 +750,43 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+    post:
+        security:
+          - SanctumBearerAuth: []
+        summary: Create a new task
+        operationId: createTask
+        tags:
+          - Task
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - internship_id
+                  - title
+                  - description
+                  - due_date
+                properties:
+                  internship_id:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                    maxLength: 255
+                  description:
+                    type: string
+                  due_date:
+                    type: string
+                    format: date
+        responses:
+          '201':
+            description: Created
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+          '403':
+            $ref: '#/components/responses/Forbidden'
   /tasks/{id}:
     get:
       security:

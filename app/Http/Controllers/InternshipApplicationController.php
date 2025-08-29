@@ -15,6 +15,37 @@ class InternshipApplicationController extends Controller
     public function index()
     {
         $limit = request()->query('limit', 10);
+
+
+        if (auth()->user()->tokenCan('company-access')) {
+
+            $internshipApplications = InternshipApplication::with('curriculumVitae.student.user', 'curriculumVitae.student.school')
+                ->whereHas('jobOpening', function ($query) {
+                    $query->where('company_id', auth()->user()->company->id);
+                })
+                ->paginate($limit);
+
+            $internshipApplications->getCollection()->transform(function ($item) {
+                $student = $item->curriculumVitae->student;
+                $student->makeHidden(['user', 'school']);
+
+                return [
+                    'id' => $item->id,
+                    'status' => $item->status,
+                    'cover_letter' => $item->cover_letter,
+                    'student' => $student,
+                    'user' => $student->user,
+                    'school' => $student->school,
+                ];
+
+            });
+
+            return response()->json($internshipApplications);
+
+        }
+
+
+
         $internshipApplications = InternshipApplication::with('jobOpening.company.user')
             ->whereHas('curriculumVitae', fn($query) => $query->where('student_id', auth()->user()->student->id))
             ->paginate($limit);
@@ -58,7 +89,6 @@ class InternshipApplicationController extends Controller
             ];
         });
 
-        // ganti collection hasil paginate dengan data yg sudah dimap
         $internshipApplications->setCollection($data);
 
         return response()->json($internshipApplications);
@@ -96,7 +126,21 @@ class InternshipApplicationController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $internshipApplication = InternshipApplication::find($id);
+
+        if (!$internshipApplication) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => 'Internship Application not found.'],
+                404
+            ));
+        }
+
+        if ($internshipApplication->jobOpening()->company()->id !== auth()->user()->company->id) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => 'Forbidden.'],
+                403
+            ));
+        }
     }
 
     /**
@@ -104,7 +148,56 @@ class InternshipApplicationController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $internshipApplication = InternshipApplication::find($id);
+
+        if (!$internshipApplication) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => 'Internship Application not found.'],
+                404
+            ));
+        }
+
+        if ($internshipApplication->jobOpening()->company()->id !== auth()->user()->company->id) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => 'Forbidden.'],
+                403
+            ));
+        }
+
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|in:in_progress,accepted,rejected',
+        ]);
+
+        if ($validator->fails()) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => $validator->errors()],
+                400
+            ));
+        }
+
+        $data = $validator->validated();
+
+        if ($data['status'] === 'rejected') {
+            $validator = Validator::make($request->all(), [
+                'status' => 'required|in:in_progress,accepted,rejected',
+                'message_rejected' => 'required|string',
+            ]);
+        }
+
+        if ($validator->fails()) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => $validator->errors()],
+                400
+            ));
+        }
+
+        $data = $validator->validated();
+
+        $internshipApplication->update($data);
+
+        return response()->json([
+            'data' => $internshipApplication
+        ], 200);
     }
 
     /**
@@ -112,7 +205,27 @@ class InternshipApplicationController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $internshipApplication = InternshipApplication::find($id);
+
+        if (!$internshipApplication) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => 'Internship Application not found.'],
+                404
+            ));
+        }
+
+        if ($internshipApplication->jobOpening()->company()->id !== auth()->user()->company->id) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => 'Forbidden.'],
+                403
+            ));
+        }
+
+        $internshipApplication->delete();
+
+        return response()->json([
+            'messages' => 'Internship Application deleted successfully.'
+        ], 200);
     }
 
     public function count()

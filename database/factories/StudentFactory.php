@@ -21,7 +21,7 @@ class StudentFactory extends Factory
             'gender' => $this->faker->randomElement(['male', 'female']),
             'phone_number' => $this->faker->phoneNumber(),
             'address' => $this->faker->address(),
-            'is_verified' => $this->faker->boolean(),
+            'is_verified' => true,
         ];
     }
 }

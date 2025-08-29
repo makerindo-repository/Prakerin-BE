@@ -38,7 +38,22 @@ class TaskController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'internship_id' => 'required|exists:internships,id',
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'due_date' => 'required|date',
+        ]);
+
+        if ($validator->fails()) {
+            throw new HttpResponseException(response()->json([
+                'errors' => $validator->errors()
+            ], 422));
+        }
+
+        $task = Task::create($validator->validated());
+
+        return response()->json(['data' => $task], 201);
     }
 
     /**

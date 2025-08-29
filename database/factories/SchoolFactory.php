@@ -19,7 +19,7 @@ class SchoolFactory extends Factory
             'name' => 'School ' . $schoolNumber++,
             'address' => $this->faker->address(),
             'phone_number' => $this->faker->phoneNumber(),
-            'is_verified' => $this->faker->boolean(),
+            'is_verified' => true,
         ];
     }
 }
