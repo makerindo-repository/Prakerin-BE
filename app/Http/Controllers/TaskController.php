@@ -133,6 +133,17 @@ class TaskController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $task = Task::find($id);
+        if (!$task) {
+            throw new HttpResponseException(response()->json(['errors' => 'Task not found,'], 404));
+        }
+
+        if ($task->internship->internshipApplications->jobOpening->company_id !== auth()->user()->company->id) {
+            throw new HttpResponseException(response()->json(['errors' => 'Forbidden.'], 403));
+        }
+
+        $task->delete();
+
+        return response()->json(['data' => 'Task deleted successfully.'], 200);
     }
 }

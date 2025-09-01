@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Internship;
 use App\Models\InternshipApplication;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
@@ -31,8 +32,12 @@ class InternshipApplicationController extends Controller
 
                 return [
                     'id' => $item->id,
+                    'curriculum_vitae_id' => $item->curriculum_vitae_id,
+                    'job_opening_id' => $item->job_opening_id,
                     'status' => $item->status,
                     'cover_letter' => $item->cover_letter,
+                    'created_at' => $item->created_at,
+                    'updated_at' => $item->updated_at,
                     'student' => $student,
                     'user' => $student->user,
                     'school' => $student->school,
@@ -114,10 +119,10 @@ class InternshipApplicationController extends Controller
 
         $data = $validator->validated();
 
-        InternshipApplication::create($data);
+        $internshipApplication = InternshipApplication::create($data);
 
         return response()->json([
-            'data' => $data
+            'data' => $internshipApplication
         ], 201);
     }
 
@@ -141,6 +146,10 @@ class InternshipApplicationController extends Controller
                 403
             ));
         }
+
+        return response()->json([
+            'data' => $internshipApplication
+        ], 200);
     }
 
     /**
@@ -157,7 +166,7 @@ class InternshipApplicationController extends Controller
             ));
         }
 
-        if ($internshipApplication->jobOpening()->company()->id !== auth()->user()->company->id) {
+        if ($internshipApplication->jobOpening->company_id !== auth()->user()->company->id) {
             throw new HttpResponseException(response()->json(
                 ['errors' => 'Forbidden.'],
                 403
@@ -182,6 +191,22 @@ class InternshipApplicationController extends Controller
                 'status' => 'required|in:in_progress,accepted,rejected',
                 'message_rejected' => 'required|string',
             ]);
+        } elseif ($data['status'] === 'accepted') {
+            $internship = new Internship();
+
+            $internship->internship_application_id = $internshipApplication->id;
+
+            $internship->start_date = now();
+
+            if ($internshipApplication->jobOpening->duration->duration_unit === "day") {
+                $internship->end_date = now()->addDays($internshipApplication->jobOpening->duration->duration_value);
+            } else if ($internshipApplication->jobOpening->duration->duration_unit === "month") {
+                $internship->end_date = now()->addMonths($internshipApplication->jobOpening->duration->duration_value);
+            } else if ($internshipApplication->jobOpening->duration->duration_unit === "year") {
+                $internship->end_date = now()->addYears($internshipApplication->jobOpening->duration->duration_value);
+            }
+
+            $internship->save();
         }
 
         if ($validator->fails()) {
@@ -214,7 +239,7 @@ class InternshipApplicationController extends Controller
             ));
         }
 
-        if ($internshipApplication->jobOpening()->company()->id !== auth()->user()->company->id) {
+        if ($internshipApplication->jobOpening->company_id !== auth()->user()->company->id) {
             throw new HttpResponseException(response()->json(
                 ['errors' => 'Forbidden.'],
                 403

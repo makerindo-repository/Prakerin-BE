@@ -26,8 +26,6 @@ class School extends Model
         'is_verified',
     ];
 
-
-
     protected static function booted()
     {
         static::creating(function ($user) {
@@ -47,5 +45,10 @@ class School extends Model
     public function students()
     {
         return $this->hasMany(Student::class);
+    }
+
+    public function mous()
+    {
+        return $this->hasMany(Mou::class);
     }
 }

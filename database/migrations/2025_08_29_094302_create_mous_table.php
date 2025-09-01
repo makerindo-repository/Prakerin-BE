@@ -10,18 +10,15 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('internships', function (Blueprint $table) {
+        Schema::create('mous', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('internship_application_id');
-            $table->uuid('role_id')->nullable();
-
+            $table->foreignUuid('company_id')->constrained('companies')->onDelete('cascade');
+            $table->foreignUuid('school_id')->constrained('schools')->onDelete('cascade');
             $table->date('start_date');
             $table->date('end_date');
-            $table->boolean('is_completed')->default(false);
-
-            $table->foreign('internship_application_id')->references('id')->on('internship_applications')->onDelete('cascade');
-            $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
-
+            $table->enum('status', ['draft', 'active', 'expired', 'rejected'])->default('draft');
+            $table->string('file');
+            $table->string('mou_number')->nullable();
             $table->timestamps();
         });
     }
@@ -31,6 +28,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('internships');
+        Schema::dropIfExists('mous');
     }
 };

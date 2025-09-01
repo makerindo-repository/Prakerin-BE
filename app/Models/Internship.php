@@ -38,5 +38,10 @@ class Internship extends Model
         return $this->belongsTo(InternshipApplication::class);
     }
 
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
 
 }

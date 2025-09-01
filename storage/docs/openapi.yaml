@@ -50,6 +50,12 @@ tags:
     description: Operations related to internship management
   - name: Contact Us
     description: Operations related to contact us management
+  - name: Mou
+    description: Operations related to mou management
+  - name: Achievement
+    description: Operations related to achievement management
+  - name: Role
+    description: Operations related to role management
 
 paths:
   # User
@@ -302,7 +308,6 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-
   # Curriculum Vitae
   /curriculum-vitaes:
     get:
@@ -453,7 +458,6 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-# Create
   #Internship Application
   /internship-applications:
     get:
@@ -505,8 +509,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
-          
+          $ref: '#/components/responses/Forbidden'         
   /internship-applications/{id}:
     patch:
       security:
@@ -523,6 +526,8 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - status
               properties:
                 status:
                   type: string
@@ -530,6 +535,8 @@ paths:
                     - in_progress
                     - accepted
                     - rejected
+                message_rejected:
+                  type: string
       responses:
         '200':
           description: OK
@@ -539,8 +546,24 @@ paths:
           $ref: '#/components/responses/NotFound'
         '403':
           $ref: '#/components/responses/Forbidden'
-
-
+    delete:
+      security:
+        - SanctumBearerAuth: []
+      summary: Delete an internship application by ID
+      operationId: deleteInternshipApplicationById
+      tags:
+        - Internship Application
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /internship-applications/count:
     get:
       security:
@@ -556,7 +579,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-# Get
+
   # Job Opening
   /job-openings:
     get:
@@ -644,15 +667,83 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-
-      
-      
   /job-openings/{id}:
     get:
       security:
         - SanctumBearerAuth: []
       summary: Get a job opening by ID
       operationId: getJobOpeningById
+      tags:
+        - Job Opening
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    patch:
+      security:
+        - SanctumBearerAuth: []
+      summary: Update a job opening by ID
+      operationId: updateJobOpeningById
+      tags:
+        - Job Opening
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                field_id:
+                  type: string
+                  format: uuid
+                duration_id:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                description:
+                  type: string
+                is_paid:
+                  type: boolean
+                grade:
+                  type: string
+                  enum:
+                    - smk
+                    - mahasiswa
+                    - all
+                type:
+                  type: string
+                  enum:
+                    - wfh
+                    - fulltime
+                    - hybrid
+                qouta:
+                  type: integer
+                  minimum: 1
+                is_available:
+                  type: boolean
+
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      security:
+        - SanctumBearerAuth: []
+      summary: Delete a job opening by ID
+      operationId: deleteJobOpeningById
       tags:
         - Job Opening
       parameters:
@@ -831,6 +922,24 @@ paths:
                     - in_progress
                     - completed
                     - cancelled
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      security:
+        - SanctumBearerAuth: []
+      summary: Delete a task by ID
+      operationId: deleteTaskById
+      tags:
+        - Task
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
       responses:
         '200':
           description: OK
@@ -1519,27 +1628,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  # Student
   /students/count:
     get:
       security:
@@ -1564,28 +1653,81 @@ paths:
           $ref: '#/components/responses/Forbidden'
 
   # Internship
-  /internships/count:
+  /internships:
     get:
       security:
         - SanctumBearerAuth: []
-      summary: Get total number of internships
-      operationId: getInternshipCount
+      summary: Get all internships
+      operationId: getAllInternships
       tags:
         - Internship
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
       responses:
         '200':
           description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: integer
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /internships/{id}:
+    patch:
+      security:
+        - SanctumBearerAuth: []
+      summary: Update an internship
+      operationId: updateInternship
+      tags:
+        - Internship
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                start_date:
+                  type: string
+                  format: date
+                end_date:
+                  type: string
+                  format: date
+                is_completed:
+                  type: boolean
+                role_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      security:
+        - SanctumBearerAuth: []
+      summary: Delete an internship
+      operationId: deleteInternship
+      tags:
+        - Internship
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
 
   # Contact Us
   /contact-us:
@@ -1689,6 +1831,108 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+
+  # Role
+  /roles:
+    get:
+      security:
+        - SanctumBearerAuth: []
+      summary: Get all roles
+      operationId: getAllRoles
+      tags:
+        - Role
+      parameters:
+        - $ref: '#/components/parameters/SearchParam'
+        - $ref: '#/components/parameters/IsAcceptedParam'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Create a new role
+      operationId: createRole
+      tags:
+        - Role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                is_accepted:
+                  type: boolean            
+      responses:
+        '201':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /roles/{id}:
+    patch:
+      security:
+        - SanctumBearerAuth: []
+      summary: Update a role
+      operationId: updateRole
+      tags:
+        - Role
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                is_accepted:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      security:
+        - SanctumBearerAuth: []
+      summary: Delete a role
+      operationId: deleteRole
+      tags:
+        - Role
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+
+
+
+
+
+
 
 components:
   securitySchemes:

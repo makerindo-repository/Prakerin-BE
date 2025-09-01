@@ -61,11 +61,11 @@ class DatabaseSeeder extends Seeder
 
 
         Field::factory(5)->create();
-        // CurriculumVitae::factory(2)->create();
+        CurriculumVitae::factory(2)->create();
 
         Duration::factory(5)->create();
 
-        JobOpening::factory(20)->create();
+        JobOpening::factory(10)->create();
         // InternshipApplication::factory(20)->create();
 
         // Test::factory(10)->create();
@@ -73,7 +73,7 @@ class DatabaseSeeder extends Seeder
 
         // Internship::factory(10)->create();
 
-        SaveJobOpening::factory(10)->create();
+        SaveJobOpening::factory(5)->create();
 
         // Task::factory(5)->create();
         // ReportTask::factory(5)->create();

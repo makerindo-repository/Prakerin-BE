@@ -10,10 +10,10 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('certificates', function (Blueprint $table) {
+        Schema::create('roles', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('internship_id');
-            $table->foreign('internship_id')->references('id')->on('internships')->onDelete('cascade');
+            $table->string('name');
+            $table->boolean('is_accepted')->default(false);
             $table->timestamps();
         });
     }
@@ -23,6 +23,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('certificates');
+        Schema::dropIfExists('roles');
     }
 };

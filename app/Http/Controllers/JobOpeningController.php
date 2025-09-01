@@ -100,7 +100,7 @@ class JobOpeningController extends Controller
             [
                 'company.user',
                 'saveJobOpening' => function ($query) {
-                    $query->where('student_id', auth()->user()?->student->id);
+                    $query->where('student_id', auth()?->user()?->student->id);
                 }
             ]
         )->find($id);
@@ -120,7 +120,39 @@ class JobOpeningController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $jobOpening = JobOpening::find($id);
+        if (!$jobOpening) {
+            throw new HttpResponseException(response()->json(['errors' => 'Job opening not found.'], 404));
+        }
+
+        if ($jobOpening->company_id !== auth()->user()->company->id) {
+            throw new HttpResponseException(response()->json(['errors' => 'Forbidden.'], 403));
+        }
+
+        $validator = Validator::make($request->all(), [
+            'field_id' => 'sometimes|required|exists:fields,id',
+            'duration_id' => 'sometimes|required|exists:durations,id',
+            'title' => 'sometimes|required|string|max:255',
+            'description' => 'sometimes|required|string',
+            'is_paid' => 'sometimes|required|boolean',
+            'grade' => 'sometimes|required|in:smk,mahasiswa,all',
+            'type' => 'sometimes|required|in:wfh,fulltime,hybrid',
+            'qouta' => 'sometimes|required|integer|min:1',
+            'is_available' => 'sometimes|required|boolean'
+        ]);
+
+        if ($validator->fails()) {
+            throw new HttpResponseException(response()->json(['errors' => $validator->errors()], 400));
+        }
+
+        $data = $validator->validated();
+
+        $jobOpening->update($data);
+        $jobOpening->save();
+
+        return response()->json([
+            'data' => $jobOpening
+        ]);
     }
 
     /**
@@ -128,6 +160,19 @@ class JobOpeningController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $jobOpening = JobOpening::find($id);
+        if (!$jobOpening) {
+            throw new HttpResponseException(response()->json(['errors' => 'Job opening not found.'], 404));
+        }
+
+        if ($jobOpening->company_id !== auth()->user()->company->id) {
+            throw new HttpResponseException(response()->json(['errors' => 'Forbidden.'], 403));
+        }
+
+        $jobOpening->delete();
+
+        return response()->json([
+            'data' => 'Job opening deleted successfully'
+        ], 200);
     }
 }

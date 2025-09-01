@@ -6,15 +6,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class Certificate extends Model
+class Mou extends Model
 {
     use HasFactory;
     public $incrementing = false;
     protected $keyType = 'string';
-
     protected $fillable = [
         'id',
-        'internship_id',
+        'company_id',
+        'school_id',
+        'start_date',
+        'end_date',
+        'status',
+        'file',
+        'mou_number',
     ];
 
     protected static function booted()
@@ -26,8 +31,13 @@ class Certificate extends Model
         });
     }
 
-    public function internship()
+    public function company()
     {
-        return $this->belongsTo(Internship::class);
+        return $this->belongsTo(Company::class);
+    }
+
+    public function school()
+    {
+        return $this->belongsTo(School::class);
     }
 }

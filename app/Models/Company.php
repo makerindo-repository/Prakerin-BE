@@ -69,4 +69,8 @@ class Company extends Model
         return $this->hasMany(JobOpening::class);
     }
 
+    public function mous()
+    {
+        return $this->hasMany(Mou::class);
+    }
 }

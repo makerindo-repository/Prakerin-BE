@@ -9,15 +9,17 @@ use App\Http\Controllers\DurationController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FieldController;
 use App\Http\Controllers\InternshipApplicationController;
+use App\Http\Controllers\InternshipController;
 use App\Http\Controllers\JobOpeningController;
+use App\Http\Controllers\MouController;
 use App\Http\Controllers\ProvinceController;
 use App\Http\Controllers\ReportTaskController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SaveJobOpeningController;
 use App\Http\Controllers\SectorController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
-use Illuminate\Console\Application;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -46,7 +48,6 @@ Route::prefix('v1')->group(function () {
         ->controller(ContactUsController::class)
         ->group(function () {
             Route::post('/', 'store');
-
             Route::middleware('auth:sanctum')->group(function () {
                 Route::middleware('abilities:admin-access')->group(function () {
                     Route::get('/', 'index');
@@ -63,38 +64,29 @@ Route::prefix('v1')->group(function () {
         ->group(function () {
             Route::post('/login', 'login');
             Route::post('/register', 'register');
-
             Route::middleware('auth:sanctum')->group(function () {
-
                 Route::post('/logout', 'logout');
                 Route::get('/profile', 'profile');
                 Route::patch('/profile', 'updateProfile');
                 Route::delete('/profile', 'deleteProfile');
                 Route::get('/', 'index');
-
-
                 Route::middleware('abilities:admin-access')->group(function () {
                     Route::patch('/{id}', 'update');
                     Route::delete('/{id}', 'destroy');
                 });
-
                 Route::middleware('abilities:school-access')->group(function () {
                     Route::get('/student/summary', 'studentSummary');
                 });
-
                 Route::middleware('ability:admin-access,school-access')->group(function () {
                     Route::post('/', 'store');
-
                 });
-
                 Route::middleware('ability:admin-access,student-access,school-access')->group(function () {
                     Route::get('/{id}', 'show');
                 });
             });
-
         });
 
-    // Curriculum Vitae Done
+    // Curriculum Vitae
     Route::prefix('/curriculum-vitaes')
         ->controller(CurriculumVitaeController::class)
         ->middleware('auth:sanctum')
@@ -136,16 +128,16 @@ Route::prefix('v1')->group(function () {
     // Job Opening 
     Route::prefix('/job-openings')
         ->controller(JobOpeningController::class)
-        ->middleware('auth:sanctum')
         ->group(function () {
-            Route::middleware('abilities:company-access')->group(function () {
-                Route::post('/', 'store');
+            Route::middleware('auth:sanctum')->group(function () {
+                Route::middleware('abilities:company-access')->group(function () {
+                    Route::post('/', 'store');
+                    Route::patch('/{id}', 'update');
+                    Route::delete('/{id}', 'destroy');
+                });
             });
-
-            Route::middleware('ability:company-access,student-access')->group(function () {
-                Route::get('/', 'index');
-                Route::get('/{id}', 'show');
-            });
+            Route::get('/', 'index');
+            Route::get('/{id}', 'show');
         });
 
     // Save Job Opening
@@ -173,6 +165,7 @@ Route::prefix('v1')->group(function () {
 
             Route::middleware('ability:company-access')->group(function () {
                 Route::post('/', 'store');
+                Route::delete('/{id}', 'destroy');
             });
         });
 
@@ -186,8 +179,6 @@ Route::prefix('v1')->group(function () {
                 Route::post('/{id}', 'store');
             });
         });
-
-
 
     // Certificate
     Route::prefix('/certificates')
@@ -213,95 +204,61 @@ Route::prefix('v1')->group(function () {
             Route::get('/rating', 'rating');
         });
 
-
+    // Duration
     Route::prefix('/durations')
         ->controller(DurationController::class)
         ->group(function () {
-
             Route::get('/', 'index');
-
             Route::middleware("auth:sanctum")->group(function () {
                 Route::middleware('ability:admin-access,company-access')->group(function () {
-
                     Route::post('/', 'store');
                 });
-
                 Route::middleware('abilities:admin-access')->group(function () {
                     Route::delete('/{id}', 'destroy');
                     Route::patch('/{id}', 'update');
                 });
             });
+        });
 
+
+    // Mou
+    Route::prefix('mous')
+        ->controller(MouController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
 
         });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    // Role
+    Route::prefix('roles')
+        ->controller(RoleController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
+
+            Route::middleware('ability:admin-access,company-access')->group(function () {
+                Route::get('/', 'index');
+                Route::post('/', 'store');
+            });
+
+            Route::middleware('abilities:admin-access')->group(function () {
+                Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+            });
+        });
+
+    // Internship
+    Route::prefix('internships')
+        ->controller(InternshipController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
+
+            Route::middleware('ability:company-access')->group(function () {
+                Route::get('/', 'index');
+                Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+            });
+        });
 
     Route::middleware('auth:sanctum')->group(function () {
 

@@ -6,15 +6,18 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class Certificate extends Model
+class Role extends Model
 {
     use HasFactory;
     public $incrementing = false;
     protected $keyType = 'string';
-
+    protected $casts = [
+        'is_accepted' => 'boolean',
+    ];
     protected $fillable = [
         'id',
-        'internship_id',
+        'name',
+        'is_accepted'
     ];
 
     protected static function booted()
@@ -26,8 +29,9 @@ class Certificate extends Model
         });
     }
 
-    public function internship()
+    public function internships()
     {
-        return $this->belongsTo(Internship::class);
+        return $this->hasMany(Internship::class);
     }
+
 }
