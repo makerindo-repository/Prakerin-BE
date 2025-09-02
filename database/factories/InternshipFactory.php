@@ -28,7 +28,6 @@ class InternshipFactory extends Factory
             'start_date' => $start,
             'end_date' => $end,
             'is_completed' => $this->faker->boolean(),
-            'role' => $this->faker->jobTitle(),
         ];
     }
 }

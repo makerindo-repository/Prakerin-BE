@@ -104,6 +104,12 @@
       background: white;
       border-radius: 6px;
       padding: 3px;
+      display: inline-block;
+    }
+
+    .header-qr svg {
+      width: 49px;
+      height: 49px;
     }
 
     /* BODY */
@@ -198,6 +204,8 @@
       text-align: center;
       vertical-align: top;
       padding: 0 20px;
+      border: 1px solid black;
+
     }
 
     .left-signature .date {
@@ -208,27 +216,27 @@
     }
 
     .signature-image {
-      height: 100px;
-      margin-bottom: 8px;
+      height: 140px;
+      margin-bottom: 4px;
       display: block;
       text-align: center;
     }
 
     .signature-image img {
-      max-height: 100px;
-      max-width: 200px;
+      max-height: 140px;
+      max-width: 240px;
       object-fit: contain;
       display: block;
       margin: 0 auto;
     }
 
     .right-signature .signature-image {
-      height: 100px;
+      height: 120px;
       margin-bottom: 8px;
     }
 
     .signature h4 {
-      font-size: 14px;
+      font-size: 16px;
       color: #002D37;
       margin-top: 3px;
       font-weight: bold;
@@ -236,7 +244,7 @@
     }
 
     .signature p {
-      font-size: 11px;
+      font-size: 13px;
       color: #555;
       margin: 1px 0;
       line-height: 1.2;
@@ -294,7 +302,9 @@
       </div>
 
       <div class="header-right">
-        <img src="img/qr.png" alt="QR Code" class="header-qr" />
+        <div class="header-qr">
+          <img src="{{ $qrPath }}" alt="QR Code" style="width: 100%; object-fit: contain;">
+        </div>
       </div>
     </div>
 
@@ -334,7 +344,10 @@
       </div>
 
       <div class="signature-section">
+
         <div class="signature left-signature">
+          <h4>{{ \Carbon\Carbon::parse($certificate->updated_at)->locale('id')->translatedFormat('d F Y') }}</h4>
+
           <div class="signature-image">
             <img src="img/ttdmaker.png" alt="Tanda Tangan Prakerin" />
           </div>
@@ -345,7 +358,7 @@
 
         <div class="signature right-signature">
           <div class="signature-image">
-            <img src="img/ttdmaker.png" alt="Tanda Tangan Pihak Ketiga" />
+
           </div>
           <h4>Nama</h4>
           <p>Jabatan</p>
@@ -356,7 +369,7 @@
 
     <div class="footer">
       Sertifikat ini diterbitkan oleh <strong>Prakerin.id</strong> | Solusi magang terbaik
-      untuk siswa dan perusahaan | Validasi kode: <strong>PRK-2025-08-12345</strong>
+      untuk siswa dan perusahaan | Validasi kode: <strong>{{ $certificate->id }}</strong>
     </div>
   </div>
 </body>

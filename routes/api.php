@@ -21,6 +21,7 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 Route::get('/', function () {
     $path = public_path('swagger/index.html');
@@ -39,6 +40,9 @@ Route::get('/docs/openapi.yaml', function () {
     return Response::file($path);
 });
 
+Route::get('/test-qr', function () {
+    return QrCode::size(200)->generate('test');
+});
 
 
 Route::prefix('v1')->group(function () {
@@ -183,12 +187,16 @@ Route::prefix('v1')->group(function () {
     // Certificate
     Route::prefix('/certificates')
         ->controller(CertificateController::class)
-        ->middleware('auth:sanctum')
         ->group(function () {
-            Route::middleware('ability:student-access')->group(function () {
-                Route::get('/', 'index');
-                Route::get('/{id}/preview', 'preview');
-                Route::get('/{id}/download', 'download');
+
+            Route::get('/{id}', 'show');
+
+            Route::middleware('auth:sanctum')->group(function () {
+                Route::middleware('ability:student-access')->group(function () {
+                    Route::get('/', 'index');
+                    Route::get('/{id}/preview', 'preview');
+                    Route::get('/{id}/download', 'download');
+                });
             });
         });
 
@@ -226,7 +234,11 @@ Route::prefix('v1')->group(function () {
         ->controller(MouController::class)
         ->middleware('auth:sanctum')
         ->group(function () {
-
+            Route::middleware('ability:school-access,company-access')->group(function () {
+                Route::post('/', 'store');
+                Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+            });
         });
 
 

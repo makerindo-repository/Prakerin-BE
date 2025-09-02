@@ -24,6 +24,10 @@ class School extends Model
         'address',
         'phone_number',
         'is_verified',
+        'accreditation',
+        'website',
+        'npsn',
+        'status',
     ];
 
     protected static function booted()

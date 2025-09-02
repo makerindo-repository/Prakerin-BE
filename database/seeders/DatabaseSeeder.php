@@ -46,13 +46,13 @@ class DatabaseSeeder extends Seeder
             'role' => 'super_admin',
         ]);
 
-        School::factory()->create([
+        School::factory(3)->create([
         ]);
 
-        Company::factory()->create([
+        Company::factory(3)->create([
         ]);
 
-        Student::factory()->create([
+        Student::factory(9)->create([
 
         ]);
 
@@ -71,7 +71,7 @@ class DatabaseSeeder extends Seeder
         // Test::factory(10)->create();
         // InternshipApplicationTest::factory(20)->create();
 
-        // Internship::factory(10)->create();
+        Internship::factory(1)->create();
 
         SaveJobOpening::factory(5)->create();
 

@@ -7,6 +7,7 @@ use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class CertificateController extends Controller
 {
@@ -35,7 +36,20 @@ class CertificateController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $certificate = Certificate::with(
+            'internship.internshipApplication.curriculumVitae.student.user',
+            'internship.internshipApplication.jobOpening.company.user'
+        )->find($id);
+
+        if (!$certificate) {
+            throw new HttpResponseException(
+                response()->json(['errors' => 'Certificate not found.'], 404)
+            );
+        }
+
+        return response()->json([
+            'data' => $certificate,
+        ], 200);
     }
 
     /**
@@ -56,25 +70,104 @@ class CertificateController extends Controller
 
     public function preview(string $id)
     {
-
-    }
-
-    public function download(string $id)
-    {
-
         $certificate = Certificate::with(
             'internship.internshipApplication.curriculumVitae.student.user',
             'internship.internshipApplication.jobOpening.company.user'
         )->find($id);
 
         if (!$certificate) {
-            throw new HttpResponseException(response()->json(['errors' => 'Certificate not found.'], 404));
+            throw new HttpResponseException(
+                response()->json(['errors' => 'Certificate not found.'], 404)
+            );
         }
 
-        $pdf = Pdf::loadView('certificates.template', compact('certificate'))
-            ->setPaper('a4', 'landscape');
+        // Buat folder temp jika belum ada
+        $tempDir = public_path('temp');
+        if (!file_exists($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
 
-        return $pdf->download("certificate-{$certificate->id}.pdf");
+        // Generate nama file QR code yang unique
+        $qrFileName = 'qr_certificate_' . $certificate->id . '_' . time() . '.png';
+        $qrPath = $tempDir . '/' . $qrFileName;
+
+        // Generate QR code dan simpan sebagai file PNG
+        QrCode::format('svg')
+            ->size(55)
+            ->margin(1)
+            ->errorCorrection('M')
+            ->generate(url("/certificates/{$certificate->id}"), $qrPath);
+
+        // Generate PDF dengan path ke file QR
+        $pdf = Pdf::loadView('certificates.template', [
+            'certificate' => $certificate,
+            'qrPath' => $qrPath,
+            'qrUrl' => asset('temp/' . $qrFileName)
+        ])->setPaper('a4', 'landscape');
+
+        // Simpan PDF ke memory
+        $pdfContent = $pdf->output();
+
+        // Hapus file QR temporary setelah PDF dibuat
+        if (file_exists($qrPath)) {
+            unlink($qrPath);
+        }
+
+        // Return PDF
+        return response($pdfContent, 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="certificate_' . $certificate->id . '.pdf"');
+    }
+
+    public function download(string $id)
+    {
+        $certificate = Certificate::with(
+            'internship.internshipApplication.curriculumVitae.student.user',
+            'internship.internshipApplication.jobOpening.company.user'
+        )->find($id);
+
+        if (!$certificate) {
+            throw new HttpResponseException(
+                response()->json(['errors' => 'Certificate not found.'], 404)
+            );
+        }
+
+        // Buat folder temp jika belum ada
+        $tempDir = public_path('temp');
+        if (!file_exists($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        // Generate nama file QR code yang unique
+        $qrFileName = 'qr_certificate_' . $certificate->id . '_' . time() . '.png';
+        $qrPath = $tempDir . '/' . $qrFileName;
+
+        // Generate QR code dan simpan sebagai file PNG
+        QrCode::format('svg')
+            ->size(55)
+            ->margin(1)
+            ->errorCorrection('M')
+            ->generate(url("/certificates/{$certificate->id}"), $qrPath);
+
+        // Generate PDF dengan path ke file QR
+        $pdf = Pdf::loadView('certificates.template', [
+            'certificate' => $certificate,
+            'qrPath' => $qrPath,
+            'qrUrl' => asset('temp/' . $qrFileName)
+        ])->setPaper('a4', 'landscape');
+
+        // Simpan PDF ke memory
+        $pdfContent = $pdf->output();
+
+        // Hapus file QR temporary setelah PDF dibuat
+        if (file_exists($qrPath)) {
+            unlink($qrPath);
+        }
+
+        // Return PDF
+        return response($pdfContent, 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'attachment; filename="certificate_' . $certificate->id . '.pdf"');
 
     }
 }

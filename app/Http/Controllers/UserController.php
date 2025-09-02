@@ -95,15 +95,33 @@ class UserController extends Controller
 
             return response()->json($users, 200);
         } else if ((auth()->user()->tokenCan('school-access') || auth()->user()->tokenCan('student-access')) && ($role === 'company')) {
-            $users = User::with(['company.cityRegency.province'])
+
+            $isMou = $request->has('is_mou')
+                ? filter_var($request->query('is_mou'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+                : null;
+
+            $users = User::with(['company.cityRegency.province', 'company.mous'])
                 ->where('role', 'company')
-                ->whereHas('company', function ($q) use ($search) {
+                ->whereHas('company', function ($q) use ($search, $isMou) {
                     $q->where('is_verified', true);
                     $q->where('name', 'like', "%$search%");
+
+                    if ($isMou === true) {
+                        $q->whereHas('mous', function ($q2) {
+                            $q2->where('school_id', auth()->user()->school->id)
+                                ->where('status', 'active');
+                        });
+                    } elseif ($isMou === false) {
+                        $q->whereDoesntHave('mous', function ($q2) {
+                            $q2->where('school_id', auth()->user()->school->id)
+                                ->where('status', 'active');
+                        });
+                    }
                 })
                 ->paginate($limit);
 
             return response()->json($users, 200);
+
         } else if (auth()->user()->tokenCan('admin-access')) {
             $users = User::with(['student', 'school', 'company'])
                 ->when($role, function ($query, $role) {
@@ -264,6 +282,10 @@ class UserController extends Controller
             $school->name = $data['name'] ?? $school->name;
             $school->address = $data['address'] ?? $school->address;
             $school->phone_number = $data['phone_number'] ?? $school->phone_number;
+            $school->website = $data['website'] ?? $school->website;
+            $school->npsn = $data['npsn'] ?? $school->npsn;
+            $school->accreditation = $data['accreditation'] ?? $school->accreditation;
+            $school->status = $data['status'] ?? $school->status;
             $school->save();
         } else if ($user->role === 'company') {
             $company = $user->company;

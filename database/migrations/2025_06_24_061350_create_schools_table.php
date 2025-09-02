@@ -18,6 +18,12 @@ return new class extends Migration {
             $table->text('address');
             $table->string('phone_number')->nullable();
             $table->boolean('is_verified')->default(false);
+            $table->enum('accreditation', ['A', 'B', 'C'])->nullable();
+            $table->string('website')->nullable();
+            $table->string('npsn')->nullable();
+            $table->enum('status', ['negeri', 'swasta']);
+
+
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
 

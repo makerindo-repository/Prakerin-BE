@@ -37,6 +37,10 @@ class UserUpdateRequest extends FormRequest
             'gender' => 'nullable|in:male,female',
             'city_regency_id' => 'nullable|uuid:4|exists:city_regencies,id',
             'sector_id' => 'nullable|uuid:4|exists:sectors,id',
+            'website' => 'nullable|url|max:255',
+            'npsn' => 'nullable|string|max:8',
+            'accreditation' => 'nullable|in:A,B,C',
+            'status' => 'nullable|in:negeri,swasta'
         ];
 
     }

@@ -161,6 +161,7 @@ paths:
         - $ref: '#/components/parameters/IsVerifiedParam'
         - $ref: '#/components/parameters/RoleParam'
         - $ref: '#/components/parameters/StatusInternshipParam'
+        - $ref: '#/components/parameters/IsMouParam'
       tags:
         - User
       responses:
@@ -1832,6 +1833,127 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  # Mou
+  /mous:
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Create a new Mou
+      operationId: createMou
+      tags:
+        - Mou
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - start_date
+                - end_date
+                - status
+                - file
+              properties:
+                company_id:
+                  type: string
+                  format: uuid
+                school_id:
+                  type: string
+                  format: uuid
+                start_date:
+                  type: string
+                  format: date
+                end_date:
+                  type: string
+                  format: date
+                status:
+                  type: string
+                  enum:
+                    - draft
+                    - active
+                    - expired
+                    - rejected
+                file:
+                  type: string
+                  format: binary
+                mou_number:
+                  type: string
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /mous/{id}:
+    post:
+      security:
+        - SanctumBearerAuth: []
+      summary: Update an Mou by ID
+      operationId: updateMouById
+      tags:
+        - Mou
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+               - _method
+              properties:
+                _method:
+                  type: string
+                  enum:
+                    - patch
+                start_date:
+                  type: string
+                  format: date
+                end_date:
+                  type: string
+                  format: date
+                status:
+                  type: string
+                  enum:
+                    - draft
+                    - active
+                    - expired
+                    - rejected
+                file:
+                  type: string
+                  format: binary
+                mou_number:
+                  type: string
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      security:
+        - SanctumBearerAuth: []
+      summary: Delete an Mou by ID
+      operationId: deleteMouById
+      tags:
+        - Mou
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   # Role
   /roles:
     get:
@@ -2063,6 +2185,14 @@ components:
           - not_started
           - ongoing
           - completed
+    IsMouParam:
+      name: is_mou
+      in: query
+      required: false
+      allowEmptyValue: true
+      description: Filter by MoU status
+      schema:
+        type: boolean
 
   responses:
     Unauthorized:
