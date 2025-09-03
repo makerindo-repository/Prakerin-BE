@@ -30,10 +30,11 @@ class MessageSent implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
-        return [
-            new Channel('chat'),
+        return [    
+            new Channel('delivery'),
         ];
     }
+
 
     public function broadcastWith(): array
     {

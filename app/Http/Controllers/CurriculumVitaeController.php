@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CurriculumVitae\CurriculumVitaeCreateRequest;
-use App\Http\Requests\CurriculumVitae\CurriculumVitaeUpdateRequest;
 use App\Models\CurriculumVitae;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class CurriculumVitaeController extends Controller
 {
@@ -92,25 +92,32 @@ class CurriculumVitaeController extends Controller
             ], 403));
         }
 
-        $data = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name' => 'sometimes|required|string|max:255',
             'file' => 'sometimes|required|file|mimes:pdf|max:2048',
         ]);
 
-        if (isset($data['name'])) {
-            $curriculumVitae->name = $data['name'];
+        if ($validator->fails()) {
+            throw new HttpResponseException(response([
+                "errors" => $validator->errors()
+            ], 422));
         }
+
+        $data = $validator->validated();
+
+
+        $curriculumVitae->name = $data['name'] ?? $curriculumVitae->name;
 
         if (isset($data['file'])) {
             // Hapus file lama kalau ada
-            if ($curriculumVitae->file_path && Storage::disk('private')->exists($curriculumVitae->file_path)) {
-                Storage::disk('private')->delete($curriculumVitae->file_path);
+            if (Storage::exists("/curriculum-vitaes/$curriculumVitae->file")) {
+                Storage::delete("/curriculum-vitaes/$curriculumVitae->file");
             }
 
             // Simpan file baru
             $filename = now()->format('Ymd_His') . '.' . $request->file('file')->getClientOriginalExtension();
-            $path = $request->file('file')->storeAs('curriculum-vitaes', $filename, 'private');
-            $curriculumVitae->file_path = $path;
+            $curriculumVitae->file = $filename;
+            $request->file('file')->storeAs('curriculum-vitaes', $filename);
         }
 
         $curriculumVitae->save();
@@ -118,7 +125,6 @@ class CurriculumVitaeController extends Controller
         return response()->json([
             'data' => $curriculumVitae
         ], 200);
-
 
     }
 
@@ -141,9 +147,9 @@ class CurriculumVitaeController extends Controller
             ], 403));
         }
 
-        // Hapus file PDF kalau ada
-        if ($curriculumVitae->file_path && Storage::disk('private')->exists($curriculumVitae->file_path)) {
-            Storage::disk('private')->delete($curriculumVitae->file_path);
+        // Hapus file lama kalau ada
+        if (Storage::exists("/curriculum-vitaes/$curriculumVitae->file")) {
+            Storage::delete("/curriculum-vitaes/$curriculumVitae->file");
         }
 
         // Hapus record dari database
@@ -171,14 +177,12 @@ class CurriculumVitaeController extends Controller
             ], 403);
         }
 
-        $path = storage_path('app\\private\\curriculum-vitaes\\' . $cv->file);
-
-
-        if (!file_exists($path)) {
+        if (!Storage::exists("/curriculum-vitaes/$cv->file")) {
             return response()->json([
                 'errors' => 'File not found.'
             ], 404);
         }
+        $path = Storage::path("/curriculum-vitaes/$cv->file");
 
         return response()->file($path, [
             'Content-Type' => 'application/pdf',
@@ -201,16 +205,15 @@ class CurriculumVitaeController extends Controller
             ], 403);
         }
 
-
-        $path = storage_path('app\\private\\curriculum-vitaes\\' . $cv->file);
-
-        if (!file_exists($path)) {
+        if (!Storage::exists("/curriculum-vitaes/$cv->file")) {
             return response()->json([
                 'errors' => 'File not found.'
             ], 404);
         }
+        $path = Storage::path("/curriculum-vitaes/$cv->file");
 
-        return response()->download($path, 'cv.pdf', [
+
+        return response()->download($path, 'cv_' . now()->format('Ymd_His') . '.pdf', [
             'Content-Type' => 'application/pdf',
         ]);
     }

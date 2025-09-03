@@ -12,9 +12,11 @@ use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
 use Http;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
@@ -108,17 +110,41 @@ class UserController extends Controller
 
                     if ($isMou === true) {
                         $q->whereHas('mous', function ($q2) {
-                            $q2->where('school_id', auth()->user()->school->id)
-                                ->where('status', 'active');
+                            if (!isset(auth()->user()->school()->id)) {
+                                $q2->where('school_id', auth()->user()->student->school_id)
+                                    ->where('status', 'active');
+                            } else {
+                                $q2->where('school_id', auth()->user()->school->id)
+                                    ->where('status', 'active');
+                            }
                         });
                     } elseif ($isMou === false) {
                         $q->whereDoesntHave('mous', function ($q2) {
-                            $q2->where('school_id', auth()->user()->school->id)
-                                ->where('status', 'active');
+                            if (!isset(auth()->user()->school()->id)) {
+                                $q2->where('school_id', auth()->user()->student->school_id)
+                                    ->where('status', 'active');
+                            } else {
+                                $q2->where('school_id', auth()->user()->school->id)
+                                    ->where('status', 'active');
+                            }
                         });
                     }
                 })
                 ->paginate($limit);
+
+            $users->getCollection()->transform(function ($item) {
+
+                return [
+                    'id' => $item->id,
+                    'username' => $item->username,
+                    'email' => $item->email,
+                    'role' => $item->role,
+                    'company' => $item->company->makeHidden(['cityRegency', 'mous']),
+                    'city_regency' => $item->company->cityRegency->makeHidden(['province']),
+                    'province' => $item->company->cityRegency->province,
+                    'mous' => $item->company->mous,
+                ];
+            });
 
             return response()->json($users, 200);
 
@@ -143,8 +169,6 @@ class UserController extends Controller
             ], 403));
         }
     }
-
-
 
     /**
      * Store a newly created resource in storage.
@@ -214,21 +238,57 @@ class UserController extends Controller
      */
     public function show(string $id)
     {
-        $user = User::with(['student', 'school', 'company'])->find($id);
+        $user = User::with([
+            'student' => fn($q) => $q->where('is_verified', true),
+            'school' => fn($q) => $q->where('is_verified', true),
+            'company' => fn($q) => $q->where('is_verified', true),
+        ])->find($id);
+
+
         if (!$user) {
             throw new HttpResponseException(response([
                 "errors" => "User not found."
             ], 404));
         }
 
+
+
+        if (!$user->student) {
+            $user->makeHidden('student');
+        }
+        if (!$user->school) {
+            $user->makeHidden('school');
+        }
+        if (!$user->company) {
+            $user->makeHidden('company');
+
+        }
+
         if ($user->role === 'company') {
+
             $user->company->load([
                 'cityRegency.province',
                 'sector',
                 'jobOpenings' => function ($q) {
-                    $q->where('is_available', true)->orderBy('created_at', 'desc'); // filter di sini
+                    $q->where('is_available', true)->orderBy('created_at', 'desc');
                 }
             ]);
+
+            $user = [
+                'id' => $user->id,
+                'username' => $user->username,
+                'email' => $user->email,
+                'role' => $user->role,
+                'photo_profile' => $user->photo_profile,
+                'email_verified_at' => $user->email_verified_at,
+                'created_at' => $user->created_at,
+                'updated_at' => $user->updated_at,
+                'company' => $user->company->makeHidden(['cityRegency', 'sector', 'jobOpenings']),
+                'city_regency' => $user->company->cityRegency->makeHidden(['province']),
+                'province' => $user->company->cityRegency->province,
+                'sector' => $user->company->sector,
+                'job_openings' => $user->company->jobOpenings
+            ];
         }
 
         return response()->json([
@@ -316,6 +376,12 @@ class UserController extends Controller
             ], 404));
         }
 
+        if ($user->photo_profile) {
+            if (Storage::exists("profile/{$user->photo_profile}")) {
+                Storage::delete("profile/{$user->photo_profile}");
+            }
+        }
+
         $user->delete();
 
         return response()->json([
@@ -352,6 +418,7 @@ class UserController extends Controller
             $request->file('image')->storeAs('profile', $filename);
         }
         $user->save();
+        $user->sendEmailVerificationNotification();
 
 
         $token = null;
@@ -390,7 +457,6 @@ class UserController extends Controller
 
         return response()->json(['token' => $token, 'role' => $user->role], 201);
     }
-
 
     public function login(UserLoginRequest $request)
     {
@@ -437,7 +503,6 @@ class UserController extends Controller
         }
 
         return response()->json(['token' => $token, 'role' => $user->role], 200);
-
     }
 
     public function logout(Request $request)
@@ -449,6 +514,18 @@ class UserController extends Controller
     public function profile(Request $request)
     {
         $user = $request->user()->with(['student', 'school', 'company'])->find($request->user()->id);
+
+
+        if (!$user->student) {
+            $user->makeHidden('student');
+        }
+        if (!$user->school) {
+            $user->makeHidden('school');
+        }
+        if (!$user->company) {
+            $user->makeHidden('company');
+        }
+
         return response()->json([
             'data' => $user,
         ], 200);
@@ -521,6 +598,13 @@ class UserController extends Controller
     public function deleteProfile(Request $request)
     {
         $user = $request->user();
+
+        if ($user->photo_profile) {
+            if (Storage::exists("profile/{$user->photo_profile}")) {
+                Storage::delete("profile/{$user->photo_profile}");
+            }
+        }
+
         $user->delete();
 
         return response()->json([
@@ -570,5 +654,32 @@ class UserController extends Controller
                 'total_student_with_internship' => $totalStudentWithInternship,
             ],
         ], 200);
+    }
+
+    public function verifyEmail(Request $request)
+    {
+        // Middleware "signed" sudah memvalidasi signature & expiry
+        $user = User::findOrFail($request->route('id'));
+
+        // Cek hash agar cocok dengan email saat link dibuat
+        $expectedHash = sha1($user->getEmailForVerification());
+        if (!hash_equals((string) $request->route('hash'), $expectedHash)) {
+            throw new HttpResponseException(response([
+                "errors" => "Link verifikasi tidak valid."
+            ], 403));
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            throw new HttpResponseException(response([
+                "errors" => "Email sudah terverifikasi."
+            ], 403));
+        }
+
+        // Tandai sebagai terverifikasi + trigger event bawaan
+        if ($user->markEmailAsVerified()) {
+            event(new Verified($user));
+        }
+
+        return response()->json(['message' => 'Email berhasil diverifikasi!']);
     }
 }

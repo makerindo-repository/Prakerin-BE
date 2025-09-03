@@ -21,7 +21,6 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 Route::get('/', function () {
     $path = public_path('swagger/index.html');
@@ -32,7 +31,7 @@ Route::get('/', function () {
 });
 
 
-Route::get('/docs/openapi.yaml', function () {
+Route::get('/docs/open.yaml', function () {
     $path = storage_path('docs/openapi.yaml');
     if (!File::exists($path)) {
         abort(404);
@@ -40,9 +39,7 @@ Route::get('/docs/openapi.yaml', function () {
     return Response::file($path);
 });
 
-Route::get('/test-qr', function () {
-    return QrCode::size(200)->generate('test');
-});
+
 
 
 Route::prefix('v1')->group(function () {
@@ -68,22 +65,30 @@ Route::prefix('v1')->group(function () {
         ->group(function () {
             Route::post('/login', 'login');
             Route::post('/register', 'register');
+
+            Route::get('/email/verify/{id}/{hash}', 'verifyEmail')->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+
+
             Route::middleware('auth:sanctum')->group(function () {
                 Route::post('/logout', 'logout');
                 Route::get('/profile', 'profile');
                 Route::patch('/profile', 'updateProfile');
                 Route::delete('/profile', 'deleteProfile');
                 Route::get('/', 'index');
+
                 Route::middleware('abilities:admin-access')->group(function () {
                     Route::patch('/{id}', 'update');
                     Route::delete('/{id}', 'destroy');
                 });
+
                 Route::middleware('abilities:school-access')->group(function () {
                     Route::get('/student/summary', 'studentSummary');
                 });
+
                 Route::middleware('ability:admin-access,school-access')->group(function () {
                     Route::post('/', 'store');
                 });
+
                 Route::middleware('ability:admin-access,student-access,school-access')->group(function () {
                     Route::get('/{id}', 'show');
                 });
@@ -139,6 +144,11 @@ Route::prefix('v1')->group(function () {
                     Route::patch('/{id}', 'update');
                     Route::delete('/{id}', 'destroy');
                 });
+
+                Route::middleware("ability:school-access,company-acceess")->group(function () {
+                    Route::get('/count', 'count');
+                });
+
             });
             Route::get('/', 'index');
             Route::get('/{id}', 'show');

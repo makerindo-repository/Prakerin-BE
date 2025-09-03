@@ -61,7 +61,7 @@ class DatabaseSeeder extends Seeder
 
 
         Field::factory(5)->create();
-        CurriculumVitae::factory(2)->create();
+        CurriculumVitae::factory(18)->create();
 
         Duration::factory(5)->create();
 
