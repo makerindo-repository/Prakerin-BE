@@ -122,9 +122,11 @@ class JobOpeningController extends Controller
                     "is_available" => $item->is_available,
                     "created_at" => $item->created_at,
                     "updated_at" => $item->updated_at,
-                    "company" => $item->company->makeHidden(['user']),
+                    "company" => $item->company->makeHidden(['user', 'cityRegency']),
                     'user' => $item->company->user,
                     'save_job_opening' => $item->saveJobOpening->isNotEmpty() ? true : false,
+                    'city_regency' => $item->company->cityRegency->makeHidden(['province']),
+                    'province' => $item->company->cityRegency->province,
                 ];
             });
         }
@@ -173,6 +175,7 @@ class JobOpeningController extends Controller
         $jobOpening = JobOpening::with(
             [
                 'company.user',
+                "company.cityRegency.province",
                 'saveJobOpening' => function ($query) {
                     $query->where('student_id', auth()?->user()?->student->id);
                 }
@@ -182,6 +185,10 @@ class JobOpeningController extends Controller
         if (!$jobOpening) {
             throw new HttpResponseException(response()->json(['errors' => 'Job opening not found'], 404));
         }
+
+        $jobOpening["city_regency"] = $jobOpening->company->cityRegency->makeHidden(['province']);
+        $jobOpening["province"] = $jobOpening->company->cityRegency->province;
+        $jobOpening["company"] = $jobOpening->company->makeHidden(['user', 'cityRegency']);
 
 
         return response()->json([

@@ -91,6 +91,8 @@ class InternshipApplicationController extends Controller
                     'email' => $app->jobOpening->company->user->email,
                     'role' => $app->jobOpening->company->user->role,
                 ],
+                'city_regency' => $app->jobOpening->company->cityRegency->makeHidden('province'),
+                'province' => $app->jobOpening->company->cityRegency->province,
             ];
         });
 

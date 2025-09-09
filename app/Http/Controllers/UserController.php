@@ -139,6 +139,7 @@ class UserController extends Controller
                     'username' => $item->username,
                     'email' => $item->email,
                     'role' => $item->role,
+                    'photo_profile' => $item->photo_profile,
                     'company' => $item->company->makeHidden(['cityRegency', 'mous']),
                     'city_regency' => $item->company->cityRegency->makeHidden(['province']),
                     'province' => $item->company->cityRegency->province,
@@ -194,7 +195,7 @@ class UserController extends Controller
         if ($request->file('image')) {
             $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
             $user->photo_profile = $filename;
-            $request->file('image')->storeAs('profile', $filename);
+            $request->file('image')->storeAs('photo-profile', $filename, 'public');
         }
         $user->save();
 
@@ -324,7 +325,7 @@ class UserController extends Controller
         if ($request->file('image')) {
             $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
             $user->photo_profile = $filename;
-            $request->file('image')->storeAs('profile', $filename);
+            $request->file('image')->storeAs('photo-profile', $filename, 'public');
         }
 
 
@@ -377,8 +378,8 @@ class UserController extends Controller
         }
 
         if ($user->photo_profile) {
-            if (Storage::exists("profile/{$user->photo_profile}")) {
-                Storage::delete("profile/{$user->photo_profile}");
+            if (Storage::exists("photo-profile/{$user->photo_profile}")) {
+                Storage::delete("photo-profile/{$user->photo_profile}");
             }
         }
 
@@ -415,7 +416,7 @@ class UserController extends Controller
         if ($request->file('image')) {
             $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
             $user->photo_profile = $filename;
-            $request->file('image')->storeAs('profile', $filename);
+            $request->file('image')->storeAs('photo-profile', $filename, 'public');
         }
         $user->save();
         $user->sendEmailVerificationNotification();
@@ -526,6 +527,16 @@ class UserController extends Controller
             $user->makeHidden('company');
         }
 
+        if ($user->company) {
+            $user->name = $user->company->name;
+        }
+        if ($user->school) {
+            $user->name = $user->school->name;
+        }
+        if ($user->student) {
+            $user->name = $user->student->name;
+        }
+
         return response()->json([
             'data' => $user,
         ], 200);
@@ -547,7 +558,7 @@ class UserController extends Controller
         if ($request->file('image')) {
             $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
             $user->photo_profile = $filename;
-            $request->file('image')->storeAs('profile', $filename);
+            $request->file('image')->storeAs('photo-profile', $filename, 'public');
         }
 
         if ($user->tokenCant('admin-access')) {
@@ -600,8 +611,8 @@ class UserController extends Controller
         $user = $request->user();
 
         if ($user->photo_profile) {
-            if (Storage::exists("profile/{$user->photo_profile}")) {
-                Storage::delete("profile/{$user->photo_profile}");
+            if (Storage::exists("photo-profile/{$user->photo_profile}")) {
+                Storage::delete("photo-profile/{$user->photo_profile}");
             }
         }
 

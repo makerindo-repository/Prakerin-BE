@@ -31,7 +31,7 @@ Route::get('/', function () {
 });
 
 
-Route::get('/docs/open.yaml', function () {
+Route::get('/docs/openapi.yaml', function () {
     $path = storage_path('docs/openapi.yaml');
     if (!File::exists($path)) {
         abort(404);
