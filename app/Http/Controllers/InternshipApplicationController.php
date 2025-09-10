@@ -20,9 +20,17 @@ class InternshipApplicationController extends Controller
 
         if (auth()->user()->tokenCan('company-access')) {
 
-            $internshipApplications = InternshipApplication::with('curriculumVitae.student.user', 'curriculumVitae.student.school')
+            $search = request()->query('search', '');
+
+            $internshipApplications = InternshipApplication::with([
+                'curriculumVitae.student.user',
+                'curriculumVitae.student.school'
+            ])
                 ->whereHas('jobOpening', function ($query) {
                     $query->where('company_id', auth()->user()->company->id);
+                })
+                ->whereHas('curriculumVitae.student', function ($query) use ($search) {
+                    $query->where('name', 'like', "%$search%");
                 })
                 ->paginate($limit);
 

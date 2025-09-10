@@ -819,25 +819,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /save-job-openings/{id}:
-    delete:
-      security:
-        - SanctumBearerAuth: []
-      summary: Remove a saved job opening by ID for the authenticated user
-      operationId: removeSavedJobOpening
-      tags:
-        - Save Job Opening
-      parameters:
-        - $ref: '#/components/parameters/IdPath'
-      responses:
-        '200':
-          description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
 
   # Task
   /tasks:

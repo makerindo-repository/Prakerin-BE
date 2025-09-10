@@ -20,7 +20,7 @@ class CityRegencyFactory extends Factory
         return [
             'province_id' => Province::inRandomOrder()->first()?->id ?? Province::factory(),
             'name' => $this->faker->city(),
-            'is_accepted' => $this->faker->boolean(),
+            'is_accepted' => true,
         ];
     }
 }

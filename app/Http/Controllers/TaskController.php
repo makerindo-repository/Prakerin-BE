@@ -70,7 +70,7 @@ class TaskController extends Controller
         }
 
         $studentId = $task->internship
-            ->internshipApplications
+            ->internshipApplication
             ->curriculumVitae
             ->student_id;
 

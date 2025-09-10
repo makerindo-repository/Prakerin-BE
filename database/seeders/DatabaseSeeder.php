@@ -36,9 +36,10 @@ class DatabaseSeeder extends Seeder
     {
 
         Province::factory(5)->create();
-        CityRegency::factory(10)->create();
+        CityRegency::factory(5)->create();
         Sector::factory(5)->create();
         Major::factory(10)->create();
+        Field::factory(10)->create();
 
 
         User::factory()->create([
@@ -75,7 +76,7 @@ class DatabaseSeeder extends Seeder
 
         SaveJobOpening::factory(5)->create();
 
-        // Task::factory(5)->create();
+        Task::factory(5)->create();
         // ReportTask::factory(5)->create();
         // ReportTaskMessage::factory(20)->create();
 

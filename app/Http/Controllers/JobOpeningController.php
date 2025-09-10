@@ -23,13 +23,13 @@ class JobOpeningController extends Controller
         $field_id = request()->query('field_id', '');
         $duration_id = request()->query('duration_id', '');
 
-        // dd(Auth::guard('sanctum')->user()?->student->id);
 
         if (Auth::guard('sanctum')->user()?->tokenCan('company-access')) {
 
             $jobOpenings = JobOpening::with(
                 [
                     'company.user',
+                    'company.cityRegency.province',
                 ]
             )
                 ->where('company_id', Auth::guard('sanctum')->user()?->company->id)
@@ -70,19 +70,22 @@ class JobOpeningController extends Controller
                     "is_available" => $item->is_available,
                     "created_at" => $item->created_at,
                     "updated_at" => $item->updated_at,
-                    "company" => $item->company->makeHidden(['user']),
+                    "company" => $item->company->makeHidden(['user', 'cityRegency']),
+                    "city_regency" => $item->company->cityRegency->makeHidden(['province']),
+                    "province" => $item->company->cityRegency->province,
                     'user' => $item->company->user,
                 ];
             });
         } else {
-            $jobOpenings = JobOpening::with(
-                [
-                    'company.user',
-                    'saveJobOpening' => function ($query) {
-                        $query->where('student_id', Auth::guard('sanctum')->user()?->student->id);
-                    }
-                ]
-            )
+            $isSaved = filter_var(request()->query('is_saved', false), FILTER_VALIDATE_BOOLEAN);
+
+
+            $jobOpenings = JobOpening::with([
+                'company.user',
+                'saveJobOpening' => function ($query) {
+                    $query->where('student_id', Auth::guard('sanctum')->user()?->student->id);
+                }
+            ])
                 ->whereHas('company', function ($query) use ($province_id, $city_regency_id) {
                     if ($province_id && !$city_regency_id) {
                         $query->whereHas('cityRegency', function ($query) use ($province_id) {
@@ -104,7 +107,13 @@ class JobOpeningController extends Controller
                     return $query->where('duration_id', $duration_id);
                 })
                 ->where('is_available', true)
+                ->when($isSaved, function ($query) {
+                    $query->whereHas('saveJobOpening', function ($q) {
+                        $q->where('student_id', Auth::guard('sanctum')->user()?->student->id);
+                    });
+                })
                 ->paginate($limit);
+
 
 
             $jobOpenings->getCollection()->transform(function ($item) {
@@ -177,7 +186,7 @@ class JobOpeningController extends Controller
                 'company.user',
                 "company.cityRegency.province",
                 'saveJobOpening' => function ($query) {
-                    $query->where('student_id', auth()?->user()?->student->id);
+                    $query->where('student_id', Auth::guard('sanctum')->user()?->student->id);
                 }
             ]
         )->find($id);
@@ -189,7 +198,10 @@ class JobOpeningController extends Controller
         $jobOpening["city_regency"] = $jobOpening->company->cityRegency->makeHidden(['province']);
         $jobOpening["province"] = $jobOpening->company->cityRegency->province;
         $jobOpening["company"] = $jobOpening->company->makeHidden(['user', 'cityRegency']);
+        $isSaved = $jobOpening->saveJobOpening->isNotEmpty() ? true : false;
+        unset($jobOpening["saveJobOpening"]);
 
+        $jobOpening['save_job_opening'] = $isSaved;
 
         return response()->json([
             'data' => $jobOpening,

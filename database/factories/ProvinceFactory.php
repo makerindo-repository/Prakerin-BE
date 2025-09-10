@@ -18,7 +18,7 @@ class ProvinceFactory extends Factory
     {
         return [
             'name' => $this->faker->city(),
-            'is_accepted' => $this->faker->boolean(),
+            'is_accepted' => true,
         ];
     }
 }

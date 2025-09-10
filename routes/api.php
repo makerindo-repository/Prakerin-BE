@@ -162,7 +162,6 @@ Route::prefix('v1')->group(function () {
             Route::middleware('ability:student-access')->group(function () {
                 Route::get('/', 'index');
                 Route::post('/', 'store');
-                Route::delete('/{id}', 'destroy');
             });
         });
 

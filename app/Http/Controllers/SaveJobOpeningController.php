@@ -79,9 +79,12 @@ class SaveJobOpeningController extends Controller
             ->first();
 
         if ($existing) {
-            throw new HttpResponseException(response()->json([
-                'message' => 'Job opening already saved.'
-            ], 400));
+            $existing->delete();
+
+            return response()->json([
+                'message' => 'Save Job Opening deleted successfully.'
+            ], 200);
+
         }
 
         $saveJobOpening = SaveJobOpening::create([
@@ -94,30 +97,4 @@ class SaveJobOpeningController extends Controller
         ], 201);
     }
 
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        $saveJobOpening = SaveJobOpening::find($id);
-
-        if (!$saveJobOpening) {
-            throw new HttpResponseException(response()->json([
-                'message' => 'Save Job Opening not found.'
-            ], 404));
-        }
-
-        if ($saveJobOpening->student_id !== auth()->user()->student->id) {
-            throw new HttpResponseException(response()->json([
-                'message' => 'Forbidden.'
-            ], 403));
-        }
-
-        $saveJobOpening->delete();
-
-        return response()->json([
-            'message' => 'Save Job Opening deleted successfully.'
-        ], 200);
-    }
 }
