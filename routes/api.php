@@ -75,6 +75,7 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/profile', 'updateProfile');
                 Route::delete('/profile', 'deleteProfile');
                 Route::get('/', 'index');
+                Route::get("/count", "count");
 
                 Route::middleware('abilities:admin-access')->group(function () {
                     Route::patch('/{id}', 'update');

@@ -143,7 +143,48 @@ class UserController extends Controller
                     'company' => $item->company->makeHidden(['cityRegency', 'mous']),
                     'city_regency' => $item->company->cityRegency->makeHidden(['province']),
                     'province' => $item->company->cityRegency->province,
-                    'mous' => $item->company->mous,
+                    'mou' => $item->company->mous->isEmpty() ? false : true,
+                ];
+            });
+
+            return response()->json($users, 200);
+
+        } else if (auth()->user()->tokenCan('company-access') && ($role === 'school')) {
+
+            $isMou = $request->has('is_mou')
+                ? filter_var($request->query('is_mou'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+                : null;
+
+            $users = User::with(['school.mous'])
+                ->where('role', 'school')
+                ->whereHas('school', function ($q) use ($search, $isMou) {
+                    $q->where('is_verified', true);
+                    $q->where('name', 'like', "%$search%");
+
+                    if ($isMou === true) {
+                        $q->whereHas('mous', function ($q2) {
+                            $q2->where('company_id', auth()->user()->company->id)
+                                ->where('status', 'active');
+                        });
+                    } elseif ($isMou === false) {
+                        $q->whereDoesntHave('mous', function ($q2) {
+                            $q2->where('company_id', auth()->user()->company->id)
+                                ->where('status', 'active');
+                        });
+                    }
+                })
+                ->paginate($limit);
+
+            $users->getCollection()->transform(function ($item) {
+
+                return [
+                    'id' => $item->id,
+                    'username' => $item->username,
+                    'email' => $item->email,
+                    'role' => $item->role,
+                    'photo_profile' => $item->photo_profile,
+                    'school' => $item->school->makeHidden(['mous']),
+                    'mou' => $item->school->mous->isEmpty() ? false : true,
                 ];
             });
 
@@ -630,7 +671,8 @@ class UserController extends Controller
 
         return response()->json([
             'data' => [
-                'company_count' => $companyCount
+                'company_count' => $companyCount,
+                'company_mou_count' => $companyCount,
             ],
         ], 200);
     }
@@ -693,4 +735,5 @@ class UserController extends Controller
 
         return response()->json(['message' => 'Email berhasil diverifikasi!']);
     }
+
 }
