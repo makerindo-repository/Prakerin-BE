@@ -43,7 +43,13 @@ class UserUpdateProfileRequest extends FormRequest
 
         $rules['name'] = 'nullable|string|max:255';
         $rules['address'] = 'nullable|string';
-        $rules['phone_number'] = 'nullable|string|regex:/^(?:\+62|0)[0-9]{9,13}$/';
+        $rules['phone_number'] = [
+            'nullable',
+            'string',
+            'regex:/^(?:\+62[\s\-]?|0)[\s\-]?[0-9]+([\s\-]?[0-9]+)*$/',
+            'min:10',
+            'max:20'  // Lebih panjang karena ada spasi/strip
+        ];
         switch ($role) {
             case 'student':
                 $rules['major_id'] = 'nullable|uuid:4|exists:majors,id';
@@ -56,8 +62,16 @@ class UserUpdateProfileRequest extends FormRequest
                 $rules['social_media_link'] = 'nullable|url|max:255';
                 break;
             case 'company':
-                $rules['city_regency_id'] = 'nullable|uuid:4|exist:city_regencies,id';
+                $rules['city_regency_id'] = 'nullable|uuid:4|exists:city_regencies,id';
                 $rules['sector_id'] = 'nullable|uuid:4|exists:sectors,id';
+                $rules['description'] = 'nullable';
+                break;
+            case 'school':
+                $rules['accreditation'] = 'nullable|in:a,b,c';
+                $rules['status'] = 'nullable|in:negeri,swasta';
+                $rules['npsn'] = 'nullable|string|max:255';
+                $rules['website'] = 'nullable|url|max:255';
+                $rules['description'] = 'nullable|string';
                 break;
             default:
                 break;

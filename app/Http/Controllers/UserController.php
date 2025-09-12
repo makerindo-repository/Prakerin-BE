@@ -585,16 +585,22 @@ class UserController extends Controller
 
     public function updateProfile(UserUpdateProfileRequest $request)
     {
+
         $data = $request->validated();
 
+
+
         $user = $request->user();
+
         $user->username = $data['username'] ?? $user->username;
         $user->email = $data['email'] ?? $user->email;
         $user->password = $data['password'] ?? $user->password;
 
-        if (!$data['email']) {
+        if (isset($data['email'])) {
             $user->email_verified_at = null;
         }
+
+
 
         if ($request->file('image')) {
             $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
@@ -602,11 +608,6 @@ class UserController extends Controller
             $request->file('image')->storeAs('photo-profile', $filename, 'public');
         }
 
-        if ($user->tokenCant('admin-access')) {
-            $user->name = $data['name'] ?? $user->name;
-            $user->address = $data['address'] ?? $user->address;
-            $user->phone_number = $data['phone_number'] ?? $user->phone_number;
-        }
 
 
         if ($user->tokenCan('student-access')) {
@@ -624,20 +625,30 @@ class UserController extends Controller
             $student->major_id = $data['major_id'] ?? $student->major_id;
             $student->save();
         } else if ($user->tokenCan('school-access')) {
+
             $school = $user->school;
             $school->name = $data['name'] ?? $school->name;
             $school->address = $data['address'] ?? $school->address;
             $school->phone_number = $data['phone_number'] ?? $school->phone_number;
+            $school->website = $data['website'] ?? $school->website;
+            $school->npsn = $data['npsn'] ?? $school->npsn;
+            $school->accreditation = $data['accreditation'] ?? $school->accreditation;
+            $school->status = $data['status'] ?? $school->status;
+            $school->description = $data['description'] ?? $school->description;
+
             $school->save();
         } else if ($user->tokenCan('company-access')) {
             $company = $user->company;
-            $user->name = $data['name'] ?? $user->name;
+            $company->name = $data['name'] ?? $company->name;
             $company->address = $data['address'] ?? $company->address;
             $company->phone_number = $data['phone_number'] ?? $company->phone_number;
             $company->city_regency_id = $data['city_regency_id'] ?? $company->city_regency_id;
             $company->sector_id = $data['sector_id'] ?? $company->sector_id;
+            $company->description = $data['description'] ?? $company->description;
+
             $company->save();
         }
+
 
         $user->save();
 

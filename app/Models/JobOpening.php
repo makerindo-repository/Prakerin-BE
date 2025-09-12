@@ -14,6 +14,7 @@ class JobOpening extends Model
     protected $casts = [
         'is_paid' => 'boolean',
         'is_available' => 'boolean',
+        'description' => 'array'
     ];
     protected $fillable = [
         'id',
@@ -26,6 +27,7 @@ class JobOpening extends Model
         'is_paid',
         'grade',
         'type',
+        'location',
         'qouta',
         'is_available',
         'role'

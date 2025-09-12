@@ -65,6 +65,7 @@ class JobOpeningController extends Controller
                     "description" => $item->description,
                     "grade" => $item->grade,
                     "type" => $item->type,
+                    "location" => $item->location,
                     "qouta" => $item->qouta,
                     "is_paid" => $item->is_paid,
                     "is_available" => $item->is_available,
@@ -126,6 +127,7 @@ class JobOpeningController extends Controller
                     "description" => $item->description,
                     "grade" => $item->grade,
                     "type" => $item->type,
+                    "location" => $item->location,
                     "qouta" => $item->qouta,
                     "is_paid" => $item->is_paid,
                     "is_available" => $item->is_available,
@@ -154,17 +156,19 @@ class JobOpeningController extends Controller
             'field_id' => 'required|exists:fields,id',
             'duration_id' => 'required|exists:durations,id',
             'title' => 'required|string|max:255',
-            'description' => 'required|string',
+            'description' => 'required',
             'is_paid' => 'required|boolean',
             'grade' => 'required|in:smk,mahasiswa,all',
-            'type' => 'required|in:wfh,fulltime,hybrid',
-            'qouta' => 'required|integer|min:1',
+            'type' => 'required|in:part_time,full_time',
+            'location' => 'required|in:onsite, remote, hybrid,field',
+            'quota' => 'required|integer|min:1',
             'is_available' => 'required|boolean'
         ]);
 
         if ($validator->fails()) {
             throw new HttpResponseException(response()->json(['errors' => $validator->errors()], 400));
         }
+
 
         $data = $validator->validated();
         $data['company_id'] = auth()->user()->company->id;
@@ -186,10 +190,12 @@ class JobOpeningController extends Controller
                 'company.user',
                 "company.cityRegency.province",
                 'saveJobOpening' => function ($query) {
-                    $query->where('student_id', Auth::guard('sanctum')->user()?->student->id);
+                    if (!Auth::guard('sanctum')->user()?->student()) {
+                    }
                 }
             ]
         )->find($id);
+
 
         if (!$jobOpening) {
             throw new HttpResponseException(response()->json(['errors' => 'Job opening not found'], 404));
@@ -198,6 +204,7 @@ class JobOpeningController extends Controller
         $jobOpening["city_regency"] = $jobOpening->company->cityRegency->makeHidden(['province']);
         $jobOpening["province"] = $jobOpening->company->cityRegency->province;
         $jobOpening["company"] = $jobOpening->company->makeHidden(['user', 'cityRegency']);
+        $jobOpening["user"] = $jobOpening->company->user;
         $isSaved = $jobOpening->saveJobOpening->isNotEmpty() ? true : false;
         unset($jobOpening["saveJobOpening"]);
 

@@ -16,6 +16,7 @@ return new class extends Migration {
 
             $table->string('name');
             $table->text('address');
+            $table->string('description')->nullable();
             $table->string('phone_number')->nullable();
             $table->boolean('is_verified')->default(false);
             $table->enum('accreditation', ['A', 'B', 'C'])->nullable();

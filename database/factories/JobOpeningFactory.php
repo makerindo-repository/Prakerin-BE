@@ -29,7 +29,8 @@ class JobOpeningFactory extends Factory
             'duration_id' => Duration::inRandomOrder()->first()?->id ?? Duration::factory(),
             'is_paid' => $this->faker->boolean(),
             'grade' => $this->faker->randomElement(['smk', 'mahasiswa', 'all']),
-            'type' => $this->faker->randomElement(['wfh', 'full_time', 'hybrid']),
+            'type' => $this->faker->randomElement(['full_time', 'part_time']),
+            'location' => $this->faker->randomElement(['onsite', 'remote', 'hybrid', 'field']),
             'qouta' => $this->faker->numberBetween(1, 10),
             'is_available' => $this->faker->boolean(),
         ];

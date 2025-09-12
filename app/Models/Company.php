@@ -27,6 +27,7 @@ class Company extends Model
 
     protected $casts = [
         'is_verified' => 'boolean',
+        'description' => 'array',
     ];
 
     protected static function booted()

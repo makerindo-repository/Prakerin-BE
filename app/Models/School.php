@@ -15,6 +15,7 @@ class School extends Model
 
     protected $casts = [
         'is_verified' => 'boolean',
+        'description' => 'array',
     ];
 
     protected $fillable = [
@@ -28,6 +29,7 @@ class School extends Model
         'website',
         'npsn',
         'status',
+        'description',
     ];
 
     protected static function booted()
