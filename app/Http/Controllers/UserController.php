@@ -183,6 +183,7 @@ class UserController extends Controller
                     'email' => $item->email,
                     'role' => $item->role,
                     'photo_profile' => $item->photo_profile,
+                    'name' => $item->school->name,
                     'school' => $item->school->makeHidden(['mous']),
                     'mou' => $item->school->mous->isEmpty() ? false : true,
                 ];
@@ -521,7 +522,7 @@ class UserController extends Controller
 
         if (!$user || !Hash::check($data['password'], $user->password)) {
             throw new HttpResponseException(response([
-                "errors" => "Email or password wrong!"
+                "errors" => "Email atau password salah!"
             ], 400));
         }
 

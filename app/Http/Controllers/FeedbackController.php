@@ -153,6 +153,7 @@ class FeedbackController extends Controller
     {
         $ratings = Feedback::where('to_user_id', $request->user()->id)->select('rating')->get();
 
+        $ratingCount = $ratings->count();
         $averageRating = $ratings->avg('rating');
         $rating1 = $ratings->where('rating', 1)->count();
         $rating2 = $ratings->where('rating', 2)->count();
@@ -162,6 +163,7 @@ class FeedbackController extends Controller
 
         return response()->json([
             'data' => [
+                'rating_count' => $ratingCount,
                 'average_rating' => $averageRating,
                 'rating_1' => $rating1,
                 'rating_2' => $rating2,

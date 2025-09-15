@@ -90,7 +90,7 @@ Route::prefix('v1')->group(function () {
                     Route::post('/', 'store');
                 });
 
-                Route::middleware('ability:admin-access,student-access,school-access')->group(function () {
+                Route::middleware('ability:admin-access,student-access,school-access,company-access')->group(function () {
                     Route::get('/{id}', 'show');
                 });
             });
@@ -146,10 +146,9 @@ Route::prefix('v1')->group(function () {
                     Route::delete('/{id}', 'destroy');
                 });
 
-                Route::middleware("ability:school-access,company-acceess")->group(function () {
+                Route::middleware("ability:school-access,company-access")->group(function () {
                     Route::get('/count', 'count');
                 });
-
             });
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
@@ -171,7 +170,7 @@ Route::prefix('v1')->group(function () {
         ->controller(TaskController::class)
         ->middleware('auth:sanctum')
         ->group(function () {
-            Route::middleware('ability:student-access')->group(function () {
+            Route::middleware('ability:student-access,company-access')->group(function () {
                 Route::get('/', 'index');
                 Route::get('/{id}', 'show');
                 Route::patch('/{id}', 'update');
@@ -198,16 +197,18 @@ Route::prefix('v1')->group(function () {
     Route::prefix('/certificates')
         ->controller(CertificateController::class)
         ->group(function () {
-
-            Route::get('/{id}', 'show');
-
             Route::middleware('auth:sanctum')->group(function () {
                 Route::middleware('ability:student-access')->group(function () {
                     Route::get('/', 'index');
                     Route::get('/{id}/preview', 'preview');
                     Route::get('/{id}/download', 'download');
                 });
+
+                Route::middleware('ability:company-access,school-access')->group(function () {
+                    Route::get('/count', 'count');
+                });
             });
+            Route::get('/{id}', 'show');
         });
 
     // Feedback
@@ -277,6 +278,7 @@ Route::prefix('v1')->group(function () {
 
             Route::middleware('ability:company-access')->group(function () {
                 Route::get('/', 'index');
+                Route::get("/count", "count");
                 Route::patch('/{id}', 'update');
                 Route::delete('/{id}', 'destroy');
             });

@@ -170,4 +170,14 @@ class CertificateController extends Controller
             ->header('Content-Disposition', 'attachment; filename="certificate_' . $certificate->id . '.pdf"');
 
     }
+
+    public function count(Request $request)
+    {
+        
+        // $count = Certificate::when($request->user);
+
+        return response()->json([
+            "count" => $request->user()->company()
+        ], 200);
+    }
 }

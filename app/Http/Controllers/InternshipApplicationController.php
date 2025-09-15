@@ -150,7 +150,8 @@ class InternshipApplicationController extends Controller
             ));
         }
 
-        if ($internshipApplication->jobOpening()->company()->id !== auth()->user()->company->id) {
+
+        if ($internshipApplication->jobOpening->company_id !== auth()->user()->company->id) {
             throw new HttpResponseException(response()->json(
                 ['errors' => 'Forbidden.'],
                 403

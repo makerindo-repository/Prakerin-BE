@@ -123,4 +123,18 @@ class InternshipController extends Controller
             'data' => 'Internship deleted successfully.',
         ], 200);
     }
+
+    public function count(Request $request)
+    {
+        $count = Internship::where('is_completed', false)
+            ->whereHas('internshipApplication.jobOpening', function ($query) use ($request) {
+                $query->where('company_id', $request->user()->company->id);
+            })
+            ->count();
+
+
+        return response()->json([
+            'data' => $count
+        ]);
+    }
 }

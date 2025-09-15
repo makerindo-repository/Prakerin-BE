@@ -276,9 +276,13 @@ class JobOpeningController extends Controller
         ], 200);
     }
 
-    public function count()
+    public function count(Request $request)
     {
-        $count = JobOpening::where("is_available", true)
+
+        $count = JobOpening::when($request->user()->tokenCan("company-access"), function ($query) use ($request) {
+            $query->where("company_id", $request->user()->company->id);
+        })
+            ->where("is_available", true)
             ->count();
 
         return response()->json([
