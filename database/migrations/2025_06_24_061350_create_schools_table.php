@@ -13,6 +13,7 @@ return new class extends Migration {
         Schema::create('schools', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id');
+            $table->foreignUuid('city_regency_id')->nullable()->references('id')->on('city_regencies')->onDelete('set null');
 
             $table->string('name');
             $table->text('address');
@@ -22,7 +23,7 @@ return new class extends Migration {
             $table->enum('accreditation', ['A', 'B', 'C'])->nullable();
             $table->string('website')->nullable();
             $table->string('npsn')->nullable();
-            $table->enum('status', ['negeri', 'swasta']);
+            $table->enum('status', ['negeri', 'swasta'])->nullable();
 
 
 

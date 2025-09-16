@@ -21,6 +21,7 @@ class School extends Model
     protected $fillable = [
         'id',
         'user_id',
+        'city_regency_id',
         'name',
         'address',
         'phone_number',

@@ -27,7 +27,7 @@ class UserRegisterRequest extends FormRequest
         $rules = [
             'username' => 'required|unique:users,username|regex:/^[a-zA-Z0-9._]+$/u',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|confirmed',
+            'password' => 'required|string|min:6|confirmed',
             'role' => 'required|in:student,school,company',
             'recaptcha_token' => 'required',
             'name' => 'required|string|max:255',

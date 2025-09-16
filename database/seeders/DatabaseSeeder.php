@@ -40,6 +40,8 @@ class DatabaseSeeder extends Seeder
         Sector::factory(5)->create();
         Major::factory(10)->create();
         Field::factory(10)->create();
+        Duration::factory(5)->create();
+
 
 
         User::factory()->create([
@@ -47,36 +49,34 @@ class DatabaseSeeder extends Seeder
             'role' => 'super_admin',
         ]);
 
-        School::factory(3)->create([
-        ]);
+        // School::factory(3)->create([
+        // ]);
 
-        Company::factory(3)->create([
-        ]);
+        // Company::factory(3)->create([
+        // ]);
 
-        Student::factory(9)->create([
+        // Student::factory(9)->create([
 
-        ]);
-
-
+        // ]);
 
 
 
-        Field::factory(5)->create();
-        CurriculumVitae::factory(18)->create();
 
-        Duration::factory(5)->create();
 
-        JobOpening::factory(10)->create();
+        // CurriculumVitae::factory(18)->create();
+
+
+        // JobOpening::factory(10)->create();
         // InternshipApplication::factory(20)->create();
 
         // Test::factory(10)->create();
         // InternshipApplicationTest::factory(20)->create();
 
-        Internship::factory(1)->create();
+        // Internship::factory(1)->create();
 
-        SaveJobOpening::factory(5)->create();
+        // SaveJobOpening::factory(5)->create();
 
-        Task::factory(5)->create();
+        // Task::factory(5)->create();
         // ReportTask::factory(5)->create();
         // ReportTaskMessage::factory(20)->create();
 

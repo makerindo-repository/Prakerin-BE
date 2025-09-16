@@ -27,7 +27,7 @@ class UserUpdateProfileRequest extends FormRequest
             'username' => 'nullable|unique:users,username|regex:/^[a-zA-Z0-9._]+$/u',
             'email' => 'nullable|email|unique:users,email',
             'password' => 'nullable|string|confirmed',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'photo_profile' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
 
         if ($this->user()->tokenCant('admin-access')) {

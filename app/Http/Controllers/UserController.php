@@ -11,6 +11,7 @@ use App\Models\Company;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
+use Auth;
 use Http;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -28,11 +29,32 @@ class UserController extends Controller
     {
         $isVerified = filter_var($request->query('is_verified', true), FILTER_VALIDATE_BOOLEAN);
         $search = $request->query('search', '');
-        $limit = request()->query('limit', 10);
+        $limit = $request->query('limit', 10);
         $role = $request->query('role', null);
 
 
-        if (auth()->user()->tokenCan('school-access') && ($role === 'student')) {
+
+        if (!Auth::guard('sanctum')->user()) {
+            $users = User::with(['school'])
+                ->where('role', 'school')
+                ->whereHas('school', function ($q) use ($search) {
+                    $q->where('is_verified', true);
+                    $q->where('name', 'like', "%$search%");
+                })
+                ->paginate($limit);
+
+            $users->getCollection()->transform(function ($item) {
+
+                return [
+                    'id' => $item->school->id,
+                    'name' => $item->school->name,
+                ];
+            });
+
+            return response()->json($users, 200);
+        }
+
+        if (Auth::guard('sanctum')->user()->tokenCan('school-access') && ($role === 'student')) {
 
             $status = $request->query('status', null);
 
@@ -44,7 +66,7 @@ class UserController extends Controller
                 ->whereHas('student', function ($q) use ($search) {
                     $q->where('is_verified', true);
                     $q->where('name', 'like', "%$search%");
-                    $q->where('school_id', auth()->user()->school->id);
+                    $q->where('school_id', Auth::guard('sanctum')->user()->school->id);
                 })
                 ->when(in_array($status, ['ongoing', 'completed']), function ($q) use ($status) {
                     $q->whereHas('student.curriculumVitae.internshipApplications', function ($q) use ($status) {
@@ -96,7 +118,7 @@ class UserController extends Controller
 
 
             return response()->json($users, 200);
-        } else if ((auth()->user()->tokenCan('school-access') || auth()->user()->tokenCan('student-access')) && ($role === 'company')) {
+        } else if ((Auth::guard('sanctum')->user()->tokenCan('school-access') || Auth::guard('sanctum')->user()->tokenCan('student-access')) && ($role === 'company')) {
 
             $isMou = $request->has('is_mou')
                 ? filter_var($request->query('is_mou'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
@@ -110,21 +132,21 @@ class UserController extends Controller
 
                     if ($isMou === true) {
                         $q->whereHas('mous', function ($q2) {
-                            if (!isset(auth()->user()->school()->id)) {
-                                $q2->where('school_id', auth()->user()->student->school_id)
+                            if (!isset(Auth::guard('sanctum')->user()->school()->id)) {
+                                $q2->where('school_id', Auth::guard('sanctum')->user()->student->school_id)
                                     ->where('status', 'active');
                             } else {
-                                $q2->where('school_id', auth()->user()->school->id)
+                                $q2->where('school_id', Auth::guard('sanctum')->user()->school->id)
                                     ->where('status', 'active');
                             }
                         });
                     } elseif ($isMou === false) {
                         $q->whereDoesntHave('mous', function ($q2) {
-                            if (!isset(auth()->user()->school()->id)) {
-                                $q2->where('school_id', auth()->user()->student->school_id)
+                            if (!isset(Auth::guard('sanctum')->user()->school()->id)) {
+                                $q2->where('school_id', Auth::guard('sanctum')->user()->student->school_id)
                                     ->where('status', 'active');
                             } else {
-                                $q2->where('school_id', auth()->user()->school->id)
+                                $q2->where('school_id', Auth::guard('sanctum')->user()->school->id)
                                     ->where('status', 'active');
                             }
                         });
@@ -149,7 +171,7 @@ class UserController extends Controller
 
             return response()->json($users, 200);
 
-        } else if (auth()->user()->tokenCan('company-access') && ($role === 'school')) {
+        } else if (Auth::guard('sanctum')->user()->tokenCan('company-access', ) && ($role === 'school')) {
 
             $isMou = $request->has('is_mou')
                 ? filter_var($request->query('is_mou'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
@@ -163,12 +185,12 @@ class UserController extends Controller
 
                     if ($isMou === true) {
                         $q->whereHas('mous', function ($q2) {
-                            $q2->where('company_id', auth()->user()->company->id)
+                            $q2->where('company_id', Auth::guard('sanctum')->user()->company->id)
                                 ->where('status', 'active');
                         });
                     } elseif ($isMou === false) {
                         $q->whereDoesntHave('mous', function ($q2) {
-                            $q2->where('company_id', auth()->user()->company->id)
+                            $q2->where('company_id', Auth::guard('sanctum')->user()->company->id)
                                 ->where('status', 'active');
                         });
                     }
@@ -191,7 +213,7 @@ class UserController extends Controller
 
             return response()->json($users, 200);
 
-        } else if (auth()->user()->tokenCan('admin-access')) {
+        } else if (Auth::guard('sanctum')->user()->tokenCan('admin-access')) {
             $users = User::with(['student', 'school', 'company'])
                 ->when($role, function ($query, $role) {
                     return $query->where('role', $role);
@@ -603,10 +625,10 @@ class UserController extends Controller
 
 
 
-        if ($request->file('image')) {
-            $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
+        if ($request->file('photo_profile')) {
+            $filename = now()->format('Ymd_His') . '.' . $request->file('photo_profile')->getClientOriginalExtension();
             $user->photo_profile = $filename;
-            $request->file('image')->storeAs('photo-profile', $filename, 'public');
+            $request->file('photo_profile')->storeAs('photo-profile', $filename, 'public');
         }
 
 

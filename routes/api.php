@@ -69,13 +69,15 @@ Route::prefix('v1')->group(function () {
 
             Route::get('/email/verify/{id}/{hash}', 'verifyEmail')->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
 
+            Route::get('/', 'index');
+
+
 
             Route::middleware('auth:sanctum')->group(function () {
                 Route::post('/logout', 'logout');
                 Route::get('/profile', 'profile');
                 Route::patch('/profile', 'updateProfile');
                 Route::delete('/profile', 'deleteProfile');
-                Route::get('/', 'index');
                 Route::get("/count", "count");
 
                 Route::middleware('abilities:admin-access')->group(function () {
