@@ -164,7 +164,7 @@ class FeedbackController extends Controller
         return response()->json([
             'data' => [
                 'rating_count' => $ratingCount,
-                'average_rating' => $averageRating,
+                'average_rating' => $averageRating === null ? 0 : $averageRating,
                 'rating_1' => $rating1,
                 'rating_2' => $rating2,
                 'rating_3' => $rating3,

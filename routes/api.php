@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CityRegencyController;
 use App\Http\Controllers\CompanyController;
@@ -282,6 +283,14 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}', 'update');
                 Route::delete('/{id}', 'destroy');
             });
+        });
+
+    Route::prefix('achievements')
+        ->controller(AchievementController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
+
+            Route::get('/count', 'count');
         });
 
     Route::middleware('auth:sanctum')->group(function () {
