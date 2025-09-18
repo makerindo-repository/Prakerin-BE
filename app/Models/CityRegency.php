@@ -31,6 +31,10 @@ class CityRegency extends Model
         });
     }
 
+    public function schools()
+    {
+        return $this->hasMany(School::class);
+    }
     public function companies()
     {
         return $this->hasMany(Company::class);

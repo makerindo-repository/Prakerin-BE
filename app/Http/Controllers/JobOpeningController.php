@@ -189,6 +189,8 @@ class JobOpeningController extends Controller
             [
                 'company.user',
                 "company.cityRegency.province",
+                'field',
+                'duration',
                 'saveJobOpening' => function ($query) {
                     if (!Auth::guard('sanctum')->user()?->student()) {
                     }

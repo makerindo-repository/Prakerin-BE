@@ -14,7 +14,8 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->uuid('company_id');
             $table->string('title');
-            $table->text('test');
+            $table->string("link");
+            $table->text('description');
             $table->enum('type', ['theory', 'practice']);
 
             $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');

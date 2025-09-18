@@ -19,7 +19,6 @@ return new class extends Migration {
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
             $table->enum('status', ['draft', 'active', 'expired', 'rejected'])->default('draft');
-            $table->string('mou_number')->nullable();
             $table->timestamps();
         });
     }

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\CityRegency;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\User;
 
@@ -20,6 +21,7 @@ class SchoolFactory extends Factory
             'address' => $this->faker->address(),
             'phone_number' => $this->faker->phoneNumber(),
             'is_verified' => true,
+            'city_regency_id' => CityRegency::inRandomOrder()->first()?->id ?? CityRegency::factory(),
         ];
     }
 }

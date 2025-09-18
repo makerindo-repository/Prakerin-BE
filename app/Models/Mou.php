@@ -11,16 +11,20 @@ class Mou extends Model
     use HasFactory;
     public $incrementing = false;
     protected $keyType = 'string';
+    protected $casts = [
+        'message' => 'array'
+    ];
     protected $fillable = [
         'id',
         'company_id',
         'school_id',
+        'file',
+        'message',
         'start_date',
         'end_date',
         'status',
-        'file',
-        'mou_number',
     ];
+
 
     protected static function booted()
     {

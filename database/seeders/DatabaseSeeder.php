@@ -45,19 +45,46 @@ class DatabaseSeeder extends Seeder
 
 
         User::factory()->create([
-            'email' => 'user@example.com',
+            'email' => 'superadmin@makerindo.id',
             'role' => 'super_admin',
         ]);
 
-        // School::factory(3)->create([
-        // ]);
+        $school = User::factory()->create([
+            'email' => 'superschool@makerindo.id',
+            'role' => 'school',
+        ]);
+        $student = User::factory()->create([
+            'email' => 'superstudent@makerindo.id',
+            'role' => 'student',
+        ]);
+        $company = User::factory()->create([
+            'email' => 'supercompany@makerindo.id',
+            'role' => 'company',
+        ]);
 
-        // Company::factory(3)->create([
-        // ]);
 
-        // Student::factory(9)->create([
+        $schoolId = School::factory()->create([
+            'user_id' => $school->id,
+        ]);
 
-        // ]);
+        Company::factory()->create([
+            'user_id' => $company->id,
+        ]);
+
+        Student::factory()->create([
+            'user_id' => $student->id,
+            'school_id' => $schoolId->id,
+        ]);
+
+        School::factory(3)->create([
+        ]);
+
+        Company::factory(3)->create([
+        ]);
+
+        Student::factory(9)->create([
+
+        ]);
 
 
 

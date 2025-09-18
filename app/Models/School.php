@@ -58,4 +58,8 @@ class School extends Model
     {
         return $this->hasMany(Mou::class);
     }
+    public function cityRegency()
+    {
+        return $this->belongsTo(CityRegency::class);
+    }
 }

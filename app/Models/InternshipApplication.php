@@ -11,6 +11,9 @@ class InternshipApplication extends Model
     use HasFactory;
     public $incrementing = false;
     protected $keyType = 'string';
+    protected $casts = [
+        'cover_letter' => 'array',
+    ];
 
     protected $fillable = [
         'id',

@@ -110,10 +110,12 @@ Route::prefix('v1')->group(function () {
                 Route::get('/{id}', 'show');
                 Route::patch('/{id}', 'update');
                 Route::delete('/{id}', 'destroy');
-                Route::get('/{id}/preview', 'preview');
-                Route::get('/{id}/download', 'download');
 
             });
+            Route::get('/{id}/download', 'download');
+
+            Route::get('/{id}/preview', 'preview');
+
         });
 
     // Internship Application

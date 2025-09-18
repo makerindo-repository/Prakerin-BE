@@ -171,11 +171,11 @@ class CurriculumVitaeController extends Controller
             ], 404);
         }
 
-        if ($cv->student_id !== $request->user()->student->id) {
-            return response()->json([
-                'errors' => 'Forbidden.'
-            ], 403);
-        }
+        // if ($cv->student_id !== $request->user()->student->id) {
+        //     return response()->json([
+        //         'errors' => 'Forbidden.'
+        //     ], 403);
+        // }
 
         if (!Storage::exists("/curriculum-vitaes/$cv->file")) {
             return response()->json([
@@ -199,11 +199,11 @@ class CurriculumVitaeController extends Controller
             ], 404);
         }
 
-        if ($cv->student_id !== $request->user()->student->id) {
-            return response()->json([
-                'errors' => 'Forbidden.'
-            ], 403);
-        }
+        // if ($cv->student_id !== $request->user()->student->id) {
+        //     return response()->json([
+        //         'errors' => 'Forbidden.'
+        //     ], 403);
+        // }
 
         if (!Storage::exists("/curriculum-vitaes/$cv->file")) {
             return response()->json([

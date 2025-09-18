@@ -24,11 +24,8 @@ class MouController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
-            'status' => 'required|in:draft,active,expired,rejected',
             'file' => 'required|file|mimes:pdf|max:2048',
-            'mou_number' => 'nullable|string|max:255'
+            'message' => 'required'
         ]);
 
         if (auth()->user()->tokenCan('school-access')) {
@@ -50,9 +47,10 @@ class MouController extends Controller
         $data = $validator->validated();
 
         $mou = new Mou();
-        $mou->start_date = $data['start_date'];
-        $mou->end_date = $data['end_date'];
-        $mou->status = $data['status'];
+
+
+        $mou->message = $data['message'];
+
 
 
         if ($request->file('file')) {
@@ -62,7 +60,6 @@ class MouController extends Controller
             $request->file('file')->storeAs('mous', $filename);
         }
 
-        $mou->mou_number = $data['mou_number'];
         if (auth()->user()->tokenCan('school-access')) {
             $mou->company_id = $data['company_id'];
             $mou->school_id = auth()->user()?->school->id;
@@ -70,6 +67,7 @@ class MouController extends Controller
             $mou->company_id = auth()->user()?->company->id;
             $mou->school_id = $data['school_id'];
         }
+
         $mou->save();
 
         return response()->json(['data' => $mou], 201);

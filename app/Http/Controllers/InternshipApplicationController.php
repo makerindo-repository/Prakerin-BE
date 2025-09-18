@@ -40,7 +40,10 @@ class InternshipApplicationController extends Controller
 
                 return [
                     'id' => $item->id,
-                    'curriculum_vitae_id' => $item->curriculum_vitae_id,
+                    'curriculum_vitae' => [
+                        'id' => $item->curriculumVitae->id,
+                        'name' => $item->curriculumVitae->name,
+                    ],
                     'job_opening_id' => $item->job_opening_id,
                     'status' => $item->status,
                     'cover_letter' => $item->cover_letter,
@@ -67,12 +70,16 @@ class InternshipApplicationController extends Controller
         $data = $internshipApplications->getCollection()->map(function ($app) {
             return [
                 'id' => $app->id,
-                'curriculum_vitae_id' => $app->curriculum_vitae_id,
                 'job_opening_id' => $app->job_opening_id,
                 'status' => $app->status,
                 'cover_letter' => $app->cover_letter,
                 'created_at' => $app->created_at,
                 'updated_at' => $app->updated_at,
+
+                'curriculum_vitae' => [
+                    'id' => $app->curriculumVitae->id,
+                    'name' => $app->curriculumVitae->name,
+                ],
 
                 'job_opening' => [
                     'id' => $app->jobOpening->id,
@@ -117,7 +124,7 @@ class InternshipApplicationController extends Controller
         $validator = Validator::make($request->all(), [
             'curriculum_vitae_id' => 'required|exists:curriculum_vitaes,id',
             'job_opening_id' => 'required|exists:job_openings,id',
-            'cover_letter' => 'required|string',
+            'cover_letter' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -141,7 +148,8 @@ class InternshipApplicationController extends Controller
      */
     public function show(string $id)
     {
-        $internshipApplication = InternshipApplication::find($id);
+        $internshipApplication = InternshipApplication::with(['curriculumVitae.student.user', 'curriculumVitae.student.major'])
+            ->find($id);
 
         if (!$internshipApplication) {
             throw new HttpResponseException(response()->json(
@@ -157,6 +165,14 @@ class InternshipApplicationController extends Controller
                 403
             ));
         }
+
+        $internshipApplication = [
+            'cover_letter' => $internshipApplication->cover_letter,
+            'student' => $internshipApplication->curriculumVitae->student->makeHidden(['user']),
+            'user' => $internshipApplication->curriculumVitae->student->user,
+            'major' => $internshipApplication->curriculumVitae->student->major,
+            'curriculum_vitae_id' => $internshipApplication->curriculum_vitae_id,
+        ];
 
         return response()->json([
             'data' => $internshipApplication

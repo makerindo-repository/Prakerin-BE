@@ -63,4 +63,9 @@ class Student extends Model
     {
         return $this->hasMany(CurriculumVitae::class);
     }
+
+    public function major()
+    {
+        return $this->belongsTo(Major::class);
+    }
 }

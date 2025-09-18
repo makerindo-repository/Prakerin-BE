@@ -8,6 +8,7 @@ use App\Http\Requests\User\UserRegisterRequest;
 use App\Http\Requests\User\UserUpdateProfileRequest;
 use App\Http\Requests\User\UserUpdateRequest;
 use App\Models\Company;
+use App\Models\Mou;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
@@ -177,7 +178,7 @@ class UserController extends Controller
                 ? filter_var($request->query('is_mou'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
                 : null;
 
-            $users = User::with(['school.mous'])
+            $users = User::with(['school.mous', 'school.cityRegency.province'])
                 ->where('role', 'school')
                 ->whereHas('school', function ($q) use ($search, $isMou) {
                     $q->where('is_verified', true);
@@ -206,8 +207,10 @@ class UserController extends Controller
                     'role' => $item->role,
                     'photo_profile' => $item->photo_profile,
                     'name' => $item->school->name,
-                    'school' => $item->school->makeHidden(['mous']),
+                    'school' => $item->school->makeHidden(['mous', 'cityRegency']),
                     'mou' => $item->school->mous->isEmpty() ? false : true,
+                    'city_regency' => $item->school->cityRegency->makeHidden(['province']),
+                    'province' => $item->school->cityRegency->province
                 ];
             });
 
@@ -341,9 +344,7 @@ class UserController extends Controller
 
             $user = [
                 'id' => $user->id,
-                'username' => $user->username,
                 'email' => $user->email,
-                'role' => $user->role,
                 'photo_profile' => $user->photo_profile,
                 'email_verified_at' => $user->email_verified_at,
                 'created_at' => $user->created_at,
@@ -353,6 +354,21 @@ class UserController extends Controller
                 'province' => $user->company->cityRegency->province,
                 'sector' => $user->company->sector,
                 'job_openings' => $user->company->jobOpenings
+            ];
+        } else if ($user->role === 'school') {
+
+            $user->school->load([
+                'cityRegency.province',
+            ]);
+
+            $user = [
+                'id' => $user->id,
+                'username' => $user->username,
+                'email' => $user->email,
+                'photo_profile' => $user->photo_profile,
+                'school' => $user->school->makeHidden(['cityRegency',]),
+                'city_regency' => $user->school->cityRegency->makeHidden(['province']),
+                'province' => $user->school->cityRegency->province,
             ];
         }
 
@@ -658,6 +674,8 @@ class UserController extends Controller
             $school->accreditation = $data['accreditation'] ?? $school->accreditation;
             $school->status = $data['status'] ?? $school->status;
             $school->description = $data['description'] ?? $school->description;
+            $school->city_regency_id = $data['city_regency_id'] ?? $school->city_regency_id;
+
 
             $school->save();
         } else if ($user->tokenCan('company-access')) {
@@ -701,12 +719,51 @@ class UserController extends Controller
 
     public function count(Request $request)
     {
-        $companyCount = User::where('role', 'company')->count();
+        $companyCount = User::where('role', 'company')
+            ->whereHas("company", function ($query) {
+                $query->where("is_verified", true);
+            })
+            ->count();
+
+        $mouCount = Mou::when($request->user()->tokenCan("company-access"), function ($query) use ($request) {
+            $query->where("company_id", $request->user()->company->id);
+        })
+            ->when($request->user()->tokenCan("school-access"), function ($query) use ($request) {
+                $query->where("school_id", $request->user()->school()->id);
+            })
+            ->when($request->user()->tokenCan("student-access"), function ($query) use ($request) {
+                $query->where("school_id", $request->user()->student->school_id);
+            })
+            ->where('status', 'active')
+            ->count();
+
+        $studentQuery = Student::where('school_id', $request->user()?->school?->id)
+            ->where('is_verified', true);
+
+        // total semua student
+        $studentCount = $studentQuery->count();
+
+        // student tanpa internship
+        $totalStudentWithoutInternship = $studentQuery->doesntHave('curriculumVitae.internshipApplications.internship')->count();
+
+        // student dengan internship tapi belum selesai
+        $totalStudentInternship = $studentQuery->whereHas('curriculumVitae.internshipApplications.internship', function ($q) {
+            $q->where('is_completed', false);
+        })->count();
+
+        // student dengan internship selesai
+        $totalStudentWithInternship = $studentQuery->whereHas('curriculumVitae.internshipApplications.internship', function ($q) {
+            $q->where('is_completed', true);
+        })->count();
 
         return response()->json([
             'data' => [
                 'company_count' => $companyCount,
-                'company_mou_count' => $companyCount,
+                'mou_count' => $mouCount,
+                'student_count' => $studentCount,
+                'total_student_without_internship' => $totalStudentWithoutInternship,
+                'total_student_internship' => $totalStudentInternship,
+                'total_student_with_internship' => $totalStudentWithInternship,
             ],
         ], 200);
     }
