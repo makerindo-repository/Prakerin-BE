@@ -725,6 +725,12 @@ class UserController extends Controller
             })
             ->count();
 
+        $schoolCount = User::where('role', 'school')
+            ->whereHas("school", function ($query) {
+                $query->where("is_verified", true);
+            })
+            ->count();
+
         $mouCount = Mou::when($request->user()->tokenCan("company-access"), function ($query) use ($request) {
             $query->where("company_id", $request->user()->company->id);
         })
@@ -759,6 +765,7 @@ class UserController extends Controller
         return response()->json([
             'data' => [
                 'company_count' => $companyCount,
+                'school_count' => $schoolCount,
                 'mou_count' => $mouCount,
                 'student_count' => $studentCount,
                 'total_student_without_internship' => $totalStudentWithoutInternship,

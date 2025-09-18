@@ -23,6 +23,8 @@ class Mou extends Model
         'start_date',
         'end_date',
         'status',
+        'is_company_accepted',
+        'is_school_accepted'
     ];
 
 

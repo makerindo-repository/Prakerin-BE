@@ -136,6 +136,20 @@ class InternshipApplicationController extends Controller
 
         $data = $validator->validated();
 
+        $user = $request->user();
+
+        $findIntershipApplicationWithSameStudent = InternshipApplication::where("job_opening_id", $data['job_opening_id'])
+            ->whereHas('curriculumVitae.student', function ($query) use ($user) {
+                $query->where('id', $user->student->id);
+            })
+            ->get();
+
+        if ($findIntershipApplicationWithSameStudent !== 0) {
+            throw new HttpResponseException(response()->json([
+                'errors' => "Anda tidak bisa melamar 2 kali di lowonngan magang yang sama!",
+            ], 400));
+        }
+
         $internshipApplication = InternshipApplication::create($data);
 
         return response()->json([

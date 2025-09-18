@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Mou;
+use Carbon\Carbon;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -10,12 +11,60 @@ use Illuminate\Support\Facades\Validator;
 
 class MouController extends Controller
 {
-    /**
+    /**g
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+
+        $search = $request->query('search', '');
+
+        $user = $request->user();
+
+        $mous = Mou::query()
+            ->when($user->tokenCan('company-access'), function ($query) use ($user, $search) {
+                $query->where('company_id', $user->company->id)
+                    ->with([
+                        'school' => function ($q) {
+                            $q->select('id', 'name');
+                        }
+                    ]);
+                $query->whereHas('school', function ($q) use ($search) {
+                    $q->where('name', 'like', "%$search%");
+                });
+            })
+            ->when($user->tokenCan('school-access'), function ($query) use ($user, $search) {
+                $query->where('school_id', $user->school->id)
+                    ->with([
+                        'company' => function ($q) use ($search) {
+                            $q->select('id', 'name');
+                        }
+                    ]);
+                $query->whereHas('company', function ($q) use ($search) {
+                    $q->where('name', 'like', "%$search%");
+                });
+            })
+            ->select('id', 'start_date', 'end_date', 'status', 'file', $user->tokenCan('company-access') ? "school_id" : "company_id")
+            ->get()
+            ->map(function ($item) use ($user) {
+
+                $item->start_date = Carbon::parse($item->start_date)->format('j-n-Y');
+                $item->end_date = Carbon::parse($item->end_date)->format('j-n-Y');
+
+                if ($user->tokenCan('company-access')) {
+                    unset($item['school_id']);
+                } else {
+                    unset($item['company_id']);
+                }
+
+                return $item;
+            });
+
+
+
+        return response()->json([
+            'data' => $mous
+        ]);
     }
 
     /**
@@ -24,6 +73,8 @@ class MouController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after:start_date',
             'file' => 'required|file|mimes:pdf|max:2048',
             'message' => 'required'
         ]);
@@ -49,6 +100,8 @@ class MouController extends Controller
         $mou = new Mou();
 
 
+        $mou->start_date = $data['start_date'];
+        $mou->end_date = $data['end_date'];
         $mou->message = $data['message'];
 
 
@@ -63,9 +116,11 @@ class MouController extends Controller
         if (auth()->user()->tokenCan('school-access')) {
             $mou->company_id = $data['company_id'];
             $mou->school_id = auth()->user()?->school->id;
+            $mou->is_school_accepted = true;
         } else if (auth()->user()->tokenCan('company-access')) {
             $mou->company_id = auth()->user()?->company->id;
             $mou->school_id = $data['school_id'];
+            $mou->is_company_accepted = true;
         }
 
         $mou->save();
@@ -76,9 +131,44 @@ class MouController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
-        //
+        $mou = Mou::with(['company.user', 'company.cityRegency.province', 'school.user', 'school.cityRegency.province'])
+            ->find($id);
+
+
+
+        if (!$mou) {
+            throw new HttpResponseException(response([
+                'errors' => 'Kerja sama tidak ditemukan.'
+            ]));
+        }
+
+
+        $user = $request->user();
+
+        $mou = collect([$mou])->map(function ($item) use ($user) {
+            return [
+                'start_date' => $item->start_date,
+                'end_date' => $item->end_date,
+                'status' => $item->status,
+                'file' => $item->file,
+                'is_company_accepted' => $item->is_company_accepted,
+                'is_school_accepted' => $item->is_school_accepted,
+                'message' => $item->message,
+                'user' => $user->tokenCan('company-access') ? $item->company->user : $item->school->user,
+                'province' => $user->tokenCan('company-access') ? $item->company->cityRegency->province : $item->school->cityRegency->province,
+                'city_regency' => $user->tokenCan('company-access') ? $item->company->cityRegency->makeHidden(['province']) : $item->school->cityRegency->makeHidden(['province']),
+                'company' => $item->company->makeHidden(['user', 'cityRegency']),
+                'school' => $item->school->makeHidden(['user', 'cityRegency']),
+            ];
+        })->first();
+
+
+
+        return response()->json([
+            'data' => $mou
+        ]);
     }
 
     /**
@@ -165,5 +255,62 @@ class MouController extends Controller
         $mou->delete();
 
         return response()->json(['message' => 'Mou deleted successfully'], 200);
+    }
+
+    public function preview(Request $request, string $id)
+    {
+        $mou = Mou::find($id);
+
+        if (!$mou) {
+            return response()->json([
+                'errors' => 'Kerja sama tidak ditemukan.'
+            ], 404);
+        }
+
+        // if ($mou->student_id !== $request->user()->student->id) {
+        //     return response()->json([
+        //         'errors' => 'Forbidden.'
+        //     ], 403);
+        // }
+
+        if (!Storage::exists("/mous/$mou->file")) {
+            return response()->json([
+                'errors' => 'File tidak ditemukan.'
+            ], 404);
+        }
+        $path = Storage::path("/mous/$mou->file");
+
+        return response()->file($path, [
+            'Content-Type' => 'application/pdf',
+        ]);
+    }
+
+    public function download(Request $request, string $id)
+    {
+        $mou = Mou::find($id);
+
+        if (!$mou) {
+            return response()->json([
+                'errors' => 'Kerja sama tidak ditemukan.'
+            ], 404);
+        }
+
+        // if ($mou->student_id !== $request->user()->student->id) {
+        //     return response()->json([
+        //         'errors' => 'Forbidden.'
+        //     ], 403);
+        // }
+
+        if (!Storage::exists("/mous/$mou->file")) {
+            return response()->json([
+                'errors' => 'File tidak ditemukan.'
+            ], 404);
+        }
+        $path = Storage::path("/mous/$mou->file");
+
+
+        return response()->download($path, 'mous_' . now()->format('Ymd_His') . '.pdf', [
+            'Content-Type' => 'application/pdf',
+        ]);
     }
 }

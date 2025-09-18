@@ -251,10 +251,15 @@ Route::prefix('v1')->group(function () {
         ->middleware('auth:sanctum')
         ->group(function () {
             Route::middleware('ability:school-access,company-access')->group(function () {
+                Route::get('/', 'index');
                 Route::post('/', 'store');
+                Route::get('/{id}', 'show');
                 Route::patch('/{id}', 'update');
                 Route::delete('/{id}', 'destroy');
             });
+
+            Route::get('/{id}/download', 'download');
+            Route::get('/{id}/preview', 'preview');
         });
 
 
