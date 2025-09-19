@@ -25,6 +25,7 @@ class Student extends Model
         'is_verified',
         'class',
         'skill',
+        'status',
         'portofolio_link',
         'social_media_link'
 

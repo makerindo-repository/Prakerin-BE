@@ -8,7 +8,7 @@ info:
     email: ranggadendi6@gmail.com
 
 servers:
-  - url: http://localhost:8000/api/v1
+  - url: http://192.168.1.27:8000/api/v1
     description: Local development server
 
 tags:
@@ -60,7 +60,7 @@ tags:
 paths:
   # User
   /users/register:
-    post: 
+    post:
       summary: User registration
       operationId: userRegister
       tags:
@@ -70,9 +70,9 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/UserRegisterRequest'
+              $ref: "#/components/schemas/UserRegisterRequest"
       responses:
-        '201':
+        "201":
           description: OK
           content:
             application/json:
@@ -83,7 +83,7 @@ paths:
                     type: string
                   role:
                     type: string
-                    enum: 
+                    enum:
                       - student
                       - school
                       - company
@@ -99,9 +99,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserLoginRequest'
+              $ref: "#/components/schemas/UserLoginRequest"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -112,12 +112,12 @@ paths:
                     type: string
                   role:
                     type: string
-                    enum: 
+                    enum:
                       - student
                       - school
                       - company
                       - super_admin
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
@@ -126,7 +126,7 @@ paths:
                 properties:
                   errors:
                     type: string
-                    example: "Email or password wrong!"               
+                    example: "Email or password wrong!"
   /users/logout:
     post:
       security:
@@ -136,7 +136,7 @@ paths:
       tags:
         - User
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -146,35 +146,35 @@ paths:
                   message:
                     type: string
                     example: "Logout successful"
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /users:
     get:
       security:
         - SanctumBearerAuth: []
-      summary: Get All User 
+      summary: Get All User
       operationId: userGetAll
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/LimitParam'
-        - $ref: '#/components/parameters/SearchParam'
-        - $ref: '#/components/parameters/IsVerifiedParam'
-        - $ref: '#/components/parameters/RoleParam'
-        - $ref: '#/components/parameters/StatusInternshipParam'
-        - $ref: '#/components/parameters/IsMouParam'
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/IsVerifiedParam"
+        - $ref: "#/components/parameters/RoleParam"
+        - $ref: "#/components/parameters/StatusInternshipParam"
+        - $ref: "#/components/parameters/IsMouParam"
       tags:
         - User
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       security:
         - SanctumBearerAuth: []
-      summary: Create User 
+      summary: Create User
       operationId: createUser
       tags:
         - User
@@ -183,14 +183,14 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/UserCreateRequest'
+              $ref: "#/components/schemas/UserCreateRequest"
       responses:
-        '201':
+        "201":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /users/{id}:
     get:
       security:
@@ -200,14 +200,14 @@ paths:
       tags:
         - User
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
     post:
       security:
         - SanctumBearerAuth: []
@@ -216,22 +216,22 @@ paths:
       tags:
         - User
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/UserUpdateRequest'
+              $ref: "#/components/schemas/UserUpdateRequest"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     delete:
       security:
         - SanctumBearerAuth: []
@@ -240,16 +240,16 @@ paths:
       tags:
         - User
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /users/profile:
     get:
       security:
@@ -259,10 +259,10 @@ paths:
       tags:
         - User
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
     post:
       security:
         - SanctumBearerAuth: []
@@ -275,12 +275,12 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/UserUpdateRequest'
+              $ref: "#/components/schemas/UserUpdateRequest"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
     delete:
       security:
         - SanctumBearerAuth: []
@@ -289,10 +289,10 @@ paths:
       tags:
         - User
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /users/student/summary:
     get:
       security:
@@ -302,12 +302,12 @@ paths:
       tags:
         - User
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   # Curriculum Vitae
   /curriculum-vitaes:
@@ -319,16 +319,16 @@ paths:
       tags:
         - Curriculum Vitae
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/LimitParam'
-        - $ref: '#/components/parameters/SearchParam'
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/SearchParam"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       security:
         - SanctumBearerAuth: []
@@ -341,14 +341,14 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/CurriculumVitaeCreateRequest'
+              $ref: "#/components/schemas/CurriculumVitaeCreateRequest"
       responses:
-        '201':
+        "201":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /curriculum-vitaes/{id}:
     get:
       security:
@@ -358,16 +358,16 @@ paths:
       tags:
         - Curriculum Vitae
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       security:
         - SanctumBearerAuth: []
@@ -376,22 +376,22 @@ paths:
       tags:
         - Curriculum Vitae
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/CurriculumVitaeUpdateRequest'
+              $ref: "#/components/schemas/CurriculumVitaeUpdateRequest"
       responses:
-        '200':  
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     delete:
       security:
         - SanctumBearerAuth: []
@@ -400,16 +400,16 @@ paths:
       tags:
         - Curriculum Vitae
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /curriculum-vitaes/{id}/preview:
     get:
       security:
@@ -419,21 +419,21 @@ paths:
       tags:
         - Curriculum Vitae
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/pdf:
               schema:
                 type: string
                 format: binary
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /curriculum-vitaes/{id}/download:
     get:
       security:
@@ -443,21 +443,21 @@ paths:
       tags:
         - Curriculum Vitae
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/pdf:
               schema:
                 type: string
                 format: binary
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   #Internship Application
   /internship-applications:
@@ -469,15 +469,15 @@ paths:
       tags:
         - Internship Application
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/LimitParam'
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       security:
         - SanctumBearerAuth: []
@@ -505,12 +505,12 @@ paths:
                 cover_letter:
                   type: string
       responses:
-        '201':
+        "201":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'         
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /internship-applications/{id}:
     patch:
       security:
@@ -518,9 +518,9 @@ paths:
       summary: Update an internship application by ID
       operationId: updateInternshipApplicationById
       tags:
-        -  Internship Application
+        - Internship Application
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
@@ -539,14 +539,14 @@ paths:
                 message_rejected:
                   type: string
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     delete:
       security:
         - SanctumBearerAuth: []
@@ -555,16 +555,16 @@ paths:
       tags:
         - Internship Application
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /internship-applications/count:
     get:
       security:
@@ -574,12 +574,12 @@ paths:
       tags:
         - Internship Application
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   # Job Opening
   /job-openings:
@@ -591,21 +591,21 @@ paths:
       tags:
         - Job Opening
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/LimitParam'
-        - $ref: '#/components/parameters/SearchParam'
-        - $ref: '#/components/parameters/ProvinceIdParam'
-        - $ref: '#/components/parameters/CityRegencyIdParam'
-        - $ref: '#/components/parameters/TypeOfEducationParam'
-        - $ref: '#/components/parameters/FieldIdParam'
-        - $ref: '#/components/parameters/DurationIdParam'  
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/ProvinceIdParam"
+        - $ref: "#/components/parameters/CityRegencyIdParam"
+        - $ref: "#/components/parameters/TypeOfEducationParam"
+        - $ref: "#/components/parameters/FieldIdParam"
+        - $ref: "#/components/parameters/DurationIdParam"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       security:
         - SanctumBearerAuth: []
@@ -660,14 +660,14 @@ paths:
                 is_available:
                   type: boolean
       responses:
-        '201':
+        "201":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /job-openings/{id}:
     get:
       security:
@@ -677,16 +677,16 @@ paths:
       tags:
         - Job Opening
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     patch:
       security:
         - SanctumBearerAuth: []
@@ -732,14 +732,14 @@ paths:
                   type: boolean
 
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     delete:
       security:
         - SanctumBearerAuth: []
@@ -748,16 +748,16 @@ paths:
       tags:
         - Job Opening
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /job-openings/count:
     get:
       security:
@@ -767,14 +767,14 @@ paths:
       tags:
         - Job Opening
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   # Save Job Opening
   /save-job-openings:
@@ -786,15 +786,15 @@ paths:
       tags:
         - Save Job Opening
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/LimitParam'
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       security:
         - SanctumBearerAuth: []
@@ -813,12 +813,12 @@ paths:
                   type: string
                   format: uuid
       responses:
-        '201':
+        "201":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   # Task
   /tasks:
@@ -830,53 +830,53 @@ paths:
       tags:
         - Task
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/LimitParam'
-        - $ref: '#/components/parameters/SearchParam'
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/SearchParam"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
-        security:
-          - SanctumBearerAuth: []
-        summary: Create a new task
-        operationId: createTask
-        tags:
-          - Task
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - internship_id
-                  - title
-                  - description
-                  - due_date
-                properties:
-                  internship_id:
-                    type: string
-                    format: uuid
-                  title:
-                    type: string
-                    maxLength: 255
-                  description:
-                    type: string
-                  due_date:
-                    type: string
-                    format: date
-        responses:
-          '201':
-            description: Created
-          '401':
-            $ref: '#/components/responses/Unauthorized'
-          '403':
-            $ref: '#/components/responses/Forbidden'
+      security:
+        - SanctumBearerAuth: []
+      summary: Create a new task
+      operationId: createTask
+      tags:
+        - Task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - internship_id
+                - title
+                - description
+                - due_date
+              properties:
+                internship_id:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                  maxLength: 255
+                description:
+                  type: string
+                due_date:
+                  type: string
+                  format: date
+      responses:
+        "201":
+          description: Created
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /tasks/{id}:
     get:
       security:
@@ -886,16 +886,16 @@ paths:
       tags:
         - Task
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     patch:
       security:
         - SanctumBearerAuth: []
@@ -904,7 +904,7 @@ paths:
       tags:
         - Task
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
@@ -922,14 +922,14 @@ paths:
                     - completed
                     - cancelled
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     delete:
       security:
         - SanctumBearerAuth: []
@@ -938,16 +938,16 @@ paths:
       tags:
         - Task
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   # Report Task
   /report-tasks/{id}:
@@ -959,16 +959,16 @@ paths:
       tags:
         - Report Task
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       security:
         - SanctumBearerAuth: []
@@ -977,7 +977,7 @@ paths:
       tags:
         - Report Task
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
@@ -990,14 +990,14 @@ paths:
                 message:
                   type: string
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   # Feedback
   /feedbacks:
@@ -1009,16 +1009,16 @@ paths:
       tags:
         - Feedback
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/LimitParam'
-        - $ref: '#/components/parameters/SearchParam'
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/SearchParam"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       security:
         - SanctumBearerAuth: []
@@ -1031,15 +1031,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FeedbackCreateRequest'
+              $ref: "#/components/schemas/FeedbackCreateRequest"
       responses:
-        '201':
+        "201":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  /feedbacks/{id}:  
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /feedbacks/{id}:
     delete:
       security:
         - SanctumBearerAuth: []
@@ -1048,12 +1048,12 @@ paths:
       tags:
         - Feedback
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "404":
+          $ref: "#/components/responses/NotFound"
   /feedbacks/check:
     get:
       security:
@@ -1070,12 +1070,12 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /feedbacks/rating:
     get:
       security:
@@ -1085,12 +1085,12 @@ paths:
       tags:
         - Feedback
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   # Certificate
   /certificates:
@@ -1102,15 +1102,15 @@ paths:
       tags:
         - Certificate
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/LimitParam'
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /certificates/{id}/preview:
     get:
       security:
@@ -1120,21 +1120,21 @@ paths:
       tags:
         - Certificate
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/pdf:
               schema:
                 type: string
                 format: binary
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /certificates/{id}/download:
     get:
       security:
@@ -1144,22 +1144,22 @@ paths:
       tags:
         - Certificate
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/pdf:
               schema:
                 type: string
                 format: binary
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   # Company
   /companies/count:
     get:
@@ -1170,7 +1170,7 @@ paths:
       tags:
         - Company
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -1179,10 +1179,10 @@ paths:
                 properties:
                   data:
                     type: integer
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   # Sector
   /sectors:
@@ -1194,13 +1194,13 @@ paths:
       tags:
         - Sector
       parameters:
-        - $ref: '#/components/parameters/SearchParam'
-        - $ref: '#/components/parameters/IsAcceptedParam'
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/IsAcceptedParam"
       responses:
-        '200':
+        "200":
           description: OK
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       security:
         - SanctumBearerAuth: []
@@ -1213,14 +1213,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SectorCreateRequest'
+              $ref: "#/components/schemas/SectorCreateRequest"
       responses:
-        '201':
+        "201":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /sectors/{id}:
     patch:
       security:
@@ -1230,7 +1230,7 @@ paths:
       tags:
         - Sector
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
@@ -1243,14 +1243,14 @@ paths:
                 is_accepted:
                   type: boolean
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     delete:
       security:
         - SanctumBearerAuth: []
@@ -1259,17 +1259,17 @@ paths:
       tags:
         - Sector
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   # Province
   /provinces:
     get:
@@ -1280,13 +1280,13 @@ paths:
       tags:
         - Province
       parameters:
-        - $ref: '#/components/parameters/SearchParam'
-        - $ref: '#/components/parameters/IsAcceptedParam'
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/IsAcceptedParam"
       responses:
-        '200':
+        "200":
           description: OK
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       security:
         - SanctumBearerAuth: []
@@ -1299,14 +1299,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProvinceCreateRequest'
+              $ref: "#/components/schemas/ProvinceCreateRequest"
       responses:
-        '201':
+        "201":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /provinces/{id}:
     patch:
       security:
@@ -1316,22 +1316,22 @@ paths:
       tags:
         - Province
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProvinceUpdateRequest'
+              $ref: "#/components/schemas/ProvinceUpdateRequest"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     delete:
       security:
         - SanctumBearerAuth: []
@@ -1340,16 +1340,16 @@ paths:
       tags:
         - Province
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   # City Regency
   /city-regencies:
@@ -1361,16 +1361,16 @@ paths:
       tags:
         - City Regency
       parameters:
-        - $ref: '#/components/parameters/SearchParam'
-        - $ref: '#/components/parameters/IsAcceptedParam'
-        - $ref: '#/components/parameters/ProvinceIdParam'
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/IsAcceptedParam"
+        - $ref: "#/components/parameters/ProvinceIdParam"
       responses:
-        '200':
+        "200":
           description: OK
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
     post:
       security:
         - SanctumBearerAuth: []
@@ -1383,14 +1383,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CityRegencyCreateRequest'
+              $ref: "#/components/schemas/CityRegencyCreateRequest"
       responses:
-        '201':
+        "201":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /city-regencies/{id}:
     patch:
       security:
@@ -1400,22 +1400,22 @@ paths:
       tags:
         - City Regency
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CityRegencyUpdateRequest'
+              $ref: "#/components/schemas/CityRegencyUpdateRequest"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     delete:
       security:
         - SanctumBearerAuth: []
@@ -1424,16 +1424,16 @@ paths:
       tags:
         - City Regency
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   # Field
   /fields:
@@ -1445,13 +1445,13 @@ paths:
       tags:
         - Field
       parameters:
-        - $ref: '#/components/parameters/SearchParam'
-        - $ref: '#/components/parameters/IsAcceptedParam'
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/IsAcceptedParam"
       responses:
-        '200':
+        "200":
           description: OK
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       security:
         - SanctumBearerAuth: []
@@ -1464,14 +1464,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FieldCreateRequest'
+              $ref: "#/components/schemas/FieldCreateRequest"
       responses:
-        '201':
+        "201":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /fields/{id}:
     patch:
       security:
@@ -1481,41 +1481,41 @@ paths:
       tags:
         - Field
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FieldUpdateRequest'
+              $ref: "#/components/schemas/FieldUpdateRequest"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     delete:
       security:
         - SanctumBearerAuth: []
       summary: Delete a field
       operationId: deleteField
-      tags:   
-        - Field 
+      tags:
+        - Field
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   # Duration
   /durations:
     get:
@@ -1526,14 +1526,14 @@ paths:
       tags:
         - Duration
       parameters:
-        - $ref: '#/components/parameters/IsAcceptedParam'
+        - $ref: "#/components/parameters/IsAcceptedParam"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       security:
         - SanctumBearerAuth: []
@@ -1556,20 +1556,20 @@ paths:
                   minimum: 1
                 duration_unit:
                   type: string
-                  enum: 
-                    - day 
-                    - month 
+                  enum:
+                    - day
+                    - month
                     - year
                 is_accepted:
                   type: boolean
                   example: true
       responses:
-        '201':
+        "201":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /durations/{id}:
     patch:
       security:
@@ -1579,7 +1579,7 @@ paths:
       tags:
         - Duration
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
@@ -1592,22 +1592,22 @@ paths:
                   minimum: 1
                 duration_unit:
                   type: string
-                  enum: 
-                    - day 
-                    - month 
+                  enum:
+                    - day
+                    - month
                     - year
                 is_accepted:
                   type: boolean
                   example: true
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     delete:
       security:
         - SanctumBearerAuth: []
@@ -1616,16 +1616,16 @@ paths:
       tags:
         - Duration
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   # Student
   /students/count:
@@ -1637,7 +1637,7 @@ paths:
       tags:
         - Student
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -1646,10 +1646,10 @@ paths:
                 properties:
                   data:
                     type: integer
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   # Internship
   /internships:
@@ -1661,16 +1661,16 @@ paths:
       tags:
         - Internship
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/LimitParam'
-        - $ref: '#/components/parameters/SearchParam'
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/SearchParam"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /internships/{id}:
     patch:
       security:
@@ -1680,7 +1680,7 @@ paths:
       tags:
         - Internship
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
@@ -1700,14 +1700,14 @@ paths:
                   type: string
                   format: uuid
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     delete:
       security:
         - SanctumBearerAuth: []
@@ -1716,17 +1716,16 @@ paths:
       tags:
         - Internship
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   # Contact Us
   /contact-us:
@@ -1738,9 +1737,9 @@ paths:
       tags:
         - Contact Us
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/LimitParam'
-        - $ref: '#/components/parameters/SearchParam'
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/SearchParam"
         - name: is_read
           in: query
           required: false
@@ -1749,12 +1748,12 @@ paths:
           schema:
             type: boolean
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'      
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       summary: Create a new contact us message
       operationId: createContactUsMessage
@@ -1782,7 +1781,7 @@ paths:
                 recaptcha_token:
                   type: string
       responses:
-        '201':
+        "201":
           description: OK
   /contact-us/{id}:
     patch:
@@ -1791,27 +1790,27 @@ paths:
       summary: Update a contact us message
       operationId: updateContactUsMessage
       tags:
-         - Contact Us
+        - Contact Us
       parameters:
-         - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
-           application/json:
+          application/json:
             schema:
               type: object
               properties:
                 is_read:
                   type: boolean
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     delete:
       security:
         - SanctumBearerAuth: []
@@ -1820,16 +1819,16 @@ paths:
       tags:
         - Contact Us
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   # Mou
   /mous:
@@ -1877,12 +1876,12 @@ paths:
                 mou_number:
                   type: string
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /mous/{id}:
     post:
       security:
@@ -1892,7 +1891,7 @@ paths:
       tags:
         - Mou
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
@@ -1900,7 +1899,7 @@ paths:
             schema:
               type: object
               required:
-               - _method
+                - _method
               properties:
                 _method:
                   type: string
@@ -1925,14 +1924,14 @@ paths:
                 mou_number:
                   type: string
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
     delete:
       security:
         - SanctumBearerAuth: []
@@ -1941,16 +1940,16 @@ paths:
       tags:
         - Mou
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   # Role
   /roles:
@@ -1962,15 +1961,15 @@ paths:
       tags:
         - Role
       parameters:
-        - $ref: '#/components/parameters/SearchParam'
-        - $ref: '#/components/parameters/IsAcceptedParam'
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/IsAcceptedParam"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       security:
         - SanctumBearerAuth: []
@@ -1990,14 +1989,14 @@ paths:
                 name:
                   type: string
                 is_accepted:
-                  type: boolean            
+                  type: boolean
       responses:
-        '201':
+        "201":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /roles/{id}:
     patch:
       security:
@@ -2007,7 +2006,7 @@ paths:
       tags:
         - Role
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
@@ -2020,14 +2019,14 @@ paths:
                 is_accepted:
                   type: boolean
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     delete:
       security:
         - SanctumBearerAuth: []
@@ -2036,23 +2035,16 @@ paths:
       tags:
         - Role
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        '200':
+        "200":
           description: OK
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-
-
-
-
-
-
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
 components:
   securitySchemes:
@@ -2079,7 +2071,7 @@ components:
       schema:
         type: integer
         example: 1
-        minimum: 1   
+        minimum: 1
     LimitParam:
       name: limit
       in: query
@@ -2225,7 +2217,6 @@ components:
                 example: "Forbidden."
 
   schemas:
-    
     # User
     UserRegisterRequest:
       type: object
@@ -2249,7 +2240,7 @@ components:
           type: string
         role:
           type: string
-          enum: 
+          enum:
             - "student"
             - "school"
             - "company"
@@ -2286,11 +2277,11 @@ components:
       properties:
         _method:
           type: string
-          enum: 
+          enum:
             - "PATCH"
         username:
           type: string
-          pattern: '^[a-zA-Z0-9._]+$'
+          pattern: "^[a-zA-Z0-9._]+$"
         email:
           type: string
           format: email
@@ -2346,7 +2337,7 @@ components:
           type: string
         role:
           type: string
-          enum: 
+          enum:
             - "student"
             - "school"
             - "company"
@@ -2419,7 +2410,7 @@ components:
           type: string
         is_accepted:
           type: boolean
-          
+
     # Field
     FieldCreateRequest:
       type: object
@@ -2438,7 +2429,6 @@ components:
         is_accepted:
           type: boolean
 
-   
     # Internship
 
     # Company
@@ -2462,7 +2452,7 @@ components:
       properties:
         _method:
           type: string
-          enum: 
+          enum:
             - "PATCH"
         name:
           type: string

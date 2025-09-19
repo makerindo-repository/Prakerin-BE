@@ -40,7 +40,8 @@ class UserUpdateRequest extends FormRequest
             'website' => 'nullable|url|max:255',
             'npsn' => 'nullable|string|max:8',
             'accreditation' => 'nullable|in:A,B,C',
-            'status' => 'nullable|in:negeri,swasta'
+            'status' => 'nullable|in:negeri,swasta',
+            'is_verified' => 'nullable|boolean',
         ];
 
     }

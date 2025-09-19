@@ -138,15 +138,16 @@ class InternshipApplicationController extends Controller
 
         $user = $request->user();
 
-        $findIntershipApplicationWithSameStudent = InternshipApplication::where("job_opening_id", $data['job_opening_id'])
+        $findIntershipApplicationWithSameStudentCount = InternshipApplication::where("job_opening_id", $data['job_opening_id'])
             ->whereHas('curriculumVitae.student', function ($query) use ($user) {
                 $query->where('id', $user->student->id);
             })
-            ->get();
+            ->count();
 
-        if ($findIntershipApplicationWithSameStudent !== 0) {
+        if ($findIntershipApplicationWithSameStudentCount !== 0) {
             throw new HttpResponseException(response()->json([
                 'errors' => "Anda tidak bisa melamar 2 kali di lowonngan magang yang sama!",
+                's' => $findIntershipApplicationWithSameStudentCount,
             ], 400));
         }
 
@@ -258,6 +259,9 @@ class InternshipApplicationController extends Controller
         }
 
         $data = $validator->validated();
+
+        $internshipApplication->curriculumVitae->student->status = "ongoing";
+        $internshipApplication->curriculumVitae->student->save();
 
         $internshipApplication->update($data);
 

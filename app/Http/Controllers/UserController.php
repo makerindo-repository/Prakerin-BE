@@ -64,42 +64,31 @@ class UserController extends Controller
                 'student.curriculumVitae.internshipApplications.jobOpening.company.cityRegency.province'
             )
                 ->where('role', 'student')
-                ->whereHas('student', function ($q) use ($search) {
-                    $q->where('is_verified', true);
+                ->whereHas('student', function ($q) use ($search, $isVerified) {
+                    $q->where('is_verified', $isVerified);
                     $q->where('name', 'like', "%$search%");
                     $q->where('school_id', Auth::guard('sanctum')->user()->school->id);
                 })
-                ->when(in_array($status, ['ongoing', 'completed']), function ($q) use ($status) {
-                    $q->whereHas('student.curriculumVitae.internshipApplications', function ($q) use ($status) {
-                        $q->whereHas('internship', function ($q) use ($status) {
-                            $q->where('id', function ($sub) {
-                                $sub->selectRaw('MAX(id)')
-                                    ->from('internships as i2')
-                                    ->whereColumn('i2.internship_application_id', 'internships.internship_application_id');
-                            });
-
-                            if ($status === 'ongoing') {
-                                $q->where('is_completed', false);
-                            } elseif ($status === 'completed') {
-                                $q->where('is_completed', true);
-                            }
-                        });
+                ->when(in_array($status, ['ongoing', 'completed', 'not_started']), function ($query) use ($status) {
+                    $query->whereHas('student', function ($q) use ($status) {
+                        $q->where('status', $status);
                     });
-                })
-                ->when($status === 'not_started', function ($q) {
-                    $q->whereDoesntHave('student.curriculumVitae.internshipApplications.internship');
                 })
                 ->paginate($limit);
 
-            $users->getCollection()->transform(function ($user) {
+
+            $users->getCollection()->transform(function ($user) use ($isVerified) {
+
                 return [
                     'id' => $user->id,
                     'username' => $user->username,
                     'email' => $user->email,
                     'role' => $user->role,
+                    'photo_profile' => $user->photo_profile,
                     'student' => [
                         'id' => $user->student?->id,
                         'name' => $user->student?->name,
+                        'class' => $user->student?->class,
                         'company' => $user->student?->curriculumVitae
                             ->flatMap->internshipApplications
                             ->map->jobOpening
@@ -114,8 +103,13 @@ class UserController extends Controller
                             })
                             ->values(),
                     ],
+                    'major' => [
+                        'name' => $user->student->major?->name
+                    ],
+                    'status' => $user->student->status, // ✅ tambahin status magang
                 ];
             });
+
 
 
             return response()->json($users, 200);
@@ -133,22 +127,22 @@ class UserController extends Controller
 
                     if ($isMou === true) {
                         $q->whereHas('mous', function ($q2) {
-                            if (!isset(Auth::guard('sanctum')->user()->school()->id)) {
+                            if (Auth::guard('sanctum')->user()->tokenCan('student-access')) {
                                 $q2->where('school_id', Auth::guard('sanctum')->user()->student->school_id)
-                                    ->where('status', 'active');
+                                    ->where('status', 'accepted');
                             } else {
                                 $q2->where('school_id', Auth::guard('sanctum')->user()->school->id)
-                                    ->where('status', 'active');
+                                    ->where('status', 'accepted');
                             }
                         });
                     } elseif ($isMou === false) {
                         $q->whereDoesntHave('mous', function ($q2) {
-                            if (!isset(Auth::guard('sanctum')->user()->school()->id)) {
+                            if (Auth::guard('sanctum')->user()->tokenCan('student-access')) {
                                 $q2->where('school_id', Auth::guard('sanctum')->user()->student->school_id)
-                                    ->where('status', 'active');
+                                    ->where('status', 'accepted');
                             } else {
                                 $q2->where('school_id', Auth::guard('sanctum')->user()->school->id)
-                                    ->where('status', 'active');
+                                    ->where('status', 'accepted');
                             }
                         });
                     }
@@ -370,6 +364,10 @@ class UserController extends Controller
                 'city_regency' => $user->school->cityRegency->makeHidden(['province']),
                 'province' => $user->school->cityRegency->province,
             ];
+        } else if ($user->role === 'student') {
+            $user->student->load([
+                'major',
+            ]);
         }
 
         return response()->json([
@@ -385,7 +383,7 @@ class UserController extends Controller
         $user = User::with(['student', 'school', 'company'])->find($id);
         if (!$user) {
             throw new HttpResponseException(response([
-                "errors" => "User not found."
+                "errors" => "Pengguna tidak ditemukan."
             ], 404));
         }
 
@@ -393,6 +391,32 @@ class UserController extends Controller
 
 
         $data = $validator->validated();
+
+        if ($request->user()->tokenCan('school-access')) {
+            if ($user->student === null) {
+                throw new HttpResponseException(response([
+                    "errors" => "Siswa tidak ditemukan."
+                ], 404));
+            }
+
+            $isVerified = $data['is_verified'];
+
+            if ($isVerified) {
+                $user->student->is_verified = true;
+                $user->student->save();
+
+                return response()->json([
+                    'data' => true,
+                ], 200);
+            } else {
+                $user->student->is_verified = false;
+                $user->student->save();
+
+                return response()->json([
+                    'data' => true,
+                ], 200);
+            }
+        }
 
         $user->username = $data['username'] ?? $user->username;
         $user->email = $data['email'] ?? $user->email;
@@ -731,11 +755,12 @@ class UserController extends Controller
             })
             ->count();
 
-        $mouCount = Mou::when($request->user()->tokenCan("company-access"), function ($query) use ($request) {
-            $query->where("company_id", $request->user()->company->id);
-        })
+        $mouCount = Mou::
+            when($request->user()->tokenCan("company-access"), function ($query) use ($request) {
+                $query->where("company_id", $request->user()->company->id);
+            })
             ->when($request->user()->tokenCan("school-access"), function ($query) use ($request) {
-                $query->where("school_id", $request->user()->school()->id);
+                $query->where("school_id", $request->user()->school->id);
             })
             ->when($request->user()->tokenCan("student-access"), function ($query) use ($request) {
                 $query->where("school_id", $request->user()->student->school_id);
@@ -749,18 +774,25 @@ class UserController extends Controller
         // total semua student
         $studentCount = $studentQuery->count();
 
+
+
+
         // student tanpa internship
         $totalStudentWithoutInternship = $studentQuery->doesntHave('curriculumVitae.internshipApplications.internship')->count();
 
         // student dengan internship tapi belum selesai
-        $totalStudentInternship = $studentQuery->whereHas('curriculumVitae.internshipApplications.internship', function ($q) {
-            $q->where('is_completed', false);
-        })->count();
+        $totalStudentInternship = Student::where([
+            'school_id' => $request->user()?->school?->id,
+            'is_verified' => true,
+            'status' => 'ongoing'
+        ])->count();
 
         // student dengan internship selesai
-        $totalStudentWithInternship = $studentQuery->whereHas('curriculumVitae.internshipApplications.internship', function ($q) {
-            $q->where('is_completed', true);
-        })->count();
+        $totalStudentWithInternship = Student::where([
+            'school_id' => $request->user()?->school?->id,
+            'is_verified' => true,
+            'status' => 'completed'
+        ])->count();
 
         return response()->json([
             'data' => [

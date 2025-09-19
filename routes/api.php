@@ -32,7 +32,7 @@ Route::get('/', function () {
 });
 
 
-Route::get('/docs/openapi.yaml', function () {
+Route::get('/docs/openap.yaml', function () {
     $path = storage_path('docs/openapi.yaml');
     if (!File::exists($path)) {
         abort(404);
@@ -80,8 +80,9 @@ Route::prefix('v1')->group(function () {
                 Route::delete('/profile', 'deleteProfile');
                 Route::get("/count", "count");
 
+
+                Route::patch('/{id}', 'update');
                 Route::middleware('abilities:admin-access')->group(function () {
-                    Route::patch('/{id}', 'update');
                     Route::delete('/{id}', 'destroy');
                 });
 

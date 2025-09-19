@@ -17,6 +17,7 @@ return new class extends Migration {
             $table->uuid('major_id')->nullable();
 
             $table->string('name');
+            $table->enum('status', ['not_started', 'ongoing', 'completed'])->default('not_started');
             $table->date('date_of_birth')->nullable();
             $table->enum('gender', ['male', 'female'])->nullable();
             $table->string('phone_number')->nullable();
