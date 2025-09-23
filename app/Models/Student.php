@@ -69,4 +69,9 @@ class Student extends Model
     {
         return $this->belongsTo(Major::class);
     }
+
+    public function internships()
+    {
+        return $this->hasMany(Internship::class);
+    }
 }

@@ -41,7 +41,7 @@ class UserUpdateRequest extends FormRequest
             'npsn' => 'nullable|string|max:8',
             'accreditation' => 'nullable|in:A,B,C',
             'status' => 'nullable|in:negeri,swasta',
-            'is_verified' => 'nullable|boolean',
+            'is_verified' => 'nullable|booleany',
         ];
 
     }

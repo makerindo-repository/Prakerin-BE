@@ -17,6 +17,7 @@ return new class extends Migration {
             $table->text('description');
             $table->enum('status', ['pending', 'in_progress', 'completed', 'cancelled'])->default('pending');
             $table->date('due_date');
+            $table->string('link');
             $table->foreign('internship_id')->references('id')->on('internships')->onDelete('cascade');
             $table->timestamps();
         });

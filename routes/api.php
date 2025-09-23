@@ -21,9 +21,10 @@ use App\Http\Controllers\SectorController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\HomepageController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
+Route::get('/docs', function () {
     $path = public_path('swagger/index.html');
     if (!File::exists($path)) {
         abort(404);
@@ -32,7 +33,7 @@ Route::get('/', function () {
 });
 
 
-Route::get('/docs/openap.yaml', function () {
+Route::get('/docs/openapi.yaml', function () {
     $path = storage_path('docs/openapi.yaml');
     if (!File::exists($path)) {
         abort(404);
@@ -44,6 +45,16 @@ Route::get('/docs/openap.yaml', function () {
 
 
 Route::prefix('v1')->group(function () {
+
+    // Route::
+
+    //Hompage
+    Route::prefix('/homepage')
+        ->controller(HomepageController::class)
+        ->group(function() {
+            Route::get('/', 'index');
+            
+        });
 
     //Contact us    
     Route::prefix('/contact-us')

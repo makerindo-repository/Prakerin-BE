@@ -23,6 +23,7 @@ use App\Models\Student;
 use App\Models\Task;
 use App\Models\Test;
 use App\Models\User;
+use App\Models\Hompage;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Queue\Jobs\Job;
@@ -42,6 +43,114 @@ class DatabaseSeeder extends Seeder
         Field::factory(10)->create();
         Duration::factory(5)->create();
 
+        $homPage = [
+            [
+                'name' => 'title-landing-1',
+                'value' => 'Raih Pengalaman Nyata,Bangun Karier Impianmu!'
+            ],
+            [
+                'name' => 'desc-landing-1',
+                'value' => 'Raih Pengalaman Nyata,Bangun Karier Impianmu!'
+            ],
+            [
+                'name' => 'title-landing-2',
+                'value' => 'Kenapa Harus Magang Melalui Prakerin?'
+            ],
+            [
+                'name' => 'subtitle-landing-2',
+                'value' => 'Prakerin hadir sebagai solusi terpercaya untuk menjembatani talenta muda dengan perusahaan berkualitas.'
+            ],
+            [
+                'name' => 'title-content-landing-2-1',
+                'value' => 'Magang Terverifikasi'
+            ],
+            [
+                'name' => 'desc-content-landing-2-1',
+                'value' => 'Semua lowongan magang di Prakerin sudah melalui proses verifikasi.'
+            ],
+            [
+                'name' => 'icon-content-landing-2-1',
+                'value' => 'CheckCircle2'
+            ],
+            [
+                'name' => 'title-content-landing-2-2',
+                'value' => 'Pendampingan Profesional'
+            ],
+            [
+                'name' => 'desc-content-landing-2-2',
+                'value' => 'Prakerin mendampingi setiap langkahmu agar pengalaman magang berjalan lancar.'
+            ],
+            [
+                'name' => 'icon-content-landing-2-2',
+                'value' => 'Users2'
+            ],
+            [
+                'name' => 'title-content-landing-2-3',
+                'value' => 'Bangun Portofolio Nyata'
+            ],
+            [
+                'name' => 'desc-content-landing-2-3',
+                'value' => 'Dapatkan pengalaman kerja yang aktual industri dan perkuat rekam jejak profesional.'
+            ],
+            [
+                'name' => 'icon-content-landing-2-3',
+                'value' => 'Inbox'
+            ],
+            [
+                'name' => 'title-landing-3',
+                'value' => 'Mitra'
+            ],
+            [
+                'name' => 'subtitle-landing-3',
+                'value' => 'Wujudkan magang di perusahaan impian anda!'
+            ],
+            [
+                'name' => 'title-landing-4',
+                'value' => 'Feedback Siswa/Mahasiswa'
+            ],
+            [
+                'name' => 'subtitle-landing-4',
+                'value' => 'Apa kata mereka yang sudah magang melalui Prakerin?'
+            ],
+            [
+                'name' => 'title-landing-5',
+                'value' => "Let's Grow Together!",
+            ],
+            [
+                'name' => 'subtitle-landing-5',
+                'value' => 'Mulai wujudkan impianmu! Prakerin siap mendukung langkah kariermu.'
+            ],
+            [
+                'name' => 'title-landing-6',
+                'value' => 'Sering di tanyakan',
+            ],
+            [
+                'name' => 'subtitle-landing-6',
+                'value' => 'Punya ide, pertanyaan, atau sekadar ingin menyapa seputar magang? Berikut adalah pertanyaan yang sering diajukan:'
+            ],
+            [
+                'name' => 'title-landing-7',
+                'value' => 'Hubungi Kami'
+            ],
+            [
+                'name' => 'subtitle-landing-7',
+                'value' => 'Punya ide, pertanyaan, atau sekadar ingin menyapa seputar magang? Kami senang mendengarnya! Silakan hubungi kami kapan saja.'
+            ],
+            [
+                'name' => 'title-about-1',
+                'value' => '[Belum Di isi]',
+            ],
+            [
+                'name' => 'desc-about-1',
+                'value' => '[Belum Di isi isi]'
+            ],
+        ];
+
+        foreach ($homPage as $item) {
+            Hompage::create(
+                $item
+            );
+        }
 
 
         User::factory()->create([

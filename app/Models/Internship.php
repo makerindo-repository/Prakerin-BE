@@ -22,6 +22,8 @@ class Internship extends Model
         'end_date',
         'is_completed',
         'role',
+        'student_id',
+        'company_id',
     ];
 
     protected static function booted()
@@ -31,6 +33,16 @@ class Internship extends Model
                 $user->id = (string) Str::uuid();
             }
         });
+    }
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 
     public function internshipApplication()

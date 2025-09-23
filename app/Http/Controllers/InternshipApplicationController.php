@@ -183,6 +183,7 @@ class InternshipApplicationController extends Controller
 
         $internshipApplication = [
             'cover_letter' => $internshipApplication->cover_letter,
+            'status' => $internshipApplication->status,
             'student' => $internshipApplication->curriculumVitae->student->makeHidden(['user']),
             'user' => $internshipApplication->curriculumVitae->student->user,
             'major' => $internshipApplication->curriculumVitae->student->major,
@@ -247,6 +248,8 @@ class InternshipApplicationController extends Controller
             } else if ($internshipApplication->jobOpening->duration->duration_unit === "year") {
                 $internship->end_date = now()->addYears($internshipApplication->jobOpening->duration->duration_value);
             }
+            $internship->student_id = $internshipApplication->curriculumVitae->student_id;
+            $internship->company_id = $request->user()->company->id;
 
             $internship->save();
         }

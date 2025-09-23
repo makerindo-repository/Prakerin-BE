@@ -14,6 +14,8 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->uuid('internship_application_id');
             $table->uuid('role_id')->nullable();
+            $table->foreignUuid('student_id')->references('id')->on('students')->onDelete('cascade');
+            $table->foreignUuid('company_id')->references('id')->on('companies')->onDelete('cascade');
 
             $table->date('start_date');
             $table->date('end_date');

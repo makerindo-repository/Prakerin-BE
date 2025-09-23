@@ -8,7 +8,7 @@ info:
     email: ranggadendi6@gmail.com
 
 servers:
-  - url: http://192.168.1.27:8000/api/v1
+  - url: http://192.168.1.15:8000/api/v1
     description: Local development server
 
 tags:
