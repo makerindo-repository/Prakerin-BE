@@ -13,6 +13,7 @@ use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
 use Auth;
+use DB;
 use Http;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -20,12 +21,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
         $isVerified = filter_var($request->query('is_verified', true), FILTER_VALIDATE_BOOLEAN);
@@ -259,10 +258,6 @@ class UserController extends Controller
             ], 403));
         }
     }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(UserCreateRequest $request)
     {
 
@@ -322,11 +317,7 @@ class UserController extends Controller
             'data' => $user->load('student', 'school', 'company')
         ], 201);
     }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(string $id, Request $request)
     {
         $user = User::with([
             'student' => fn($q) => $q->where('is_verified', true),
@@ -393,19 +384,37 @@ class UserController extends Controller
                 'province' => $user->school->cityRegency->province,
             ];
         } else if ($user->role === 'student') {
-            $user->student->load([
-                'major',
-            ]);
+            if ($user->student->status === 'ongoing' && isset($request->user()->company->id)) {
+                $user->student->load([
+                    'internships' => function ($q) use ($request) {
+                        $q->where('is_completed', false)
+                            ->where('company_id', $request->user()->company->id)
+                            ->with('company.user', 'company.cityRegency.province');
+                    },
+                ]);
+
+                $user = [
+                    'id' => $user->id,
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'photo_profile' => $user->photo_profile,
+                    'student' => $user->student,
+                    'company' => $user->student->internships->first()?->company?->makeHidden(['cityRegency', 'mous']),
+                    'city_regency' => $user->student->internships->first()?->company?->cityRegency?->makeHidden(['province']),
+                    'province' => $user->student->internships->first()?->company?->cityRegency?->province,
+                    'internship' => $user->student->internships->first(),
+                ];
+            } else {
+                $user->student->load([
+                    'major',
+                ]);
+            }
         }
 
         return response()->json([
             'data' => $user,
         ], 200);
     }
-
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, UserUpdateRequest $userUpdateRequest, string $id)
     {
         $user = User::with(['student', 'school', 'company'])->find($id);
@@ -496,10 +505,6 @@ class UserController extends Controller
         ], 200);
 
     }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
         $user = User::find($id);
@@ -521,7 +526,6 @@ class UserController extends Controller
             'message' => 'User deleted successfully',
         ], 200);
     }
-
     public function register(UserRegisterRequest $request, User $user)
     {
         $data = $request->validated();
@@ -590,7 +594,6 @@ class UserController extends Controller
 
         return response()->json(['token' => $token, 'role' => $user->role], 201);
     }
-
     public function login(UserLoginRequest $request)
     {
         $data = $request->validated();
@@ -637,13 +640,11 @@ class UserController extends Controller
 
         return response()->json(['token' => $token, 'role' => $user->role], 200);
     }
-
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Logout success'], 200);
     }
-
     public function profile(Request $request)
     {
         $user = $request->user()->with(['student', 'school', 'company'])->find($request->user()->id);
@@ -673,7 +674,6 @@ class UserController extends Controller
             'data' => $user,
         ], 200);
     }
-
     public function updateProfile(UserUpdateProfileRequest $request)
     {
 
@@ -750,7 +750,6 @@ class UserController extends Controller
             'data' => $user->load(['student', 'school', 'company']),
         ], 200);
     }
-
     public function deleteProfile(Request $request)
     {
         $user = $request->user();
@@ -768,7 +767,6 @@ class UserController extends Controller
         ], 200);
 
     }
-
     public function count(Request $request)
     {
         $companyCount = User::where('role', 'company')
@@ -834,7 +832,6 @@ class UserController extends Controller
             ],
         ], 200);
     }
-
     public function studentSummary(Request $request)
     {
         $studentQuery = Student::where('school_id', $request->user()?->school?->id)
@@ -866,7 +863,6 @@ class UserController extends Controller
             ],
         ], 200);
     }
-
     public function verifyEmail(Request $request)
     {
         // Middleware "signed" sudah memvalidasi signature & expiry
@@ -893,5 +889,85 @@ class UserController extends Controller
 
         return response()->json(['message' => 'Email berhasil diverifikasi!']);
     }
+    public function importStudentTemplate(Request $request)
+    {
+        $path = Storage::path('/import-template/csv-template.csv');
 
+        return response()->download($path, 'csv-template.csv', [
+            'Content-Type' => 'text/csv'
+        ]);
+    }
+    public function importStudent(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv|max:1024'
+        ]);
+
+        $file = $request->file("file");
+
+        $data = [];
+
+
+        if (($handle = fopen($file->getRealPath(), 'r')) !== false) {
+            $header = fgetcsv($handle, 1000, ',');
+
+            // Validasi header
+            if ($header !== ["username", "nama", "email", "password"]) {
+                throw new HttpResponseException(response([
+                    "errors" => "File csv yang anda masukkan tidak valid!"
+                ], 400));
+            }
+
+            // Baca isi file
+            while (($row = fgetcsv($handle, 1000, ',')) !== false) {
+                $data[] = $row;
+            }
+            fclose($handle);
+        }
+
+        if (empty($data)) {
+            throw new HttpResponseException(response([
+                "errors" => "Data kosong!"
+            ], 400));
+        }
+
+
+        DB::transaction(function () use ($data, $request) {
+            $users = [];
+            $students = [];
+
+            foreach ($data as $row) {
+                [$username, $nama, $email, $password] = $row;
+
+                $userId = (string) Str::uuid();
+                $studentId = (string) Str::uuid();
+
+                $users[] = [
+                    'id' => $userId,
+                    'username' => $username,
+                    'email' => $email,
+                    'role' => 'student',
+                    'password' => $password,
+                ];
+
+                $students[] = [
+                    'id' => $studentId,
+                    'user_id' => $userId,
+                    'school_id' => $request->user()->school->id,
+                    'name' => $nama,
+                    'is_verified' => true,
+                ];
+            }
+
+            // Bulk insert
+            DB::table('users')->insert($users);
+            DB::table('students')->insert($students);
+        });
+
+
+        return response()->json([
+            'data' => true
+        ]);
+
+    }
 }

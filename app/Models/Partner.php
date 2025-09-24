@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 
-class Hompage extends Model
+class Partner extends Model
 {
+    /** @use HasFactory<\Database\Factories\PartnerFactory> */
+    use HasFactory;
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -20,8 +22,10 @@ class Hompage extends Model
     }
 
     protected $fillable = [
-        "name",
-        "value"
+        'id',
+        'name',
+        'icon',
+        'sector'
     ];
 
     protected $hidden = [

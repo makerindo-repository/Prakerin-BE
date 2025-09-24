@@ -51,9 +51,9 @@ Route::prefix('v1')->group(function () {
     //Hompage
     Route::prefix('/homepage')
         ->controller(HomepageController::class)
-        ->group(function() {
+        ->group(function () {
             Route::get('/', 'index');
-            
+
         });
 
     //Contact us    
@@ -99,6 +99,8 @@ Route::prefix('v1')->group(function () {
 
                 Route::middleware('abilities:school-access')->group(function () {
                     Route::get('/student/summary', 'studentSummary');
+                    Route::get('/student/import/template', 'importStudentTemplate');
+                    Route::post('/student/import', 'importStudent');
                 });
 
                 Route::middleware('ability:admin-access,school-access')->group(function () {

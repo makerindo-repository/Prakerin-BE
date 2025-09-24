@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Student;
 use App\Models\Task;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use PHPUnit\Framework\Attributes\Group;
 
 class TaskController extends Controller
 {
@@ -17,8 +19,11 @@ class TaskController extends Controller
         $limit = request()->query('limit', 10);
         $search = request()->query('search', '');
         $status = request()->query('status', '');
+        $userStudentId = $request->query("user_student_id", null);
 
         $user = $request->user();
+
+        $studentId = Student::where('user_id', $userStudentId)->first();
 
         $tasks = Task::
             when(isset($user->student), function ($query) use ($user) {
@@ -26,17 +31,32 @@ class TaskController extends Controller
                     $query->where('student_id', $user->student->id);
                 });
             })
-            ->when(isset($user->company), function ($query) use ($user) {
-                $query->whereHas('internship', function ($query) use ($user) {
+            ->when(isset($user->company), function ($query) use ($user, $studentId) {
+                $query->whereHas('internship', function ($query) use ($user, $studentId) {
                     $query->where('company_id', $user->company->id);
+                    $query->when(isset($studentId), function ($query) use ($studentId) {
+                        $query->where('student_id', $studentId);
+                    });
                 });
             })
             ->where('title', 'like', "%$search%")
             ->when($status === 'pending' || $status === 'in_progress' || $status === 'completed' || $status === 'cancelled', function ($query) use ($status) {
                 $query->where('status', $status);
             })
-            ->select(['id', 'title', 'status', 'due_date'])
+            ->selectRaw("
+                id,
+                title,
+                status,
+                due_date,
+                created_at,
+                CASE 
+                    WHEN status = 'completed' THEN updated_at 
+                    ELSE NULL 
+                END as updated_at
+            ")
             ->paginate($limit);
+
+
 
         return response()->json($tasks);
     }
@@ -118,7 +138,7 @@ class TaskController extends Controller
         $validator = Validator::make($request->all(), [
             'status' => 'required|in:pending,in_progress,completed,cancelled',
         ]);
-
+        
         if ($validator->fails()) {
             throw new HttpResponseException(response()->json([
                 'errors' => $validator->errors()
