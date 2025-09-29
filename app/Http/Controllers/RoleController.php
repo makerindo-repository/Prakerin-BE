@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Role;
+use Auth;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -16,6 +17,7 @@ class RoleController extends Controller
     {
         $isAccepted = filter_var($request->query('is_accepted', true), FILTER_VALIDATE_BOOLEAN);
         $search = $request->query('search', '');
+        $limit = $request->query('limit', 10);
 
         if ($isAccepted === false && !$request->user()?->tokenCan("admin-access")) {
             throw new HttpResponseException(response([
@@ -23,11 +25,28 @@ class RoleController extends Controller
             ], 403));
         }
 
-        $roles = Role::where('is_accepted', $isAccepted)->where('name', "like", "%$search%")->get();
+        if (Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
 
-        return response()->json([
-            'data' => $roles,
-        ], 200);
+            $roles = Role::where('is_accepted', $isAccepted)
+                ->where('name', "like", "%$search%")
+                ->paginate($limit);
+
+            return response()->json(
+                $roles,
+                200
+            );
+
+        } else {
+
+            $roles = Role::where('is_accepted', $isAccepted)
+                ->where('name', "like", "%$search%")
+                ->get();
+
+            return response()->json([
+                'data' => $roles,
+            ], 200);
+        }
+
     }
 
     /**

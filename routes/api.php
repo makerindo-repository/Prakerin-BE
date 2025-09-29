@@ -12,6 +12,7 @@ use App\Http\Controllers\FieldController;
 use App\Http\Controllers\InternshipApplicationController;
 use App\Http\Controllers\InternshipController;
 use App\Http\Controllers\JobOpeningController;
+use App\Http\Controllers\MajorController;
 use App\Http\Controllers\MouController;
 use App\Http\Controllers\ProvinceController;
 use App\Http\Controllers\ReportTaskController;
@@ -20,40 +21,72 @@ use App\Http\Controllers\SaveJobOpeningController;
 use App\Http\Controllers\SectorController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TestController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\HomepageController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/docs', function () {
-    $path = public_path('swagger/index.html');
-    if (!File::exists($path)) {
-        abort(404);
-    }
-    return Response::file($path);
-});
+// Route::get('/docs', function () {
+//     $path = public_path('swagger/index.html');
+//     if (!File::exists($path)) {
+//         abort(404);
+//     }
+//     return Response::file($path);
+// });
 
 
-Route::get('/docs/openapi.yaml', function () {
-    $path = storage_path('docs/openapi.yaml');
-    if (!File::exists($path)) {
-        abort(404);
-    }
-    return Response::file($path);
-});
+// Route::get('/docs/openapi.yaml', function () {
+//     $path = storage_path('docs/openapi.yaml');
+//     if (!File::exists($path)) {
+//         abort(404);
+//     }
+//     return Response::file($path);
+// });
 
 
 
 
 Route::prefix('v1')->group(function () {
 
-    // Route::
+    // Test
+    Route::prefix('/tests')
+        ->controller(TestController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
+            Route::middleware('abilities:company-access')->group(function () {
+                Route::get('/', 'index');
+                Route::post('/', 'store');
+                Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+            });
+        });
+
+    // Majors
+    Route::prefix('/majors')
+        ->controller(MajorController::class)
+        ->group(function () {
+            Route::get('/', 'index');
+
+            Route::middleware('auth:sanctum')->group(function () {
+                Route::middleware('abilities:admin-access')->group(function () {
+                    Route::post('/', 'store');
+                    Route::patch('/{id}', 'update');
+                    Route::delete('/{id}', 'destroy');
+                });
+            });
+        });
 
     //Hompage
-    Route::prefix('/homepage')
+    Route::prefix('/homepages')
         ->controller(HomepageController::class)
         ->group(function () {
             Route::get('/', 'index');
 
+            Route::middleware('auth:sanctum')->group(function () {
+                Route::middleware('abilities:admin-access')->group(function () {
+                    Route::patch('/', 'update');
+                });
+            });
         });
 
     //Contact us    

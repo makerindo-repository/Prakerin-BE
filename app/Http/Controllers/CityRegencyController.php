@@ -6,6 +6,7 @@ use App\Http\Requests\CityRegency\CityRegencyCreateRequest;
 use App\Http\Requests\CityRegency\CityRegencyUpdateRequest;
 use App\Models\CityRegency;
 use App\Models\Province;
+use Arr;
 use Auth;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
@@ -20,7 +21,8 @@ class CityRegencyController extends Controller
 
         $is_accepted = filter_var($request->query('is_accepted', true), FILTER_VALIDATE_BOOLEAN);
         $search = $request->query('search', '');
-        $provinceId = $request->query('province_id', null);
+        $provinceId = $request->query('province_id', []);
+        $limit = $request->query('limit', 10);
 
         if ($is_accepted === false && !Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
             throw new HttpResponseException(response([
@@ -28,31 +30,38 @@ class CityRegencyController extends Controller
             ], 403));
         }
 
-        $cityRegencies = [];
-
-        if ($provinceId) {
-            $province = Province::find($provinceId);
-            if (!$province) {
-                throw new HttpResponseException(response([
-                    'errors' => 'Province not found',
-                ], 404));
-            }
+        if (Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
 
             $cityRegencies = CityRegency::where('is_accepted', $is_accepted)
                 ->where('name', "like", "%$search%")
-                ->where('province_id', $provinceId)
-                ->get();
+                ->when(!empty($provinceId), function ($query) use ($provinceId) {
+                    $query->whereIn('province_id', Arr::wrap($provinceId));
+                })
+                ->paginate($limit);
+
+
+            return response()->json(
+                $cityRegencies,
+                200
+            );
         } else {
+
             $cityRegencies = CityRegency::where('is_accepted', $is_accepted)
                 ->where('name', "like", "%$search%")
+                ->when(!empty($provinceId), function ($query) use ($provinceId) {
+                    $query->whereIn('province_id', Arr::wrap($provinceId));
+                })
                 ->get();
+
+
+
+            return response()->json([
+                'data' => $cityRegencies,
+            ], 200);
         }
 
 
 
-        return response()->json([
-            'data' => $cityRegencies,
-        ], 200);
     }
 
     /**

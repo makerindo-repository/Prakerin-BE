@@ -34,6 +34,11 @@ class Test extends Model
         return $this->belongsTo(Company::class);
     }
 
+    public function jobOpening()
+    {
+        return $this->belongsToMany(JobOpening::class);
+    }
+
     public function internshipApplicationTests()
     {
         return $this->hasMany(InternshipApplicationTest::class);

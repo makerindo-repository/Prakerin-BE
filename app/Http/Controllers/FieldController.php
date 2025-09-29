@@ -18,6 +18,7 @@ class FieldController extends Controller
     {
         $is_accepted = filter_var($request->query('is_accepted', true), FILTER_VALIDATE_BOOLEAN);
         $search = $request->query('search', '');
+        $limit = $request->query('limit', 10);
 
         if ($is_accepted === false && !Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
             throw new HttpResponseException(response([
@@ -25,11 +26,26 @@ class FieldController extends Controller
             ], 403));
         }
 
-        $fields = Field::where('is_accepted', $is_accepted)->where('name', "like", "%$search%")->get();
+        if (Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
+            $fields = Field::where('is_accepted', $is_accepted)
+                ->where('name', "like", "%$search%")
+                ->paginate($limit);
 
-        return response()->json([
-            'data' => $fields,
-        ], 200);
+            return response()->json(
+                $fields,
+                200
+            );
+        } else {
+            $fields = Field::where('is_accepted', $is_accepted)
+                ->where('name', "like", "%$search%")
+                ->get();
+
+            return response()->json([
+                'data' => $fields,
+            ], 200);
+        }
+
+
     }
 
     /**

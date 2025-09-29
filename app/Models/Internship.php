@@ -50,6 +50,12 @@ class Internship extends Model
         return $this->belongsTo(InternshipApplication::class);
     }
 
+    public function tests()
+{
+    return $this->belongsToMany(Test::class, 'internship_test', 'internship_id', 'test_id')
+        ->withTimestamps();
+}
+
     public function role()
     {
         return $this->belongsTo(Role::class);

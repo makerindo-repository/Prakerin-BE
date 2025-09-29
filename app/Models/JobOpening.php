@@ -53,6 +53,10 @@ class JobOpening extends Model
         return $this->belongsTo(Field::class);
     }
 
+    public function test(){
+        return $this->belongsToMany(Test::class);
+    }
+
     public function duration()
     {
         return $this->belongsTo(Duration::class);

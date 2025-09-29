@@ -20,13 +20,19 @@ return new class extends Migration {
             $table->text('description');
             $table->enum('grade', ['smk', 'mahasiswa', 'all'])->default('all');
             $table->enum('type', ['full_time', 'part_time']);
-            $table->enum('location', ['onsite', 'remote', 'hybrid', 'field']);
+            $table->enum('location', ['onsite', 'remote', 'hybrid']);
             $table->integer('qouta')->default(1);
             $table->boolean('is_paid');
             $table->boolean('is_available');
             $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->foreign('field_id')->references('id')->on('fields')->onDelete('cascade');
             $table->foreign('duration_id')->references('id')->on('durations')->onDelete('cascade');
+
+            $table->date('start_date');
+            $table->date('end_date');
+
+            $table->date('closing_date');
+
 
             $table->timestamps();
         });

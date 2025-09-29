@@ -19,7 +19,7 @@ class MajorFactory extends Factory
         return [
             'name' => $this->faker->word(),
             'is_accepted' => $this->faker->boolean(),
-            'level' => $this->faker->randomElement(['high_school', 'college']),
+            'level' => $this->faker->randomElement(['smk', 'college']),
         ];
     }
 }

@@ -16,7 +16,7 @@ return new class extends Migration {
             $table->string('title');
             $table->string("link");
             $table->text('description');
-            $table->enum('type', ['theory', 'practice']);
+            $table->enum('type', ['theory', 'practice', 'other']);
 
             $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->timestamps();

@@ -16,6 +16,8 @@ class DurationController extends Controller
     public function index(Request $request)
     {
         $isAccepted = filter_var($request->query('is_accepted', true), FILTER_VALIDATE_BOOLEAN);
+        $limit = $request->query('limit', 10);
+        $unit = $request->query('unit', null);
 
         if ($isAccepted === false && !Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
             throw new HttpResponseException(response([
@@ -23,9 +25,28 @@ class DurationController extends Controller
             ], 403));
         }
 
-        $durations = Duration::where('is_accepted', $isAccepted)->get();
+        if (Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
+            $durations = Duration::where('is_accepted', $isAccepted)
+                ->when($unit, function ($query) use ($unit) {
+                    $query->where('duration_unit', $unit);
+                })
+                ->orderBy('updated_at', 'desc')
+                ->paginate($limit);
+            return response()->json(
+                $durations,
+                200
+            );
+        } else {
+            $durations = Duration::where('is_accepted', $isAccepted)
+                ->when($unit, function ($query) use ($unit) {
+                    $query->where('duration_unit', $unit);
+                })
+                ->orderBy('duration_unit', 'asc')
+                ->get();
+            return response()->json(['data' => $durations], 200);
+        }
 
-        return response()->json(['data' => $durations], 200);
+
     }
 
     /**
@@ -74,7 +95,7 @@ class DurationController extends Controller
 
         $validator = Validator::make($request->all(), [
             'duration_value' => 'sometimes|integer|min:1',
-            'duration_unit' => 'sometimes|string|in:days,weeks,months',
+            'duration_unit' => 'sometimes|string|in:day,month,year',
             'is_accepted' => 'sometimes|boolean',
         ]);
 

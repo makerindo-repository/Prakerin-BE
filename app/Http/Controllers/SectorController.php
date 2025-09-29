@@ -18,6 +18,7 @@ class SectorController extends Controller
     {
         $is_accepted = filter_var($request->query('is_accepted', true), FILTER_VALIDATE_BOOLEAN);
         $search = $request->query('search', '');
+        $limit = $request->query('limit', 10);
 
         if ($is_accepted === false && !Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
             throw new HttpResponseException(response([
@@ -25,11 +26,28 @@ class SectorController extends Controller
             ], 403));
         }
 
-        $sectors = Sector::where('is_accepted', $is_accepted)->where('name', "like", "%$search%")->get();
+        if (Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
 
-        return response()->json([
-            'data' => $sectors,
-        ], 200);
+            $sectors = Sector::where('is_accepted', $is_accepted)
+                ->where('name', "like", "%$search%")
+                ->orderBy('updated_at', 'desc')
+                ->paginate($limit);
+
+            return response()->json(
+                $sectors,
+                200
+            );
+
+        } else {
+            $sectors = Sector::where('is_accepted', $is_accepted)
+                ->where('name', "like", "%$search%")
+                ->orderBy('name', 'asc')
+                ->get();
+
+            return response()->json([
+                'data' => $sectors,
+            ], 200);
+        }
     }
 
     /**

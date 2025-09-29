@@ -19,6 +19,7 @@ class ProvinceController extends Controller
 
         $is_accepted = filter_var($request->query('is_accepted', true), FILTER_VALIDATE_BOOLEAN);
         $search = $request->query('search', '');
+        $limit = $request->query('limit', 10);
 
         if ($is_accepted === false && !Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
             throw new HttpResponseException(response([
@@ -26,11 +27,24 @@ class ProvinceController extends Controller
             ], 403));
         }
 
-        $provinces = Province::where('is_accepted', $is_accepted)->where('name', "like", "%$search%")->get();
 
-        return response()->json([
-            'data' => $provinces,
-        ], 200);
+
+        if (Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
+            $provinces = Province::where('is_accepted', $is_accepted)
+                ->where('name', "like", "%$search%")
+                ->paginate($limit);
+            return response()->json(
+                $provinces,
+                200
+            );
+        } else {
+            $provinces = Province::where('is_accepted', $is_accepted)
+                ->where('name', "like", "%$search%")
+                ->get();
+            return response()->json([
+                'data' => $provinces,
+            ], 200);
+        }
     }
 
     /**
