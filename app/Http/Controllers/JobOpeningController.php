@@ -291,6 +291,7 @@ class JobOpeningController extends Controller
                 "company.cityRegency.province",
                 'field',
                 'duration',
+                'test',
                 'saveJobOpening' => function ($query) {
                     if (!Auth::guard('sanctum')->user()?->student()) {
                     }
@@ -307,6 +308,8 @@ class JobOpeningController extends Controller
         $jobOpening["province"] = $jobOpening->company->cityRegency->province;
         $jobOpening["company"] = $jobOpening->company->makeHidden(['user', 'cityRegency']);
         $jobOpening["user"] = $jobOpening->company->user;
+        $jobOpening["start_date"] = \Carbon\Carbon::parse($jobOpening->start_date)->toDateString();
+        $jobOpening["closing_date"] = \Carbon\Carbon::parse($jobOpening->closing_date)->toDateString();
         $isSaved = $jobOpening->saveJobOpening->isNotEmpty() ? true : false;
         unset($jobOpening["saveJobOpening"]);
 

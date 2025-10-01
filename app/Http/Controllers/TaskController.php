@@ -54,6 +54,7 @@ class TaskController extends Controller
                     ELSE NULL 
                 END as updated_at
             ")
+            ->orderBy('updated_at', 'desc')
             ->paginate($limit);
 
 
@@ -106,7 +107,13 @@ class TaskController extends Controller
 
         // }
 
-        $task['phone_number'] = $task->internship->company->phone_number;
+        $user = $request->user();
+
+        if (isset($user->company)) {
+            $task['phone_number'] = isset($task->internship->student->phone_number) ? $this->normalizePhone($task->internship->student->phone_number) : null;
+        } else {
+            $task['phone_number'] = isset($task->internship->company->phone_number) ? $this->normalizePhone($task->internship->company->phone_number) : null;
+        }
 
         $task->makeHidden(['internship']);
 
@@ -127,16 +134,7 @@ class TaskController extends Controller
             ], 404));
         }
 
-        $studentId = $task->internship
-            ->internshipApplications
-            ->curriculumVitae
-            ->student_id;
-
-        if ($studentId !== auth()->user()->student->id) {
-            throw new HttpResponseException(response()->json([
-                'message' => 'Forbidden.'
-            ], 403));
-        }
+        $studentId = $task->internship->student_id;
 
         $validator = Validator::make($request->all(), [
             'status' => 'required|in:pending,in_progress,completed,cancelled',
@@ -145,15 +143,14 @@ class TaskController extends Controller
         if ($validator->fails()) {
             throw new HttpResponseException(response()->json([
                 'errors' => $validator->errors()
-            ], 422));
+            ], 400));
         }
 
         $task->update($validator->validated());
         $task->save();
-        $task->makeHidden(['internship']);
 
 
-        return response()->json(['data' => $task], 200);
+        return response()->json(['data' => true], 200);
     }
 
     /**
@@ -174,4 +171,23 @@ class TaskController extends Controller
 
         return response()->json(['data' => 'Task deleted successfully.'], 200);
     }
+
+    private function normalizePhone(string $phone): string
+    {
+        // Hapus semua spasi dan tanda hubung
+        $phone = preg_replace('/[\s\-]/', '', $phone);
+
+        // Ganti prefix +62 → 62
+        if (strpos($phone, '+62') === 0) {
+            $phone = '62' . substr($phone, 3);
+        }
+
+        // Ganti prefix 0 → 62
+        if (strpos($phone, '0') === 0) {
+            $phone = '62' . substr($phone, 1);
+        }
+
+        return $phone;
+    }
+
 }

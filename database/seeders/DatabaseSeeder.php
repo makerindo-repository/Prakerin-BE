@@ -185,10 +185,10 @@ class DatabaseSeeder extends Seeder
             'school_id' => $schoolId->id,
         ]);
 
-        School::factory(3)->create([
+        School::factory(20)->create([
         ]);
 
-        Company::factory(3)->create([
+        Company::factory(20)->create([
         ]);
 
         Student::factory(9)->create([

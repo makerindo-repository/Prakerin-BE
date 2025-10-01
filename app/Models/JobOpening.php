@@ -57,7 +57,7 @@ class JobOpening extends Model
     }
 
     public function test(){
-        return $this->belongsToMany(Test::class);
+        return $this->belongsToMany(Test::class)->select('title', 'description', 'link', 'type');
     }
 
     public function duration()

@@ -23,6 +23,8 @@ return new class extends Migration {
             $table->text('description')->nullable();
             $table->string('phone_number')->nullable();
             $table->boolean('is_verified')->default(false);
+            $table->string('website')->nullable();
+
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('city_regency_id')->references('id')->on('city_regencies')->onDelete('set null');

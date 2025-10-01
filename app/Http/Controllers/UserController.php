@@ -299,7 +299,7 @@ class UserController extends Controller
                     });
                 });
             })
-            ->when(($user?->tokenCan('school-access') || $user->tokenCan('student-access')) && ($role === 'company'), function ($query) use ($search, $isMou, $user) {
+            ->when(($user?->tokenCan('school-access') || $user?->tokenCan('student-access')) && ($role === 'company'), function ($query) use ($search, $isMou, $user) {
                 $query->with(['company.cityRegency.province', 'company.mous']);
                 $query->where('role', 'company');
                 $query->whereHas('company', function ($q) use ($search, $isMou, $user) {
@@ -357,12 +357,17 @@ class UserController extends Controller
                     $query->where('is_completed', false);
                 });
             })
-            ->when($user?->tokenCan('admin-access'), function ($query) use ($role, $isVerified) {
+            ->when($user?->tokenCan('admin-access'), function ($query) use ($role, $request) {
+                $isVerified = $request->has('is_verified')
+                    ? filter_var($request->query('is_verified'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+                    : null;
+
+
                 $query->with(['student', 'school', 'company']);
                 $query->when($role, function ($query, $role) {
                     return $query->where('role', $role);
                 });
-                $query->when(isset($isVerified), function ($query) use ($isVerified) {
+                $query->when($isVerified !== null, function ($query) use ($isVerified) {
                     $query->where(function ($q) use ($isVerified) {
                         $q->whereHas('student', fn($q2) => $q2->where('is_verified', $isVerified))
                             ->orWhereHas('school', fn($q2) => $q2->where('is_verified', $isVerified))
@@ -379,24 +384,25 @@ class UserController extends Controller
                         'name' => $item->school->name,
                     ];
                 } else if (($user?->tokenCan('school-access') && ($role === 'student'))) {
+
                     return [
-                        'id' => $user->id,
-                        'username' => $user->username,
-                        'email' => $user->email,
-                        'role' => $user->role,
-                        'photo_profile' => $user->photo_profile,
+                        'id' => $item->id,
+                        'username' => $item->username,
+                        'email' => $item->email,
+                        'role' => $item->role,
+                        'photo_profile' => $item->photo_profile,
                         'student' => [
-                            'id' => $user->student?->id,
-                            'name' => $user->student?->name,
-                            'class' => $user->student?->class,
-                            'company' => $user->student?->curriculumVitae
+                            'id' => $item->student?->id,
+                            'name' => $item->student?->name,
+                            'class' => $item->student?->class,
+                            'company' => $item->student?->curriculumVitae
                                 ->flatMap->internshipApplications
                                 ->map->jobOpening
                                 ->map->company
                                 ->unique('id')
                                 ->map(function ($company) {
                                     $data = $company->toArray();
-                                    $data['user'] = $company->user?->toArray();
+                                    $data['item'] = $company->item?->toArray();
                                     $data['city_regency'] = $company->cityRegency?->toArray();
                                     $data['province'] = $company->cityRegency?->province?->toArray();
                                     return $data;
@@ -404,11 +410,11 @@ class UserController extends Controller
                                 ->values(),
                         ],
                         'major' => [
-                            'name' => $user->student->major?->name
+                            'name' => $item->student->major?->name
                         ],
-                        'status' => $user->student->status, // ✅ tambahin status magang
+                        'status' => $item->student->status, // ✅ tambahin status magang
                     ];
-                } else if (($user?->tokenCan('school-access') || $user->tokenCan('student-access')) && ($role === 'company')) {
+                } else if (($user?->tokenCan('school-access') || $user?->tokenCan('student-access')) && ($role === 'company')) {
                     return [
                         'id' => $item->id,
                         'username' => $item->username,
@@ -445,6 +451,9 @@ class UserController extends Controller
                         'internship' => $item->student->internships->first()
                     ];
                 }
+
+                return $item;
+
 
             });
 
@@ -667,6 +676,9 @@ class UserController extends Controller
 
             $isVerified = $data['is_verified'];
 
+
+
+
             if ($isVerified) {
                 $user->student->is_verified = true;
                 $user->student->save();
@@ -675,7 +687,8 @@ class UserController extends Controller
                     'data' => true,
                 ], 200);
             } else {
-                $user->student->is_verified = false;
+
+                $user->student->school_id = null;
                 $user->student->save();
 
                 return response()->json([
@@ -684,46 +697,13 @@ class UserController extends Controller
             }
         }
 
-        $user->username = $data['username'] ?? $user->username;
-        $user->email = $data['email'] ?? $user->email;
-        $user->password = $data['password'] ?? $user->password;
-
-        if (!$data['email']) {
-            $user->email_verified_at = null;
-        }
-
-        if ($request->file('image')) {
-            $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
-            $user->photo_profile = $filename;
-            $request->file('image')->storeAs('photo-profile', $filename, 'public');
-        }
-
-
-        if ($user->role === 'student') {
-            $student = $user->student;
-            $student->name = $data['name'] ?? $student->name;
-            $student->address = $data['address'] ?? $student->address;
-            $student->phone_number = $data['phone_number'] ?? $student->phone_number;
-            $student->name = $data['name'] ?? $student->name;
-            $student->school_id = $data['school_id'] ?? $student->school_id;
-            $student->date_of_birth = $data['date_of_birth'] ?? $student->date_of_birth;
-            $student->save();
-        } else if ($user->role === 'school') {
+        if ($user->role === 'school') {
             $school = $user->school;
-            $school->name = $data['name'] ?? $school->name;
-            $school->address = $data['address'] ?? $school->address;
-            $school->phone_number = $data['phone_number'] ?? $school->phone_number;
-            $school->website = $data['website'] ?? $school->website;
-            $school->npsn = $data['npsn'] ?? $school->npsn;
-            $school->accreditation = $data['accreditation'] ?? $school->accreditation;
-            $school->status = $data['status'] ?? $school->status;
+            $school->is_verified = $data['is_verified'] ?? $school->is_verified;
             $school->save();
         } else if ($user->role === 'company') {
             $company = $user->company;
-            $company->name = $data['name'] ?? $company->name;
-            $company->address = $data['address'] ?? $company->address;
-            $company->city_regency_id = $data['city_regency_id'] ?? $company->city_regency_id;
-            $company->sector_id = $data['sector_id'] ?? $company->sector_id;
+            $company->is_verified = $data['is_verified'] ?? $company->is_verified;
             $company->save();
         }
 
@@ -891,6 +871,11 @@ class UserController extends Controller
 
         if ($user->company) {
             $user->name = $user->company->name;
+            if (isset($user->company->cityRegency)) {
+                $user['company']["province_id"] = $user->company->cityRegency->province_id;
+            } else {
+                $user['company']["province_id"] = null;
+            }
         }
         if ($user->school) {
             $user->name = $user->school->name;
@@ -907,7 +892,6 @@ class UserController extends Controller
     {
 
         $data = $request->validated();
-
 
 
         $user = $request->user();
@@ -967,6 +951,7 @@ class UserController extends Controller
             $company->city_regency_id = $data['city_regency_id'] ?? $company->city_regency_id;
             $company->sector_id = $data['sector_id'] ?? $company->sector_id;
             $company->description = $data['description'] ?? $company->description;
+            $company->website = $data['website'] ?? $company->website;
 
             $company->save();
         }

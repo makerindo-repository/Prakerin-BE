@@ -23,6 +23,7 @@ class Company extends Model
         'address',
         'phone_number',
         'is_verified',
+        'website',
     ];
 
     protected $casts = [

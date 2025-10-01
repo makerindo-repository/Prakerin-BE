@@ -5,6 +5,7 @@ namespace App\Http\Requests\User;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\Rule;
 
 class UserUpdateProfileRequest extends FormRequest
 {
@@ -23,10 +24,20 @@ class UserUpdateProfileRequest extends FormRequest
      */
     public function rules(): array
     {
+        $userId = $this->user()->id; // ambil id user sekarang
+
         $rules = [
-            'username' => 'nullable|unique:users,username|regex:/^[a-zA-Z0-9._]+$/u',
-            'email' => 'nullable|email|unique:users,email',
-            'password' => 'nullable|string|confirmed',
+            'username' => [
+                'nullable',
+                'regex:/^[a-zA-Z0-9._]+$/u',
+                Rule::unique('users', 'username')->ignore($userId)
+            ],
+            'email' => [
+                'nullable',
+                'email',
+                Rule::unique('users', 'email')->ignore($userId)
+            ],
+            'password' => 'nullable|string|min:6|confirmed',
             'photo_profile' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
 
@@ -46,7 +57,7 @@ class UserUpdateProfileRequest extends FormRequest
         $rules['phone_number'] = [
             'nullable',
             'string',
-            'regex:/^(?:\+62[\s\-]?|0)[\s\-]?[0-9]+([\s\-]?[0-9]+)*$/',
+            'regex:/^\+62 8[0-9]{2}-[0-9]{4}-[0-9]{4}$/',
             'min:10',
             'max:20'  // Lebih panjang karena ada spasi/strip
         ];
@@ -64,6 +75,7 @@ class UserUpdateProfileRequest extends FormRequest
             case 'company':
                 $rules['city_regency_id'] = 'nullable|uuid:4|exists:city_regencies,id';
                 $rules['sector_id'] = 'nullable|uuid:4|exists:sectors,id';
+                $rules['website'] = 'nullable|url|max:255';
                 $rules['description'] = 'nullable';
                 break;
             case 'school':
