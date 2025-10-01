@@ -195,6 +195,8 @@ class DatabaseSeeder extends Seeder
 
         ]);
 
+        Test::factory(20)->create();
+
 
 
 

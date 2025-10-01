@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Company;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,10 +18,11 @@ class TestFactory extends Factory
     public function definition(): array
     {
         return [
-            'company_id' => Company::inRandomOrder()->first()->id ?? Company::factory(),
+            'company_id' => User::where('email', 'supercompany@makerindo.id')->first()->company->id,
             'title' => $this->faker->sentence(3),
-            'test' => $this->faker->paragraph(2),
-            'type' => $this->faker->randomElement(['theory', 'practice']),
+            'link' => $this->faker->url(),
+            'description' => $this->faker->paragraph(),
+            'type' => $this->faker->randomElement(['theory', 'practice', 'other']),
         ];
     }
 }

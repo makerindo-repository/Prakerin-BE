@@ -12,7 +12,9 @@ class Mou extends Model
     public $incrementing = false;
     protected $keyType = 'string';
     protected $casts = [
-        'message' => 'array'
+        'message' => 'array',
+        'is_company_accepted' => 'boolean',
+        'is_school_accepted' => 'boolean',
     ];
     protected $fillable = [
         'id',
@@ -20,6 +22,7 @@ class Mou extends Model
         'school_id',
         'file',
         'message',
+        'reason',
         'start_date',
         'end_date',
         'status',

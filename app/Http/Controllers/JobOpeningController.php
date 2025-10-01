@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\JobOpening;
+use App\Models\Duration;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Arr;
@@ -229,6 +230,7 @@ class JobOpeningController extends Controller
      */
     public function store(Request $request)
     {
+
         $validator = Validator::make($request->all(), [
             'field_id' => 'required|exists:fields,id',
             'duration_id' => 'required|exists:durations,id',
@@ -237,26 +239,44 @@ class JobOpeningController extends Controller
             'is_paid' => 'required|boolean',
             'grade' => 'required|in:smk,mahasiswa,all',
             'type' => 'required|in:part_time,full_time',
-            'location' => 'required|in:onsite, remote, hybrid,field',
+            'location' => 'required|in:onsite,remote,hybrid,field',
             'quota' => 'required|integer|min:1',
             'is_available' => 'required|boolean',
-            'test' => 'array'
+            'tests' => 'array',
+            'start_date' => 'required|date',
+            'closing_date' => 'required|date'
         ]);
 
         if ($validator->fails()) {
             throw new HttpResponseException(response()->json(['errors' => $validator->errors()], 400));
         }
-
-
+        
+        
         $data = $validator->validated();
         $data['company_id'] = auth()->user()->company->id;
-
+        // return response()->json($data['company_id'], 400);
+        // Default: 14 hari setelah start_date
+        $duration = Duration::where('id', $data['duration_id'])->where('is_accepted', true)->first();
+        $startDate = \Carbon\Carbon::parse($data['start_date']);
+        // Jika request mengandung 'duration_type', gunakan 3 bulan jika '3_month', selain itu 14 hari
+        if ($duration->duration_unit == 'month') {
+            $data['end_date'] = $startDate->copy()->addMonths($duration->duration_value);
+        } else if($duration->duration_unit == 'day') {
+            $data['end_date'] = $startDate->copy()->addDays($duration->duration_value);
+        } else if($duration->duration_unit == 'year' ) {
+            $data['end_date'] = $startDate->copy()->addYears($duration->duration_value);
+        } 
+        
+        // return response()->json([
+        //     $data
+        // ], 400);
         $jobOpening = JobOpening::create($data);
 
-        $jobOpening->attach($data['test']);
-
+        $jobOpening->test()->attach($data['tests']);
+        
         return response()->json([
             'data' => $jobOpening->with('test')
+            // 'test' => $data
         ], 201);
     }
 

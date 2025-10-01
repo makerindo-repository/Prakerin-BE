@@ -23,6 +23,7 @@ class TestController extends Controller
             ->when($type, function ($query, $type) {
                 return $query->where('type', $type);
             })
+            ->orderBy('updated_at', 'desc')
             ->paginate($limit);
 
         return response()->json($tests, 200);
@@ -86,7 +87,7 @@ class TestController extends Controller
             'title' => 'sometimes|required|string|max:255',
             'link' => 'sometimes|required|string|active_url|max:255',
             'description' => 'sometimes|required|string',
-            'type' => 'sometimes|required|in:theory,practice',
+            'type' => 'sometimes|required|in:theory,practice,other',
         ]);
 
         if ($validated->fails()) {

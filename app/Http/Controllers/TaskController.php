@@ -103,7 +103,10 @@ class TaskController extends Controller
         //     throw new HttpResponseException(response()->json([
         //         'message' => 'Forbidden.'
         //     ], 403));
+
         // }
+
+        $task['phone_number'] = $task->internship->company->phone_number;
 
         $task->makeHidden(['internship']);
 
@@ -138,7 +141,7 @@ class TaskController extends Controller
         $validator = Validator::make($request->all(), [
             'status' => 'required|in:pending,in_progress,completed,cancelled',
         ]);
-        
+
         if ($validator->fails()) {
             throw new HttpResponseException(response()->json([
                 'errors' => $validator->errors()

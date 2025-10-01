@@ -25,102 +25,284 @@ use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
+    // public function index(Request $request)
+    // {
+    //     $isVerified = filter_var($request->query('is_verified', true), FILTER_VALIDATE_BOOLEAN);
+    //     $search = $request->query('search', '');
+    //     $limit = $request->query('limit', 10);
+    //     $role = $request->query('role', null);
+
+    //     if (!Auth::guard('sanctum')->user()) {
+    //         $users = User::with(['school'])
+    //             ->where('role', 'school')
+    //             ->whereHas('school', function ($q) use ($search) {
+    //                 $q->where('is_verified', true);
+    //                 $q->where('name', 'like', "%$search%");
+    //             })
+    //             ->paginate($limit);
+
+    //         $users->getCollection()->transform(function ($item) {
+
+    //             return [
+    //                 'id' => $item->school->id,
+    //                 'name' => $item->school->name,
+    //             ];
+    //         });
+
+    //         return response()->json($users, 200);
+    //     }
+
+    //     $user = Auth::guard('sanctum')->user();
+
+    //     if ($user->tokenCan('school-access') && ($role === 'student')) {
+
+    //         $status = $request->query('status', null);
+
+    //         $users = User::with(
+    //             'student.curriculumVitae.internshipApplications.jobOpening.company.user',
+    //             'student.curriculumVitae.internshipApplications.jobOpening.company.cityRegency.province'
+    //         )
+    //             ->where('role', 'student')
+    //             ->whereHas('student', function ($q) use ($search, $isVerified, $user) {
+    //                 $q->where('is_verified', $isVerified);
+    //                 $q->where('name', 'like', "%$search%");
+    //                 $q->where('school_id', $user->school->id);
+    //             })
+    //             ->when(in_array($status, ['ongoing', 'completed', 'not_started']), function ($query) use ($status) {
+    //                 $query->whereHas('student', function ($q) use ($status) {
+    //                     $q->where('status', $status);
+    //                 });
+    //             })
+    //             ->paginate($limit);
+
+
+    //         $users->getCollection()->transform(function ($user) use ($isVerified) {
+
+    //             return [
+    //                 'id' => $user->id,
+    //                 'username' => $user->username,
+    //                 'email' => $user->email,
+    //                 'role' => $user->role,
+    //                 'photo_profile' => $user->photo_profile,
+    //                 'student' => [
+    //                     'id' => $user->student?->id,
+    //                     'name' => $user->student?->name,
+    //                     'class' => $user->student?->class,
+    //                     'company' => $user->student?->curriculumVitae
+    //                         ->flatMap->internshipApplications
+    //                         ->map->jobOpening
+    //                         ->map->company
+    //                         ->unique('id')
+    //                         ->map(function ($company) {
+    //                             $data = $company->toArray();
+    //                             $data['user'] = $company->user?->toArray();
+    //                             $data['city_regency'] = $company->cityRegency?->toArray();
+    //                             $data['province'] = $company->cityRegency?->province?->toArray();
+    //                             return $data;
+    //                         })
+    //                         ->values(),
+    //                 ],
+    //                 'major' => [
+    //                     'name' => $user->student->major?->name
+    //                 ],
+    //                 'status' => $user->student->status, // ✅ tambahin status magang
+    //             ];
+    //         });
+
+
+
+    //         return response()->json($users, 200);
+    //     } else if (($user->tokenCan('school-access') || $user->tokenCan('student-access')) && ($role === 'company')) {
+
+    //         $isMou = $request->has('is_mou')
+    //             ? filter_var($request->query('is_mou'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+    //             : null;
+
+    //         $users = User::with(['company.cityRegency.province', 'company.mous'])
+    //             ->where('role', 'company')
+    //             ->whereHas('company', function ($q) use ($search, $isMou, $user) {
+    //                 $q->where('is_verified', true);
+    //                 $q->where('name', 'like', "%$search%");
+
+    //                 if ($isMou === true) {
+    //                     $q->whereHas('mous', function ($q2) use ($user) {
+    //                         if ($user->tokenCan('student-access')) {
+    //                             $q2->where('school_id', $user->student->school_id)
+    //                                 ->where('status', 'accepted');
+    //                         } else {
+    //                             $q2->where('school_id', $user->school->id)
+    //                                 ->where('status', 'accepted');
+    //                         }
+    //                     });
+    //                 } elseif ($isMou === false) {
+    //                     $q->whereDoesntHave('mous', function ($q2) use ($user) {
+    //                         if ($user->tokenCan('student-access')) {
+    //                             $q2->where('school_id', $user->student->school_id)
+    //                                 ->where('status', 'accepted');
+    //                         } else {
+    //                             $q2->where('school_id', $user->school->id)
+    //                                 ->where('status', 'accepted');
+    //                         }
+    //                     });
+    //                 }
+    //             })
+    //             ->paginate($limit);
+
+    //         $users->getCollection()->transform(function ($item) {
+
+    //             return [
+    //                 'id' => $item->id,
+    //                 'username' => $item->username,
+    //                 'email' => $item->email,
+    //                 'role' => $item->role,
+    //                 'photo_profile' => $item->photo_profile,
+    //                 'company' => $item->company->makeHidden(['cityRegency', 'mous']),
+    //                 'city_regency' => $item->company->cityRegency->makeHidden(['province']),
+    //                 'province' => $item->company->cityRegency->province,
+    //                 'mou' => $item->company->mous->isEmpty() ? false : true,
+    //             ];
+    //         });
+
+    //         return response()->json($users, 200);
+
+    //     } else if ($user->tokenCan('company-access', ) && ($role === 'school')) {
+
+    //         $isMou = $request->has('is_mou')
+    //             ? filter_var($request->query('is_mou'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+    //             : null;
+
+    //         $users = User::with(['school.mous', 'school.cityRegency.province'])
+    //             ->where('role', 'school')
+    //             ->whereHas('school', function ($q) use ($search, $isMou, $user) {
+    //                 $q->where('is_verified', true);
+    //                 $q->where('name', 'like', "%$search%");
+
+    //                 if ($isMou === true) {
+    //                     $q->whereHas('mous', function ($q2) use ($user) {
+    //                         $q2->where('company_id', $user->company->id)
+    //                             ->where('status', 'active');
+    //                     });
+    //                 } elseif ($isMou === false) {
+    //                     $q->whereDoesntHave('mous', function ($q2) use ($user) {
+    //                         $q2->where('company_id', $user->company->id)
+    //                             ->where('status', 'active');
+    //                     });
+    //                 }
+    //             })
+    //             ->paginate($limit);
+
+    //         $users->getCollection()->transform(function ($item) {
+
+    //             return [
+    //                 'id' => $item->id,
+    //                 'username' => $item->username,
+    //                 'email' => $item->email,
+    //                 'role' => $item->role,
+    //                 'photo_profile' => $item->photo_profile,
+    //                 'name' => $item->school->name,
+    //                 'school' => $item->school->makeHidden(['mous', 'cityRegency']),
+    //                 'mou' => $item->school->mous->isEmpty() ? false : true,
+    //                 'city_regency' => $item->school->cityRegency->makeHidden(['province']),
+    //                 'province' => $item->school->cityRegency->province
+    //             ];
+    //         });
+
+    //         return response()->json($users, 200);
+
+    //     } else if ($user->tokenCan('company-access') && ($role === 'student')) {
+
+
+
+    //         $users = User::with(['student.school', 'student.internships'])
+    //             ->where('role', 'student')
+    //             ->whereHas('student.internships', function ($query) use ($user) {
+    //                 $query->where('company_id', $user->company->id);
+    //                 $query->where('is_completed', false);
+    //             })
+
+    //             ->paginate($limit);
+
+    //         $users->getCollection()->transform(function ($item) {
+
+    //             return [
+    //                 'id' => $item->id,
+    //                 'username' => $item->username,
+    //                 'email' => $item->email,
+    //                 'phone_number' => $item->phone_number,
+    //                 'photo_profile' => $item->photo_profile,
+    //                 'student' => $item->student,
+    //                 'school' => $item->student->school,
+    //                 'internship' => $item->student->internships->first()
+    //             ];
+    //         });
+    //         return response()->json($users, 200);
+
+    //     } else if ($user->tokenCan('admin-access')) {
+    //         $users = User::with(['student', 'school', 'company'])
+    //             ->when($role, function ($query, $role) {
+    //                 return $query->where('role', $role);
+    //             })
+    //             ->when(isset($isVerified), function ($query) use ($isVerified) {
+    //                 $query->where(function ($q) use ($isVerified) {
+    //                     $q->whereHas('student', fn($q2) => $q2->where('is_verified', $isVerified))
+    //                         ->orWhereHas('school', fn($q2) => $q2->where('is_verified', $isVerified))
+    //                         ->orWhereHas('company', fn($q2) => $q2->where('is_verified', $isVerified));
+    //                 });
+    //             })
+    //             ->paginate($limit);
+
+    //         return response()->json($users, 200);
+    //     } else {
+    //         throw new HttpResponseException(response([
+    //             "errors" => "Forbidden."
+    //         ], 403));
+    //     }
+    // }
+
     public function index(Request $request)
     {
         $isVerified = filter_var($request->query('is_verified', true), FILTER_VALIDATE_BOOLEAN);
         $search = $request->query('search', '');
         $limit = $request->query('limit', 10);
         $role = $request->query('role', null);
+        $status = $request->query('status', null);
+        $isMou = $request->has('is_mou')
+            ? filter_var($request->query('is_mou'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+            : null;
 
-        if (!Auth::guard('sanctum')->user()) {
-            $users = User::with(['school'])
-                ->where('role', 'school')
-                ->whereHas('school', function ($q) use ($search) {
-                    $q->where('is_verified', true);
-                    $q->where('name', 'like', "%$search%");
-                })
-                ->paginate($limit);
-
-            $users->getCollection()->transform(function ($item) {
-
-                return [
-                    'id' => $item->school->id,
-                    'name' => $item->school->name,
-                ];
-            });
-
-            return response()->json($users, 200);
-        }
 
         $user = Auth::guard('sanctum')->user();
 
-        if ($user->tokenCan('school-access') && ($role === 'student')) {
-
-            $status = $request->query('status', null);
-
-            $users = User::with(
-                'student.curriculumVitae.internshipApplications.jobOpening.company.user',
-                'student.curriculumVitae.internshipApplications.jobOpening.company.cityRegency.province'
-            )
-                ->where('role', 'student')
-                ->whereHas('student', function ($q) use ($search, $isVerified, $user) {
+        $users = User::
+            when($user === null, function ($query) use ($search, $limit) {
+                $query->with(['school']);
+                $query->where('role', 'school');
+                $query->whereHas('school', function ($q) use ($search) {
+                    $q->where('is_verified', true);
+                    $q->where('name', 'like', "%$search%");
+                });
+            })
+            ->when($user?->tokenCan('school-access') && ($role === 'student'), function ($query, ) use ($search, $isVerified, $user, $status) {
+                $query->with(
+                    'student.curriculumVitae.internshipApplications.jobOpening.company.user',
+                    'student.curriculumVitae.internshipApplications.jobOpening.company.cityRegency.province'
+                );
+                $query->where('role', 'student');
+                $query->whereHas('student', function ($q) use ($search, $isVerified, $user) {
                     $q->where('is_verified', $isVerified);
                     $q->where('name', 'like', "%$search%");
                     $q->where('school_id', $user->school->id);
-                })
-                ->when(in_array($status, ['ongoing', 'completed', 'not_started']), function ($query) use ($status) {
+                });
+                $query->when(in_array($status, ['ongoing', 'completed', 'not_started']), function ($query) use ($status) {
                     $query->whereHas('student', function ($q) use ($status) {
                         $q->where('status', $status);
                     });
-                })
-                ->paginate($limit);
-
-
-            $users->getCollection()->transform(function ($user) use ($isVerified) {
-
-                return [
-                    'id' => $user->id,
-                    'username' => $user->username,
-                    'email' => $user->email,
-                    'role' => $user->role,
-                    'photo_profile' => $user->photo_profile,
-                    'student' => [
-                        'id' => $user->student?->id,
-                        'name' => $user->student?->name,
-                        'class' => $user->student?->class,
-                        'company' => $user->student?->curriculumVitae
-                            ->flatMap->internshipApplications
-                            ->map->jobOpening
-                            ->map->company
-                            ->unique('id')
-                            ->map(function ($company) {
-                                $data = $company->toArray();
-                                $data['user'] = $company->user?->toArray();
-                                $data['city_regency'] = $company->cityRegency?->toArray();
-                                $data['province'] = $company->cityRegency?->province?->toArray();
-                                return $data;
-                            })
-                            ->values(),
-                    ],
-                    'major' => [
-                        'name' => $user->student->major?->name
-                    ],
-                    'status' => $user->student->status, // ✅ tambahin status magang
-                ];
-            });
-
-
-
-            return response()->json($users, 200);
-        } else if (($user->tokenCan('school-access') || $user->tokenCan('student-access')) && ($role === 'company')) {
-
-            $isMou = $request->has('is_mou')
-                ? filter_var($request->query('is_mou'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
-                : null;
-
-            $users = User::with(['company.cityRegency.province', 'company.mous'])
-                ->where('role', 'company')
-                ->whereHas('company', function ($q) use ($search, $isMou, $user) {
+                });
+            })
+            ->when(($user?->tokenCan('school-access') || $user->tokenCan('student-access')) && ($role === 'company'), function ($query) use ($search, $isMou, $user) {
+                $query->with(['company.cityRegency.province', 'company.mous']);
+                $query->where('role', 'company');
+                $query->whereHas('company', function ($q) use ($search, $isMou, $user) {
                     $q->where('is_verified', true);
                     $q->where('name', 'like', "%$search%");
 
@@ -145,119 +327,132 @@ class UserController extends Controller
                             }
                         });
                     }
-                })
-                ->paginate($limit);
-
-            $users->getCollection()->transform(function ($item) {
-
-                return [
-                    'id' => $item->id,
-                    'username' => $item->username,
-                    'email' => $item->email,
-                    'role' => $item->role,
-                    'photo_profile' => $item->photo_profile,
-                    'company' => $item->company->makeHidden(['cityRegency', 'mous']),
-                    'city_regency' => $item->company->cityRegency->makeHidden(['province']),
-                    'province' => $item->company->cityRegency->province,
-                    'mou' => $item->company->mous->isEmpty() ? false : true,
-                ];
-            });
-
-            return response()->json($users, 200);
-
-        } else if ($user->tokenCan('company-access', ) && ($role === 'school')) {
-
-            $isMou = $request->has('is_mou')
-                ? filter_var($request->query('is_mou'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
-                : null;
-
-            $users = User::with(['school.mous', 'school.cityRegency.province'])
-                ->where('role', 'school')
-                ->whereHas('school', function ($q) use ($search, $isMou, $user) {
+                });
+            })
+            ->when($user?->tokenCan('company-access') && ($role === 'school'), function ($query) use ($search, $isMou, $user) {
+                $query->with(['school.mous', 'school.cityRegency.province']);
+                $query->where('role', 'school');
+                $query->whereHas('school', function ($q) use ($search, $isMou, $user) {
                     $q->where('is_verified', true);
                     $q->where('name', 'like', "%$search%");
 
                     if ($isMou === true) {
                         $q->whereHas('mous', function ($q2) use ($user) {
                             $q2->where('company_id', $user->company->id)
-                                ->where('status', 'active');
+                                ->where('status', 'accepted');
                         });
                     } elseif ($isMou === false) {
                         $q->whereDoesntHave('mous', function ($q2) use ($user) {
                             $q2->where('company_id', $user->company->id)
-                                ->where('status', 'active');
+                                ->where('status', 'accepted');
                         });
                     }
-                })
-                ->paginate($limit);
-
-            $users->getCollection()->transform(function ($item) {
-
-                return [
-                    'id' => $item->id,
-                    'username' => $item->username,
-                    'email' => $item->email,
-                    'role' => $item->role,
-                    'photo_profile' => $item->photo_profile,
-                    'name' => $item->school->name,
-                    'school' => $item->school->makeHidden(['mous', 'cityRegency']),
-                    'mou' => $item->school->mous->isEmpty() ? false : true,
-                    'city_regency' => $item->school->cityRegency->makeHidden(['province']),
-                    'province' => $item->school->cityRegency->province
-                ];
-            });
-
-            return response()->json($users, 200);
-
-        } else if ($user->tokenCan('company-access') && ($role === 'student')) {
-
-
-
-            $users = User::with(['student.school', 'student.internships'])
-                ->where('role', 'student')
-                ->whereHas('student.internships', function ($query) use ($user) {
+                });
+            })
+            ->when($user?->tokenCan('company-access') && ($role === 'student'), function ($query) use ($user) {
+                $query->with(['student.school', 'student.internships']);
+                $query->where('role', 'student');
+                $query->whereHas('student.internships', function ($query) use ($user) {
                     $query->where('company_id', $user->company->id);
                     $query->where('is_completed', false);
-                })
-
-                ->paginate($limit);
-
-            $users->getCollection()->transform(function ($item) {
-
-                return [
-                    'id' => $item->id,
-                    'username' => $item->username,
-                    'email' => $item->email,
-                    'phone_number' => $item->phone_number,
-                    'photo_profile' => $item->photo_profile,
-                    'student' => $item->student,
-                    'school' => $item->student->school,
-                    'internship' => $item->student->internships->first()
-                ];
-            });
-            return response()->json($users, 200);
-
-        } else if ($user->tokenCan('admin-access')) {
-            $users = User::with(['student', 'school', 'company'])
-                ->when($role, function ($query, $role) {
+                });
+            })
+            ->when($user?->tokenCan('admin-access'), function ($query) use ($role, $isVerified) {
+                $query->with(['student', 'school', 'company']);
+                $query->when($role, function ($query, $role) {
                     return $query->where('role', $role);
-                })
-                ->when(isset($isVerified), function ($query) use ($isVerified) {
+                });
+                $query->when(isset($isVerified), function ($query) use ($isVerified) {
                     $query->where(function ($q) use ($isVerified) {
                         $q->whereHas('student', fn($q2) => $q2->where('is_verified', $isVerified))
                             ->orWhereHas('school', fn($q2) => $q2->where('is_verified', $isVerified))
                             ->orWhereHas('company', fn($q2) => $q2->where('is_verified', $isVerified));
                     });
-                })
-                ->paginate($limit);
+                });
+            })
+            ->orderBy('updated_at', 'desc')
+            ->paginate($limit)
+            ->through(function ($item) use ($user, $role) {
+                if ($user === null) {
+                    return [
+                        'id' => $item->school->id,
+                        'name' => $item->school->name,
+                    ];
+                } else if (($user?->tokenCan('school-access') && ($role === 'student'))) {
+                    return [
+                        'id' => $user->id,
+                        'username' => $user->username,
+                        'email' => $user->email,
+                        'role' => $user->role,
+                        'photo_profile' => $user->photo_profile,
+                        'student' => [
+                            'id' => $user->student?->id,
+                            'name' => $user->student?->name,
+                            'class' => $user->student?->class,
+                            'company' => $user->student?->curriculumVitae
+                                ->flatMap->internshipApplications
+                                ->map->jobOpening
+                                ->map->company
+                                ->unique('id')
+                                ->map(function ($company) {
+                                    $data = $company->toArray();
+                                    $data['user'] = $company->user?->toArray();
+                                    $data['city_regency'] = $company->cityRegency?->toArray();
+                                    $data['province'] = $company->cityRegency?->province?->toArray();
+                                    return $data;
+                                })
+                                ->values(),
+                        ],
+                        'major' => [
+                            'name' => $user->student->major?->name
+                        ],
+                        'status' => $user->student->status, // ✅ tambahin status magang
+                    ];
+                } else if (($user?->tokenCan('school-access') || $user->tokenCan('student-access')) && ($role === 'company')) {
+                    return [
+                        'id' => $item->id,
+                        'username' => $item->username,
+                        'email' => $item->email,
+                        'role' => $item->role,
+                        'photo_profile' => $item->photo_profile,
+                        'company' => $item->company->makeHidden(['cityRegency', 'mous']),
+                        'city_regency' => $item->company->cityRegency->makeHidden(['province']),
+                        'province' => $item->company->cityRegency->province,
+                        'mou' => $item->company->mous->isEmpty() ? false : true,
+                    ];
+                } else if ($user?->tokenCan('company-access') && ($role === 'school')) {
+                    return [
+                        'id' => $item->id,
+                        'username' => $item->username,
+                        'email' => $item->email,
+                        'role' => $item->role,
+                        'photo_profile' => $item->photo_profile,
+                        'name' => $item->school->name,
+                        'school' => $item->school->makeHidden(['mous', 'cityRegency']),
+                        'mou' => $item->school->mous->isEmpty() ? false : true,
+                        'city_regency' => $item->school->cityRegency->makeHidden(['province']),
+                        'province' => $item->school->cityRegency->province
+                    ];
+                } else if ($user?->tokenCan('company-access') && ($role === 'student')) {
+                    return [
+                        'id' => $item->id,
+                        'username' => $item->username,
+                        'email' => $item->email,
+                        'phone_number' => $item->phone_number,
+                        'photo_profile' => $item->photo_profile,
+                        'student' => $item->student,
+                        'school' => $item->student->school,
+                        'internship' => $item->student->internships->first()
+                    ];
+                }
 
-            return response()->json($users, 200);
-        } else {
-            throw new HttpResponseException(response([
-                "errors" => "Forbidden."
-            ], 403));
-        }
+            });
+
+
+        return response()->json($users, 200);
+
     }
+
     public function store(UserCreateRequest $request)
     {
 
@@ -353,7 +548,25 @@ class UserController extends Controller
                 'jobOpenings' => function ($q) {
                     $q->where('is_available', true)->orderBy('created_at', 'desc');
                 }
+
             ]);
+
+            $mou = false;
+
+
+            if ($request->user()->tokenCan('school-access')) {
+                $mou = $user->company
+                    ->mous()
+                    ->where('school_id', $request->user()->school->id)
+                    ->where('status', 'accepted')
+                    ->exists();
+            } else if ($request->user()->tokenCan('student-access')) {
+                $mou = $user->company
+                    ->mous()
+                    ->where('school_id', $request->user()->student->school->id)
+                    ->where('status', 'accepted')
+                    ->exists();
+            }
 
             $user = [
                 'id' => $user->id,
@@ -366,13 +579,28 @@ class UserController extends Controller
                 'city_regency' => $user->company->cityRegency->makeHidden(['province']),
                 'province' => $user->company->cityRegency->province,
                 'sector' => $user->company->sector,
-                'job_openings' => $user->company->jobOpenings
+                'job_openings' => $user->company->jobOpenings,
+                'mou' => $mou
+
             ];
         } else if ($user->role === 'school') {
 
             $user->school->load([
                 'cityRegency.province',
             ]);
+
+            $mou = false;
+
+            if ($request->user()->tokenCan('company-access')) {
+                $mou = $user->school
+                    ->mous()
+                    ->where('company_id', $request->user()->company->id)
+                    ->where('status', 'accepted')
+                    ->exists();
+
+            }
+
+
 
             $user = [
                 'id' => $user->id,
@@ -382,6 +610,7 @@ class UserController extends Controller
                 'school' => $user->school->makeHidden(['cityRegency',]),
                 'city_regency' => $user->school->cityRegency->makeHidden(['province']),
                 'province' => $user->school->cityRegency->province,
+                'mou' => $mou
             ];
         } else if ($user->role === 'student') {
             if ($user->student->status === 'ongoing' && isset($request->user()->company->id)) {
@@ -791,7 +1020,7 @@ class UserController extends Controller
             ->when($request->user()->tokenCan("student-access"), function ($query) use ($request) {
                 $query->where("school_id", $request->user()->student->school_id);
             })
-            ->where('status', 'active')
+            ->where('status', 'accepted')
             ->count();
 
         $studentQuery = Student::where('school_id', $request->user()?->school?->id)

@@ -18,6 +18,8 @@ class MouController extends Controller
     {
 
         $search = $request->query('search', '');
+        $type = $request->query('type', null);
+        $limit = $request->query('limit', 10);
 
         $user = $request->user();
 
@@ -44,9 +46,13 @@ class MouController extends Controller
                     $q->where('name', 'like', "%$search%");
                 });
             })
+            ->when($type && in_array($type, ['pending', 'accepted', 'rejected']), function ($query) use ($type) {
+                $query->where('status', $type);
+            })
+            ->orderBy('updated_at', 'desc')
             ->select('id', 'start_date', 'end_date', 'status', 'file', $user->tokenCan('company-access') ? "school_id" : "company_id")
-            ->get()
-            ->map(function ($item) use ($user) {
+            ->paginate($limit)
+            ->through(function ($item) use ($user) {
 
                 $item->start_date = Carbon::parse($item->start_date)->format('j-n-Y');
                 $item->end_date = Carbon::parse($item->end_date)->format('j-n-Y');
@@ -62,9 +68,7 @@ class MouController extends Controller
 
 
 
-        return response()->json([
-            'data' => $mous
-        ]);
+        return response()->json($mous);
     }
 
     /**
@@ -148,6 +152,11 @@ class MouController extends Controller
         $user = $request->user();
 
         $mou = collect([$mou])->map(function ($item) use ($user) {
+            $partner = $user->tokenCan('company-access')
+                ? $item->school->only(['name', 'website'])
+                : $item->company->only(['name', 'website']);
+
+
             return [
                 'start_date' => $item->start_date,
                 'end_date' => $item->end_date,
@@ -155,12 +164,18 @@ class MouController extends Controller
                 'file' => $item->file,
                 'is_company_accepted' => $item->is_company_accepted,
                 'is_school_accepted' => $item->is_school_accepted,
+                'reason' => $item->reason,
                 'message' => $item->message,
-                'user' => $user->tokenCan('company-access') ? $item->company->user : $item->school->user,
-                'province' => $user->tokenCan('company-access') ? $item->company->cityRegency->province : $item->school->cityRegency->province,
-                'city_regency' => $user->tokenCan('company-access') ? $item->company->cityRegency->makeHidden(['province']) : $item->school->cityRegency->makeHidden(['province']),
-                'company' => $item->company->makeHidden(['user', 'cityRegency']),
-                'school' => $item->school->makeHidden(['user', 'cityRegency']),
+                'user' => $user->tokenCan('company-access') ?
+                    $item->company->user->only('email', 'photo_profile') :
+                    $item->school->user->only('email', 'photo_profile'),
+                'province' => $user->tokenCan('company-access') ?
+                    $item->company->cityRegency->province :
+                    $item->school->cityRegency->province,
+                'city_regency' => $user->tokenCan('company-access')
+                    ? $item->company->cityRegency->makeHidden(['province'])
+                    : $item->school->cityRegency->makeHidden(['province']),
+                'partner' => $partner,
             ];
         })->first();
 
@@ -193,11 +208,7 @@ class MouController extends Controller
 
 
         $validator = Validator::make($request->all(), [
-            'start_date' => 'sometimes|required|date',
-            'end_date' => 'sometimes|required|date|after:start_date',
-            'status' => 'sometimes|required|in:draft,active,expired,rejected',
-            'file' => 'sometimes|required|file|mimes:pdf|max:2048',
-            'mou_number' => 'sometimes|nullable|string|max:255'
+            'reason' => 'sometimes|required|string',
         ]);
 
         if ($validator->fails()) {
@@ -207,26 +218,27 @@ class MouController extends Controller
         }
 
         $data = $validator->validated();
-        if (isset($data['file'])) {
-            if (Storage::exists('mous/' . $mou->file)) {
-                Storage::delete('mous/' . $mou->file);
+
+        if (isset($data['reason'])) {
+            $mou->reason = $data['reason'];
+            $mou->status = 'rejected';
+            if ($request->user()->tokenCan('company-access')) {
+                $mou->is_company_accepted = false;
+            } else {
+                $mou->is_school_accepted = false;
             }
-
-            $filename = now()->format('Ymd_His') . '.' . $data['file']->getClientOriginalExtension();
-            $mou->file = $filename;
-
-            $data['file']->storeAs('mous', $filename);
+        } else {
+            $mou->status = 'accepted';
+            if ($request->user()->tokenCan('company-access')) {
+                $mou->is_company_accepted = true;
+            } else {
+                $mou->is_school_accepted = true;
+            }
         }
-
-
-        $mou->start_date = $data['start_date'] ?? $mou->start_date;
-        $mou->end_date = $data['end_date'] ?? $mou->end_date;
-        $mou->status = $data['status'] ?? $mou->status;
-        $mou->mou_number = $data['mou_number'] ?? $mou->mou_number;
 
         $mou->save();
 
-        return response()->json(['data' => $mou], 200);
+        return response()->json(['data' => true], 200);
     }
 
     /**

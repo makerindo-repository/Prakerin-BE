@@ -10,7 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('jobOpening_test', function (Blueprint $table) {
+        Schema::create('job_opening_test', function (Blueprint $table) {
             $table->uuid('job_opening_id');
             $table->uuid('test_id');
             $table->timestamps();

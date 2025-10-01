@@ -30,7 +30,10 @@ class JobOpening extends Model
         'location',
         'qouta',
         'is_available',
-        'role'
+        'role',
+        'start_date',
+        'end_date',
+        'closing_date'
     ];
 
     protected static function booted()

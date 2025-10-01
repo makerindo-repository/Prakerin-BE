@@ -15,12 +15,13 @@ return new class extends Migration {
             $table->foreignUuid('company_id')->constrained('companies')->onDelete('cascade');
             $table->foreignUuid('school_id')->constrained('schools')->onDelete('cascade');
             $table->text("message");
+            $table->text("reason")->nullable();
             $table->string('file');
             $table->date('start_date');
             $table->date('end_date');
             $table->enum('status', ['pending ', 'accepted ', 'rejected'])->default('pending');
-            $table->boolean('is_company_accepted')->default(false);
-            $table->boolean('is_school_accepted')->default(false);
+            $table->boolean('is_company_accepted')->nullable();
+            $table->boolean('is_school_accepted')->nullable();
             $table->timestamps();
         });
     }
