@@ -36,166 +36,168 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
 
-        Province::factory(5)->create();
-        CityRegency::factory(5)->create();
-        Sector::factory(5)->create();
-        Major::factory(10)->create();
-        Field::factory(10)->create();
-        Duration::factory(5)->create();
+        // Province::factory(5)->create();
+        // CityRegency::factory(5)->create();
+        // Sector::factory(5)->create();
+        // Major::factory(10)->create();
+        // Field::factory(10)->create();
+        // Duration::factory(5)->create();
 
-        $homPage = [
-            [
-                'name' => 'title-landing-1',
-                'value' => 'Raih Pengalaman Nyata,Bangun Karier Impianmu!'
-            ],
-            [
-                'name' => 'desc-landing-1',
-                'value' => 'Raih Pengalaman Nyata,Bangun Karier Impianmu!'
-            ],
-            [
-                'name' => 'title-landing-2',
-                'value' => 'Kenapa Harus Magang Melalui Prakerin?'
-            ],
-            [
-                'name' => 'subtitle-landing-2',
-                'value' => 'Prakerin hadir sebagai solusi terpercaya untuk menjembatani talenta muda dengan perusahaan berkualitas.'
-            ],
-            [
-                'name' => 'title-content-landing-2-1',
-                'value' => 'Magang Terverifikasi'
-            ],
-            [
-                'name' => 'desc-content-landing-2-1',
-                'value' => 'Semua lowongan magang di Prakerin sudah melalui proses verifikasi.'
-            ],
-            [
-                'name' => 'icon-content-landing-2-1',
-                'value' => 'CheckCircle2'
-            ],
-            [
-                'name' => 'title-content-landing-2-2',
-                'value' => 'Pendampingan Profesional'
-            ],
-            [
-                'name' => 'desc-content-landing-2-2',
-                'value' => 'Prakerin mendampingi setiap langkahmu agar pengalaman magang berjalan lancar.'
-            ],
-            [
-                'name' => 'icon-content-landing-2-2',
-                'value' => 'Users2'
-            ],
-            [
-                'name' => 'title-content-landing-2-3',
-                'value' => 'Bangun Portofolio Nyata'
-            ],
-            [
-                'name' => 'desc-content-landing-2-3',
-                'value' => 'Dapatkan pengalaman kerja yang aktual industri dan perkuat rekam jejak profesional.'
-            ],
-            [
-                'name' => 'icon-content-landing-2-3',
-                'value' => 'Inbox'
-            ],
-            [
-                'name' => 'title-landing-3',
-                'value' => 'Mitra'
-            ],
-            [
-                'name' => 'subtitle-landing-3',
-                'value' => 'Wujudkan magang di perusahaan impian anda!'
-            ],
-            [
-                'name' => 'title-landing-4',
-                'value' => 'Feedback Siswa/Mahasiswa'
-            ],
-            [
-                'name' => 'subtitle-landing-4',
-                'value' => 'Apa kata mereka yang sudah magang melalui Prakerin?'
-            ],
-            [
-                'name' => 'title-landing-5',
-                'value' => "Let's Grow Together!",
-            ],
-            [
-                'name' => 'subtitle-landing-5',
-                'value' => 'Mulai wujudkan impianmu! Prakerin siap mendukung langkah kariermu.'
-            ],
-            [
-                'name' => 'title-landing-6',
-                'value' => 'Sering di tanyakan',
-            ],
-            [
-                'name' => 'subtitle-landing-6',
-                'value' => 'Punya ide, pertanyaan, atau sekadar ingin menyapa seputar magang? Berikut adalah pertanyaan yang sering diajukan:'
-            ],
-            [
-                'name' => 'title-landing-7',
-                'value' => 'Hubungi Kami'
-            ],
-            [
-                'name' => 'subtitle-landing-7',
-                'value' => 'Punya ide, pertanyaan, atau sekadar ingin menyapa seputar magang? Kami senang mendengarnya! Silakan hubungi kami kapan saja.'
-            ],
-            [
-                'name' => 'title-about-1',
-                'value' => '[Belum Di isi]',
-            ],
-            [
-                'name' => 'desc-about-1',
-                'value' => '[Belum Di isi isi]'
-            ],
-        ];
+        // $homPage = [
+        //     [
+        //         'name' => 'title-landing-1',
+        //         'value' => 'Raih Pengalaman Nyata,Bangun Karier Impianmu!'
+        //     ],
+        //     [
+        //         'name' => 'desc-landing-1',
+        //         'value' => 'Raih Pengalaman Nyata,Bangun Karier Impianmu!'
+        //     ],
+        //     [
+        //         'name' => 'title-landing-2',
+        //         'value' => 'Kenapa Harus Magang Melalui Prakerin?'
+        //     ],
+        //     [
+        //         'name' => 'subtitle-landing-2',
+        //         'value' => 'Prakerin hadir sebagai solusi terpercaya untuk menjembatani talenta muda dengan perusahaan berkualitas.'
+        //     ],
+        //     [
+        //         'name' => 'title-content-landing-2-1',
+        //         'value' => 'Magang Terverifikasi'
+        //     ],
+        //     [
+        //         'name' => 'desc-content-landing-2-1',
+        //         'value' => 'Semua lowongan magang di Prakerin sudah melalui proses verifikasi.'
+        //     ],
+        //     [
+        //         'name' => 'icon-content-landing-2-1',
+        //         'value' => 'CheckCircle2'
+        //     ],
+        //     [
+        //         'name' => 'title-content-landing-2-2',
+        //         'value' => 'Pendampingan Profesional'
+        //     ],
+        //     [
+        //         'name' => 'desc-content-landing-2-2',
+        //         'value' => 'Prakerin mendampingi setiap langkahmu agar pengalaman magang berjalan lancar.'
+        //     ],
+        //     [
+        //         'name' => 'icon-content-landing-2-2',
+        //         'value' => 'Users2'
+        //     ],
+        //     [
+        //         'name' => 'title-content-landing-2-3',
+        //         'value' => 'Bangun Portofolio Nyata'
+        //     ],
+        //     [
+        //         'name' => 'desc-content-landing-2-3',
+        //         'value' => 'Dapatkan pengalaman kerja yang aktual industri dan perkuat rekam jejak profesional.'
+        //     ],
+        //     [
+        //         'name' => 'icon-content-landing-2-3',
+        //         'value' => 'Inbox'
+        //     ],
+        //     [
+        //         'name' => 'title-landing-3',
+        //         'value' => 'Mitra'
+        //     ],
+        //     [
+        //         'name' => 'subtitle-landing-3',
+        //         'value' => 'Wujudkan magang di perusahaan impian anda!'
+        //     ],
+        //     [
+        //         'name' => 'title-landing-4',
+        //         'value' => 'Feedback Siswa/Mahasiswa'
+        //     ],
+        //     [
+        //         'name' => 'subtitle-landing-4',
+        //         'value' => 'Apa kata mereka yang sudah magang melalui Prakerin?'
+        //     ],
+        //     [
+        //         'name' => 'title-landing-5',
+        //         'value' => "Let's Grow Together!",
+        //     ],
+        //     [
+        //         'name' => 'subtitle-landing-5',
+        //         'value' => 'Mulai wujudkan impianmu! Prakerin siap mendukung langkah kariermu.'
+        //     ],
+        //     [
+        //         'name' => 'title-landing-6',
+        //         'value' => 'Sering di tanyakan',
+        //     ],
+        //     [
+        //         'name' => 'subtitle-landing-6',
+        //         'value' => 'Punya ide, pertanyaan, atau sekadar ingin menyapa seputar magang? Berikut adalah pertanyaan yang sering diajukan:'
+        //     ],
+        //     [
+        //         'name' => 'title-landing-7',
+        //         'value' => 'Hubungi Kami'
+        //     ],
+        //     [
+        //         'name' => 'subtitle-landing-7',
+        //         'value' => 'Punya ide, pertanyaan, atau sekadar ingin menyapa seputar magang? Kami senang mendengarnya! Silakan hubungi kami kapan saja.'
+        //     ],
+        //     [
+        //         'name' => 'title-about-1',
+        //         'value' => '[Belum Di isi]',
+        //     ],
+        //     [
+        //         'name' => 'desc-about-1',
+        //         'value' => '[Belum Di isi isi]'
+        //     ],
+        // ];
 
-        foreach ($homPage as $item) {
-            Hompage::create(
-                $item
-            );
-        }
-
-
-        User::factory()->create([
-            'email' => 'superadmin@makerindo.id',
-            'role' => 'super_admin',
-        ]);
-
-        $school = User::factory()->create([
-            'email' => 'superschool@makerindo.id',
-            'role' => 'school',
-        ]);
-        $student = User::factory()->create([
-            'email' => 'superstudent@makerindo.id',
-            'role' => 'student',
-        ]);
-        $company = User::factory()->create([
-            'email' => 'supercompany@makerindo.id',
-            'role' => 'company',
-        ]);
+        // foreach ($homPage as $item) {
+        //     Hompage::create(
+        //         $item
+        //     );
+        // }
 
 
-        $schoolId = School::factory()->create([
-            'user_id' => $school->id,
-        ]);
+        // User::factory()->create([
+        //     'email' => 'superadmin@makerindo.id',
+        //     'role' => 'super_admin',
+        // ]);
 
-        Company::factory()->create([
-            'user_id' => $company->id,
-        ]);
+        // $school = User::factory()->create([
+        //     'email' => 'superschool@makerindo.id',
+        //     'role' => 'school',
+        // ]);
+        // $student = User::factory()->create([
+        //     'email' => 'superstudent@makerindo.id',
+        //     'role' => 'student',
+        // ]);
+        // $company = User::factory()->create([
+        //     'email' => 'supercompany@makerindo.id',
+        //     'role' => 'company',
+        // ]);
 
-        Student::factory()->create([
-            'user_id' => $student->id,
-            'school_id' => $schoolId->id,
-        ]);
 
-        School::factory(20)->create([
-        ]);
+        // $schoolId = School::factory()->create([
+        //     'user_id' => $school->id,
+        // ]);
 
-        Company::factory(20)->create([
-        ]);
+        // Company::factory()->create([
+        //     'user_id' => $company->id,
+        // ]);
 
-        Student::factory(9)->create([
+        // Student::factory()->create([
+        //     'user_id' => $student->id,
+        //     'school_id' => $schoolId->id,
+        // ]);
 
-        ]);
+        // School::factory(20)->create([
+        // ]);
 
-        Test::factory(20)->create();
+        // Company::factory(20)->create([
+        // ]);
+
+        // Student::factory(9)->create([
+
+        // ]);
+
+        // Test::factory(20)->create();
+
+        Task::factory(20)->create();
 
 
 

@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Internship;
 use App\Models\Student;
 use App\Models\Task;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use PHPUnit\Framework\Attributes\Group;
+use Illuminate\Support\Facades\DB;
+use Log;
 
 class TaskController extends Controller
 {
@@ -72,7 +74,7 @@ class TaskController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'due_date' => 'required|date',
-            'link' => 'required|active_url'
+            'link' => 'nullable|active_url'
         ]);
 
         if ($validator->fails()) {
@@ -81,9 +83,9 @@ class TaskController extends Controller
             ], 400));
         }
 
-        $task = Task::create($validator->validated());
+        Task::create($validator->validated());
 
-        return response()->json(['data' => $task], 201);
+        return response()->json(['data' => true], 201);
     }
 
     /**
@@ -172,6 +174,36 @@ class TaskController extends Controller
         return response()->json(['data' => 'Task deleted successfully.'], 200);
     }
 
+    public function count(Request $request)
+    {
+        $user = $request->user();
+
+        $allStatuses = ['pending', 'in_progress', 'completed', 'cancelled'];
+        $data = collect($allStatuses)->mapWithKeys(function ($status) use ($user) {
+            return [
+                $status => Task::whereHas('internship', function ($q) use ($user) {
+                    $q->where('company_id', $user->company->id);
+                })->where('status', $status)->count()
+            ];
+        });
+
+        $students = DB::table('internships')
+            ->join('students', 'internships.student_id', '=', 'students.id')
+            ->leftJoin('tasks', function ($join) {
+                $join->on('internships.id', '=', 'tasks.internship_id')
+                    ->where('tasks.status', 'completed');
+            })
+            ->where('internships.company_id', $user->company->id)
+            ->where('internships.is_completed', false)
+            ->select('students.name', DB::raw('COUNT(tasks.id) as completed_tasks'))
+            ->groupBy('students.id', 'students.name')
+            ->get();
+                
+        $data['students'] = $students;
+
+        return response()->json(['data' => $data], 200);
+    }
+
     private function normalizePhone(string $phone): string
     {
         // Hapus semua spasi dan tanda hubung
@@ -189,5 +221,7 @@ class TaskController extends Controller
 
         return $phone;
     }
+
+
 
 }

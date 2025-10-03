@@ -18,9 +18,14 @@ class TaskFactory extends Factory
     public function definition(): array
     {
         return [
-            'internship_id' => Internship::inRandomOrder()->first()?->id ?? Internship::factory(),
+            'internship_id' => Internship::whereHas('student', function ($query) {
+                $query->whereHas('user', function ($q) {
+                    $q->where('email', 'superstudent@makerindo.id');
+                });
+            })->first()->id ?? Internship::factory(),
             'title' => $this->faker->sentence(3),
             'description' => $this->faker->paragraph(),
+            'link' => $this->faker->url(),
             'status' => $this->faker->randomElement(['pending', 'in_progress', 'completed', 'cancelled']),
             'due_date' => $this->faker->date(),
         ];

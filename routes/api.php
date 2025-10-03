@@ -224,6 +224,7 @@ Route::prefix('v1')->group(function () {
         ->group(function () {
             Route::middleware('ability:student-access,company-access')->group(function () {
                 Route::get('/', 'index');
+                Route::get('/count', 'count');
                 Route::get('/{id}', 'show');
                 Route::patch('/{id}', 'update');
             });

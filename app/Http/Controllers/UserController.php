@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Log;
 
 class UserController extends Controller
 {
@@ -424,7 +425,7 @@ class UserController extends Controller
                         'company' => $item->company->makeHidden(['cityRegency', 'mous']),
                         'city_regency' => $item->company->cityRegency->makeHidden(['province']),
                         'province' => $item->company->cityRegency->province,
-                        'mou' => $item->company->mous->isEmpty() ? false : true,
+                        'mou' => !$item->company->mous->where('status', 'accepted')->isEmpty(),
                     ];
                 } else if ($user?->tokenCan('company-access') && ($role === 'school')) {
                     return [
@@ -435,7 +436,7 @@ class UserController extends Controller
                         'photo_profile' => $item->photo_profile,
                         'name' => $item->school->name,
                         'school' => $item->school->makeHidden(['mous', 'cityRegency']),
-                        'mou' => $item->school->mous->isEmpty() ? false : true,
+                        'mou' => !$item->school->mous->where('status', 'accepted')->isEmpty(),
                         'city_regency' => $item->school->cityRegency->makeHidden(['province']),
                         'province' => $item->school->cityRegency->province
                     ];
@@ -879,9 +880,20 @@ class UserController extends Controller
         }
         if ($user->school) {
             $user->name = $user->school->name;
+            if (isset($user->school->cityRegency)) {
+                $user['school']["province_id"] = $user->school->cityRegency->province_id;
+            } else {
+                $user['school']["province_id"] = null;
+            }
         }
         if ($user->student) {
             $user->name = $user->student->name;
+            if (isset($user->student->school)) {
+                $user['student']["school_name"] = $user->student->school->name;
+            } else {
+                $user['student']["school_name"] = null;
+            }
+
         }
 
         return response()->json([

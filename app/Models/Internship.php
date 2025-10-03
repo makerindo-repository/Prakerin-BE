@@ -50,6 +50,11 @@ class Internship extends Model
         return $this->belongsTo(InternshipApplication::class);
     }
 
+    public function tasks()
+    {
+        return $this->hasMany(Task::class);
+    }
+
     public function tests()
 {
     return $this->belongsToMany(Test::class, 'internship_test', 'internship_id', 'test_id')

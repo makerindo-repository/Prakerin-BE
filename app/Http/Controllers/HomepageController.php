@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Hompage;
 use App\Models\Company;
 use Illuminate\Support\Facades\Auth;
+use Log;
 class HomepageController extends Controller
 {
     public function index()

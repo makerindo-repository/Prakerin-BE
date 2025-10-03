@@ -23,7 +23,7 @@ return new class extends Migration {
             $table->string('phone_number')->nullable();
             $table->text('address')->nullable();
             $table->boolean('is_verified')->default(false);
-            $table->enum('class', ['10', '11', '12', 'college'])->nullable();
+            $table->enum('class', ['10', '11', '12', 'collage'])->nullable();
             $table->string('skill')->nullable();
             $table->string('portofolio_link')->nullable();
             $table->string('social_media_link')->nullable();

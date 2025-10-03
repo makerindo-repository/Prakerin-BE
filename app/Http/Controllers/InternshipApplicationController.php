@@ -16,6 +16,7 @@ class InternshipApplicationController extends Controller
     public function index()
     {
         $limit = request()->query('limit', 10);
+        $status = request()->query('status', null);
 
 
         if (auth()->user()->tokenCan('company-access')) {
@@ -31,6 +32,9 @@ class InternshipApplicationController extends Controller
                 })
                 ->whereHas('curriculumVitae.student', function ($query) use ($search) {
                     $query->where('name', 'like', "%$search%");
+                })
+                ->when($status !== null, function ($query) use ($status) {
+                    $query->where('status', $status);
                 })
                 ->paginate($limit);
 

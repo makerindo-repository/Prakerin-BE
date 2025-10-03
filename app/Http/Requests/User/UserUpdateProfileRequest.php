@@ -80,7 +80,7 @@ class UserUpdateProfileRequest extends FormRequest
                 break;
             case 'school':
                 $rules['city_regency_id'] = 'nullable|uuid:4|exists:city_regencies,id';
-                $rules['accreditation'] = 'nullable|in:a,b,c';
+                $rules['accreditation'] = 'nullable|in:A,B,C';
                 $rules['status'] = 'nullable|in:negeri,swasta';
                 $rules['npsn'] = 'nullable|string|max:255';
                 $rules['website'] = 'nullable|url|max:255';
