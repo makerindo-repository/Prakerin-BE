@@ -250,8 +250,8 @@ class JobOpeningController extends Controller
         if ($validator->fails()) {
             throw new HttpResponseException(response()->json(['errors' => $validator->errors()], 400));
         }
-        
-        
+
+
         $data = $validator->validated();
         $data['company_id'] = auth()->user()->company->id;
         // return response()->json($data['company_id'], 400);
@@ -261,19 +261,19 @@ class JobOpeningController extends Controller
         // Jika request mengandung 'duration_type', gunakan 3 bulan jika '3_month', selain itu 14 hari
         if ($duration->duration_unit == 'month') {
             $data['end_date'] = $startDate->copy()->addMonths($duration->duration_value);
-        } else if($duration->duration_unit == 'day') {
+        } else if ($duration->duration_unit == 'day') {
             $data['end_date'] = $startDate->copy()->addDays($duration->duration_value);
-        } else if($duration->duration_unit == 'year' ) {
+        } else if ($duration->duration_unit == 'year') {
             $data['end_date'] = $startDate->copy()->addYears($duration->duration_value);
-        } 
-        
+        }
+
         // return response()->json([
         //     $data
         // ], 400);
         $jobOpening = JobOpening::create($data);
 
         $jobOpening->test()->attach($data['tests']);
-        
+
         return response()->json([
             'data' => $jobOpening->with('test')
             // 'test' => $data
@@ -384,14 +384,23 @@ class JobOpeningController extends Controller
     public function count(Request $request)
     {
 
-        $count = JobOpening::when($request->user()->tokenCan("company-access"), function ($query) use ($request) {
+
+        $counts = JobOpening::when($request->user()->tokenCan("company-access"), function ($query) use ($request) {
             $query->where("company_id", $request->user()->company->id);
         })
-            ->where("is_available", true)
-            ->count();
+            ->selectRaw('is_available, COUNT(*) as total')
+            ->groupBy('is_available')
+            ->pluck('total', 'is_available')
+            ->toArray();
 
+        // siapkan default biar selalu ada key true/false meskipun count = 0
+        $final = [
+            'true' => $counts[1] ?? 0, // di DB boolean biasanya 1/0
+            'false' => $counts[0] ?? 0,
+            'total' => array_sum($counts),
+        ];
         return response()->json([
-            'data' => $count
+            'data' => $final
         ]);
     }
 }
