@@ -43,6 +43,10 @@ class InternshipApplication extends Model
         return $this->belongsTo(JobOpening::class);
     }
 
+    public function test(){
+        return $this->belongsToMany(Test::class)->select("title", "type")->withPivot(['is_passed']);
+    }
+
     public function internshipApplicationTests()
     {
         return $this->hasMany(InternshipApplicationTest::class);

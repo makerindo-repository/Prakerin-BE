@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\HomePage\HomePageRequest;
+use App\Models\CommentPrakerin;
+use App\Models\Partner;
 use DB;
-use Illuminate\Http\Request;
 use App\Models\Hompage;
-use App\Models\Company;
 use Illuminate\Support\Facades\Auth;
 use Log;
 class HomepageController extends Controller
@@ -16,7 +16,8 @@ class HomepageController extends Controller
         $data = Hompage::where('name', 'LIKE', '%landing%')
             ->orderBy('created_at', 'ASC')
             ->get();
-        $company = Company::limit(10)->get();
+        $partner = Partner::orderBy('created_at', 'ASC')->get();
+        $commentPrakerin = CommentPrakerin::orderBy('created_at', 'ASC')->get();
 
 
         $formatted = [];
@@ -24,13 +25,18 @@ class HomepageController extends Controller
             foreach ($data as $item) {
                 $formatted[$item->name] = $item->value;
             }
-            $formatted['mitra'] = $company;
         } else {
             $formatted = $data;
         }
 
 
-        return response()->json(['data' => $formatted], 200);
+        return response()->json([
+            'data' => [
+                'homepages' => $formatted,
+                'partners' => $partner,
+                'comment_prakerins' => $commentPrakerin,
+            ]
+        ], 200);
     }
 
     public function about()

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CityRegencyController;
+use App\Http\Controllers\CommentPrakerinController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\ContactUsController;
 use App\Http\Controllers\CurriculumVitaeController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\InternshipController;
 use App\Http\Controllers\JobOpeningController;
 use App\Http\Controllers\MajorController;
 use App\Http\Controllers\MouController;
+use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\ProvinceController;
 use App\Http\Controllers\ReportTaskController;
 use App\Http\Controllers\RoleController;
@@ -47,6 +49,29 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::prefix('v1')->group(function () {
+
+    Route::prefix('comment-prakerins')
+        ->controller(CommentPrakerinController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
+            Route::middleware('abilities:admin-access')->group(function () {
+                Route::post('/', 'store');
+                Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+            });
+
+        });
+
+    Route::prefix('partners')
+        ->controller(PartnerController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
+            Route::middleware('abilities:admin-access')->group(function () {
+                Route::post('/', 'store');
+                Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+            });
+        });
 
     // Test
     Route::prefix('/tests')
@@ -174,6 +199,7 @@ Route::prefix('v1')->group(function () {
             Route::middleware('abilities:student-access')->group(function () {
                 Route::post('/', 'store');
                 Route::get('/count', 'count');
+                Route::patch('/{idInternshipApplication}/{idTest}', 'update_type');
             });
 
             Route::middleware('abilities:company-access')->group(function () {

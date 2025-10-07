@@ -55,13 +55,13 @@ class CurriculumVitaeController extends Controller
         $curriculumVitae = CurriculumVitae::find($id);
 
         if (!$curriculumVitae) {
-            return throw new HttpResponseException(response([
+             throw new HttpResponseException(response([
                 "errors" => "Curriculum Vitae not found."
             ], 404));
         }
 
         if ($curriculumVitae->student_id !== request()->user()->student->id) {
-            return throw new HttpResponseException(response([
+             throw new HttpResponseException(response([
                 "errors" => "Forbidden."
             ], 401));
         }

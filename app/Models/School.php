@@ -23,6 +23,7 @@ class School extends Model
         'user_id',
         'city_regency_id',
         'name',
+        'type',
         'address',
         'phone_number',
         'is_verified',

@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->foreignUuid('city_regency_id')->nullable()->references('id')->on('city_regencies')->onDelete('set null');
 
             $table->string('name');
+            $table->enum('type', ['school','university']);
             $table->text('address');
             $table->string('description')->nullable();
             $table->string('phone_number')->nullable();
