@@ -1,2 +1,6 @@
 *
 !.gitignore
+!profile
+!mous
+!import-template
+!curriculum-vitaes
