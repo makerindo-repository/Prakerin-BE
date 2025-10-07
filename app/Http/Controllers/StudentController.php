@@ -152,9 +152,18 @@ class StudentController extends Controller
     public function studentCount(Request $request)
     {
 
-        $studentCount = Student::where('school_id', $request->user()?->school?->id)
-            ->where('is_verified', true)
-            ->count();
+        $allStatuses = ['not_started', 'ongoing', 'completed'];
+
+        $studentCount = collect($allStatuses)
+            ->mapWithKeys(function ($status) use ($request) {
+                $count = Student::where('school_id', $request->user()?->school?->id)
+                    ->where('is_verified', true)
+                    ->where('status', $status)
+                    ->count();
+                return [$status => $count];
+            });
+
+
         return response()->json([
             'data' => $studentCount
         ], 200);

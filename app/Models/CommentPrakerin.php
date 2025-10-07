@@ -2,14 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Str;
 
-class Partner extends Model
+class CommentPrakerin extends Model
 {
-    /** @use HasFactory<\Database\Factories\PartnerFactory> */
-    use HasFactory;
+
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -24,15 +22,14 @@ class Partner extends Model
 
     protected $fillable = [
         'id',
-        'logo',
+        'photo_profile',
         'name',
-        'address',
+        'position',
+        'comment',
     ];
 
     protected $hidden = [
         'created_at',
         'updated_at'
     ];
-
-
 }

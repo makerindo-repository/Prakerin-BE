@@ -10,11 +10,12 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('partners', function (Blueprint $table) {
+        Schema::create('comment_prakerins', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->string('photo_profile');
             $table->string('name');
-            $table->string('logo');
-            $table->string('address');
+            $table->string('position');
+            $table->text('comment');
             $table->timestamps();
         });
     }
@@ -24,6 +25,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('partners');
+        Schema::dropIfExists('comment_prakerins');
     }
 };

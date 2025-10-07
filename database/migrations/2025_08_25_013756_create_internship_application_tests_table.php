@@ -10,18 +10,15 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('internship_application_tests', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+        Schema::create('internship_application_test', function (Blueprint $table) {
             $table->uuid('internship_application_id');
             $table->uuid('test_id');
-
-            $table->enum('type', ['theory', 'practice']);
+            // $table->enum('type', ['theory', 'practice']);
             $table->boolean('is_passed')->default(false);
-
+            $table->timestamps();
+            $table->primary(['internship_application_id', 'test_id']);
             $table->foreign('internship_application_id')->references('id')->on('internship_applications')->onDelete('cascade');
             $table->foreign('test_id')->references('id')->on('tests')->onDelete('cascade');
-
-            $table->timestamps();
         });
     }
 

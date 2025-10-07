@@ -22,6 +22,8 @@ class TaskController extends Controller
         $search = request()->query('search', '');
         $status = request()->query('status', '');
         $userStudentId = $request->query("user_student_id", null);
+        $isDeadline = filter_var($request->query('is_deadline', false), FILTER_VALIDATE_BOOLEAN);
+
 
         $user = $request->user();
 
@@ -41,6 +43,18 @@ class TaskController extends Controller
                     });
                 });
             })
+            ->when($isDeadline, function ($query) {
+                $query->with('internship.student:name');
+                $query->whereDate('due_date', '<=', now());
+                $query->whereNot('status', 'completed');
+            })
+            ->with([
+                'internship' => function ($q) {
+                    $q->select('id', 'student_id') // cuma ambil minimal
+                        ->with(['student:id,name']);
+                }
+            ])
+
             ->where('title', 'like', "%$search%")
             ->when($status === 'pending' || $status === 'in_progress' || $status === 'completed' || $status === 'cancelled', function ($query) use ($status) {
                 $query->where('status', $status);
@@ -48,6 +62,7 @@ class TaskController extends Controller
             ->selectRaw("
                 id,
                 title,
+                internship_id,
                 status,
                 due_date,
                 created_at,
@@ -198,7 +213,7 @@ class TaskController extends Controller
             ->select('students.name', DB::raw('COUNT(tasks.id) as completed_tasks'))
             ->groupBy('students.id', 'students.name')
             ->get();
-                
+
         $data['students'] = $students;
 
         return response()->json(['data' => $data], 200);

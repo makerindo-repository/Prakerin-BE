@@ -6,6 +6,7 @@ use App\Models\Internship;
 use App\Models\InternshipApplication;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
 class InternshipApplicationController extends Controller
@@ -56,6 +57,8 @@ class InternshipApplicationController extends Controller
                     'student' => $student,
                     'user' => $student->user,
                     'school' => $student->school,
+                    'major' => $student->major?->name,
+
                 ];
 
             });
@@ -66,7 +69,7 @@ class InternshipApplicationController extends Controller
 
 
 
-        $internshipApplications = InternshipApplication::with('jobOpening.company.user')
+        $internshipApplications = InternshipApplication::with('jobOpening.company.user', 'test')
             ->whereHas('curriculumVitae', fn($query) => $query->where('student_id', auth()->user()->student->id))
             ->paginate($limit);
 
@@ -95,6 +98,8 @@ class InternshipApplicationController extends Controller
                     'is_paid' => $app->jobOpening->is_paid,
                     'is_available' => $app->jobOpening->is_available,
                 ],
+
+                'test' => $app->test,
 
                 'company' => [
                     'id' => $app->jobOpening->company->id,
@@ -157,8 +162,23 @@ class InternshipApplicationController extends Controller
 
         $internshipApplication = InternshipApplication::create($data);
 
+        $test = $internshipApplication->jobOpening->test->pluck('pivot.test_id')->toArray();
+
+        $internshipApplication->test()->attach($test);
+
+        // dd($test);
+
         return response()->json([
-            'data' => $internshipApplication
+            'data' => $test
+        ], 201);
+    }
+
+    public function update_type($idInternshipApplication, $idTest){
+        $internshipAppilaciotn = InternshipApplication::find($idInternshipApplication);
+        $test = $internshipAppilaciotn->test->pivot;
+        $result = $internshipAppilaciotn->test()->updateExistingPivot($idTest, ['is_passed' => !$test->is_passed]);
+        return response()->json([
+            "test_status" => $result
         ], 201);
     }
 
@@ -167,7 +187,8 @@ class InternshipApplicationController extends Controller
      */
     public function show(string $id)
     {
-        $internshipApplication = InternshipApplication::with(['curriculumVitae.student.user', 'curriculumVitae.student.major'])
+        $internshipApplication = InternshipApplication::
+            with(['curriculumVitae.student.user', 'curriculumVitae.student.major', 'jobOpening.test'])
             ->find($id);
 
         if (!$internshipApplication) {
@@ -192,6 +213,8 @@ class InternshipApplicationController extends Controller
             'user' => $internshipApplication->curriculumVitae->student->user,
             'major' => $internshipApplication->curriculumVitae->student->major,
             'curriculum_vitae_id' => $internshipApplication->curriculum_vitae_id,
+            'job_opening' => $internshipApplication->jobOpening->makeHidden(['test']),
+            'test' => $internshipApplication->jobOpening->test,
         ];
 
         return response()->json([
@@ -221,7 +244,8 @@ class InternshipApplicationController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'status' => 'required|in:in_progress,accepted,rejected',
+            'status' => 'required|in:accepted,rejected',
+            'file' => 'required|file|mimes:pdf|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -233,12 +257,7 @@ class InternshipApplicationController extends Controller
 
         $data = $validator->validated();
 
-        if ($data['status'] === 'rejected') {
-            $validator = Validator::make($request->all(), [
-                'status' => 'required|in:in_progress,accepted,rejected',
-                'message_rejected' => 'required|string',
-            ]);
-        } elseif ($data['status'] === 'accepted') {
+        if ($data['status'] === 'accepted') {
             $internship = new Internship();
 
             $internship->internship_application_id = $internshipApplication->id;
@@ -256,24 +275,30 @@ class InternshipApplicationController extends Controller
             $internship->company_id = $request->user()->company->id;
 
             $internship->save();
+
+
+            $internshipApplication->curriculumVitae->student->status = "ongoing";
+            $internshipApplication->curriculumVitae->student->save();
         }
+        $email = $internshipApplication->curriculumVitae->student->user->email;
 
-        if ($validator->fails()) {
-            throw new HttpResponseException(response()->json(
-                ['errors' => $validator->errors()],
-                400
-            ));
-        }
+        $pdf = $request->file('file');
+        $pdfContent = file_get_contents($pdf->getRealPath()); // ambil isi file dari memori
 
-        $data = $validator->validated();
+        Mail::send([], [], function ($message) use ($email, $pdf, $pdfContent) {
+            $message->to($email)
+                ->subject('Dokumen PDF Anda')
+                ->html('<p>Halo, ini dokumen PDF yang Anda kirimkan!</p>')
+                ->attachData($pdfContent, $pdf->getClientOriginalName(), [
+                    'mime' => 'application/pdf',
+                ]);
+        });
 
-        $internshipApplication->curriculumVitae->student->status = "ongoing";
-        $internshipApplication->curriculumVitae->student->save();
-
-        $internshipApplication->update($data);
+        $internshipApplication->status = $data['status'];
+        $internshipApplication->save();
 
         return response()->json([
-            'data' => $internshipApplication
+            'data' => true
         ], 200);
     }
 

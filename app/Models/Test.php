@@ -16,7 +16,8 @@ class Test extends Model
         'id',
         'company_id',
         "title",
-        "test",
+        "link",
+        "description",
         "type"
     ];
 
@@ -37,6 +38,10 @@ class Test extends Model
     public function jobOpening()
     {
         return $this->belongsToMany(JobOpening::class);
+    }
+
+    public function internshipApplication(){
+        return $this->belongsToMany(InternshipApplication::class);
     }
 
     public function internshipApplicationTests()
