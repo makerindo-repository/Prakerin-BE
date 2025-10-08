@@ -8,6 +8,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Log;
 
 class InternshipApplicationController extends Controller
 {
@@ -124,7 +125,6 @@ class InternshipApplicationController extends Controller
 
         return response()->json($internshipApplications);
     }
-
     /**
      * Store a newly created resource in storage.
      */
@@ -173,10 +173,28 @@ class InternshipApplicationController extends Controller
         ], 201);
     }
 
-    public function update_type($idInternshipApplication, $idTest){
-        $internshipAppilaciotn = InternshipApplication::find($idInternshipApplication);
-        $test = $internshipAppilaciotn->test->pivot;
-        $result = $internshipAppilaciotn->test()->updateExistingPivot($idTest, ['is_passed' => !$test->is_passed]);
+    /**
+     * Update the specified resource in storage.
+     */
+    public function updateTestPassed($idInternshipApplication, $idTest)
+    {
+        $internshipApplication = InternshipApplication::find($idInternshipApplication);
+        $testIsPassed = $internshipApplication->test()->where('test_id', $idTest)->first()->pivot->is_passed;
+
+        $internshipApplication->test()->updateExistingPivot($idTest, ['is_passed' => !$testIsPassed]);
+        Log::info($internshipApplication->test);
+
+        return response()->json([
+            'data' => true
+        ], 201);
+    }
+
+    public function updateTestFailed($idInternshipApplication, $idTest)
+    {
+        $internshipApplication = InternshipApplication::find($idInternshipApplication);
+        $test = $internshipApplication->test->pivot;
+
+        $result = $internshipApplication->test()->updateExistingPivot($idTest, ['is_passed' => !$test->is_passed]);
         return response()->json([
             "test_status" => $result
         ], 201);
@@ -188,7 +206,7 @@ class InternshipApplicationController extends Controller
     public function show(string $id)
     {
         $internshipApplication = InternshipApplication::
-            with(['curriculumVitae.student.user', 'curriculumVitae.student.major', 'jobOpening.test'])
+            with(['curriculumVitae.student.user', 'curriculumVitae.student.major', 'test'])
             ->find($id);
 
         if (!$internshipApplication) {
@@ -214,7 +232,7 @@ class InternshipApplicationController extends Controller
             'major' => $internshipApplication->curriculumVitae->student->major,
             'curriculum_vitae_id' => $internshipApplication->curriculum_vitae_id,
             'job_opening' => $internshipApplication->jobOpening->makeHidden(['test']),
-            'test' => $internshipApplication->jobOpening->test,
+            'test' => $internshipApplication->test,
         ];
 
         return response()->json([

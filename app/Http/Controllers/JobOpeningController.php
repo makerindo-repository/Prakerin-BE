@@ -40,6 +40,8 @@ class JobOpeningController extends Controller
         )
             ->where('title', 'like', "%{$search}%")
             ->whereHas('company', function ($query) use ($province_id, $city_regency_id) {
+
+
                 if ($province_id) {
                     $query->whereHas('cityRegency', function ($query) use ($province_id) {
                         $query->whereIn('province_id', Arr::wrap($province_id));
@@ -60,6 +62,8 @@ class JobOpeningController extends Controller
 
                 if ($user->company) {
                     $query->where('company_id', $user->company->id);
+                } else {
+                    $query->where('is_available', true);
                 }
             })
 
@@ -76,13 +80,10 @@ class JobOpeningController extends Controller
             ->when($duration_id, function ($query, $duration_id) {
                 return $query->whereIn('duration_id', Arr::wrap($duration_id));
             })
-            ->where('is_available', true)
             ->paginate($limit);
 
         $jobOpenings->getCollection()->transform(function ($item) use ($field_id, $user) {
             return [
-                'a' => $user,
-                'b' => $field_id,
                 "id" => $item->id,
                 "title" => $item->title,
                 "description" => $item->description,

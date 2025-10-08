@@ -127,17 +127,6 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
-        'stdout' => [
-            'driver' => 'monolog',
-            'level' => env('LOG_LEVEL', 'debug'),
-            'handler' => StreamHandler::class,
-            'handler_with' => [
-                'stream' => 'php://stdout',
-            ],
-            'formatter' => env('LOG_STDERR_FORMATTER'),
-            'processors' => [PsrLogMessageProcessor::class],
-        ],
-
     ],
 
 ];
