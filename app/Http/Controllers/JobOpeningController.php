@@ -98,7 +98,7 @@ class JobOpeningController extends Controller
                 "company" => $item->company->makeHidden(['user', 'cityRegency']),
                 'user' => $item->company->user,
                 'save_job_opening' => $item->saveJobOpening->isNotEmpty() ? true : false,
-                'city_regency' => $item->company->cityRegency->makeHidden(['province']),
+                'city_regency' => $item->company?->cityRegency->makeHidden(['province']),
                 'province' => $item->company->cityRegency->province,
                 "duration" => $item->duration,
             ];
