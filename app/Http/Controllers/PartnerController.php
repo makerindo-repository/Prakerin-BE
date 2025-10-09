@@ -22,6 +22,7 @@ class PartnerController extends Controller
             'name' => 'required|string|max:255',
             'logo' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'address' => 'required|string|max:255',
+            'type' => 'required|in:school,company',
         ]);
 
         if ($validator->fails()) {
@@ -46,6 +47,7 @@ class PartnerController extends Controller
             'name' => $validated['name'],
             'logo' => $filename,
             'address' => $validated['address'],
+            'type' => $validated['type'],
         ]);
 
         return response()->json(['data' => true], 201);
@@ -71,6 +73,7 @@ class PartnerController extends Controller
             'name' => 'required|string|max:255',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'address' => 'required|string|max:255',
+            'type' => 'required|in:school,company',
         ]);
 
         if ($validator->fails()) {
@@ -103,6 +106,7 @@ class PartnerController extends Controller
 
         $partner->name = $validated['name'];
         $partner->address = $validated['address'];
+        $partner->type = $validated['type'];
         $partner->save();
 
         return response()->json(['data' => true], 200);
