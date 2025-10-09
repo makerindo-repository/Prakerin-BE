@@ -24,7 +24,7 @@ class CityRegencyCreateRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'name' => 'required|max:255|unique:provinces,name',
+            'name' => 'required|max:255|unique:city_regencies,name',
             'province_id' => 'required|exists:provinces,id',
         ];
         if ($this->user()->tokenCan("admin-access")) {
