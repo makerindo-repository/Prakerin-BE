@@ -27,6 +27,7 @@ class Partner extends Model
         'logo',
         'name',
         'address',
+        'type',
     ];
 
     protected $hidden = [
