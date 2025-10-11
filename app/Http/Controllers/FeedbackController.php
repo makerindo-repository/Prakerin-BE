@@ -33,6 +33,12 @@ class FeedbackController extends Controller
         ]);
     }
 
+    public function feed(Request $request) {
+        $limit = $request->query('limit', 10);
+        $search = $request->query('search', '');
+        
+    }
+
     /**
      * Store a newly created resource in storage.
      */
@@ -80,6 +86,8 @@ class FeedbackController extends Controller
         ]);
 
     }
+
+
 
     /**
      * Display the specified resource.
