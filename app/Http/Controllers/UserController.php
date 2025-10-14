@@ -19,10 +19,10 @@ use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Log;
 
 class UserController extends Controller
 {
@@ -39,17 +39,27 @@ class UserController extends Controller
         $isCompleted = $request->has('is_completed')
             ? filter_var($request->query('is_completed'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
             : null;
+        $isSchool = $request->has('is_school')
+            ? filter_var($request->query('is_school'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+            : null;
+
+        Log::info('Tes'.$isSchool);
+        Log::info('Dua '.$request->query('is_school'));
+        Log::info('Tiga '.$request->has('is_school'));
+        Log::info('Empat'.$isSchool !== null);
 
 
         $user = Auth::guard('sanctum')->user();
 
+
         $users = User::
-            when($user === null, function ($query) use ($search, $limit) {
+            when($user === null, function ($query) use ($search, $isSchool) {
                 $query->with(['school']);
                 $query->where('role', 'school');
-                $query->whereHas('school', function ($q) use ($search) {
+                $query->whereHas('school', function ($q) use ($search, $isSchool) {
                     $q->where('is_verified', true);
                     $q->where('name', 'like', "%$search%");
+                    $q->where('type', $isSchool ? 'school' : 'university');
                 });
             })
             ->when($user?->tokenCan('school-access') && ($role === 'student'), function ($query, ) use ($search, $isVerified, $user, $status) {
@@ -132,7 +142,7 @@ class UserController extends Controller
                     $q->where('name', 'like', "%$search%");
                 });
             })
-            ->when($user?->tokenCan('admin-access'), function ($query) use ($role, $request) {
+            ->when($user?->tokenCan('admin-access'), function ($query) use ($role, $request, $isSchool) {
                 $isVerified = $request->has('is_verified')
                     ? filter_var($request->query('is_verified'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
                     : null;
@@ -142,10 +152,13 @@ class UserController extends Controller
                 $query->when($role, function ($query, $role) {
                     return $query->where('role', $role);
                 });
-                $query->when($isVerified !== null, function ($query) use ($isVerified) {
-                    $query->where(function ($q) use ($isVerified) {
+                $query->when($isVerified !== null, function ($query) use ($isVerified, $isSchool) {
+                    $query->where(function ($q) use ($isVerified, $isSchool) {
                         $q->whereHas('student', fn($q2) => $q2->where('is_verified', $isVerified))
-                            ->orWhereHas('school', fn($q2) => $q2->where('is_verified', $isVerified))
+                            ->orWhereHas('school', function($q2) use ($isVerified, $isSchool) {
+                                $q2->where('is_verified', $isVerified);
+                                $q2->when($isSchool !== null, fn($q3) => $q3->where('type', $isSchool ? 'school' : 'university'));
+                            })
                             ->orWhereHas('company', fn($q2) => $q2->where('is_verified', $isVerified));
                     });
                 });

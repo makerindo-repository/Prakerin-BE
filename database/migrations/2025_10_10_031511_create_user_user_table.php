@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->uuid('user_id');
             $table->uuid('related_user_id');
+            $table->boolean('is_done')->default(false);
             $table->timestamps();
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
             $table->foreign('related_user_id')->references('id')->on('users')->cascadeOnDelete();

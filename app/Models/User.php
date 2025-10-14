@@ -81,9 +81,9 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     public function toRate() {
-        return $this->belongsToMany(User::class, 'user_user',  'user_id', 'related_user_id')->withTimestamps();
+        return $this->belongsToMany(User::class, 'user_user',  'user_id', 'related_user_id')->withTimestamps()->withPivot('is_done');
     }
     public function rated() {
-        return $this->belongsToMany(User::class, 'user_user', 'related_user_id', 'user_id')->withTimestamps();
+        return $this->belongsToMany(User::class, 'user_user', 'related_user_id', 'user_id')->withTimestamps()->withPivot('is_done');
     }
 }
