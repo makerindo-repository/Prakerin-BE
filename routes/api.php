@@ -299,15 +299,15 @@ Route::prefix('v1')->group(function () {
     // Feedback
     Route::prefix('/feedbacks')
         ->controller(FeedbackController::class)
-        // ->middleware('auth:sanctum')
+        ->middleware('auth:sanctum')
         ->group(function () {
             Route::get('/', 'index');
             Route::post('/', 'store');
-            Route::get('/{id}', 'show');
             Route::delete('/{id}', 'destroy');
             Route::get('/ulasan', 'rate');
             Route::get('/check', 'check');
             Route::get('/rating', 'rating');
+            Route::get('/{id}', 'show');
         });
 
     // Duration

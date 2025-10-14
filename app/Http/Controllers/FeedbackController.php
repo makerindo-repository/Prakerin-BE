@@ -41,18 +41,22 @@ class FeedbackController extends Controller
         // debug cepat: lihat isi pivot untuk user yang login
         Log::info('===> FUNCTION RATE DIPANGGIL <===');
         // debug: lihat query yang akan dieksekusi
-        $query = $request->user()->toRate();
-        Log::info('toRate sql', [$query->toSql(), $query->getBindings()]);
 
         $limit = $request->query('limit', 10);
         $search = $request->query('search', '');
 
+        $query = $request->user()->with(['toRate', 'feedbacksGiven']);
+        Log::info('toRate sql', [$query->toSql(), $query->getBindings()]);
+
         // Pastikan kita Eager Load semua relasi yang mungkin dibutuhkan
         // untuk menghindari N+1 query problem saat transformasi.
-        $query->with([
+        $query->toRate->with([
             'company.cityRegency.province',
-            // 'student.someRelation', // Ganti dengan relasi yang relevan untuk student
             // 'school.someRelation'  // Ganti dengan relasi yang relevan untuk school
+        ]);
+
+        $query->feedbacksGiven([
+            'formUser.student.major'
         ]);
 
         if ($search !== '') {
@@ -71,6 +75,7 @@ class FeedbackController extends Controller
                     // Pastikan relasi company tidak null untuk menghindari error
                     if ($user->company) {
                         return [
+                            'is_done' => $user->pivot->is_done,
                             'id'       => $user->id,
                             'name'     => $user->company->name,
                             'kota'     => $user->company->cityRegency->name ?? 'Data tidak tersedia',
@@ -107,7 +112,7 @@ class FeedbackController extends Controller
         // Opsi lain adalah tidak mem-filter dan biarkan frontend yang menangani item null.
         // Untuk saat ini kita biarkan apa adanya.
 
-        return response()->json("test", 200);
+        return response()->json($transformedData, 200);
     }
 
     /**

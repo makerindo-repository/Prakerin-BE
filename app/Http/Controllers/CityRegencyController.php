@@ -5,11 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CityRegency\CityRegencyCreateRequest;
 use App\Http\Requests\CityRegency\CityRegencyUpdateRequest;
 use App\Models\CityRegency;
-use App\Models\Province;
 use Arr;
 use Auth;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class CityRegencyController extends Controller
 {
@@ -23,6 +23,8 @@ class CityRegencyController extends Controller
         $search = $request->query('search', '');
         $provinceId = $request->query('province_id', []);
         $limit = $request->query('limit', 10);
+        Log::info($provinceId);
+
 
         if ($is_accepted === false && !Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
             throw new HttpResponseException(response([
@@ -31,8 +33,8 @@ class CityRegencyController extends Controller
         }
 
         if (Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
-
             $cityRegencies = CityRegency::where('is_accepted', $is_accepted)
+                ->with('province')
                 ->where('name', "like", "%$search%")
                 ->when(!empty($provinceId), function ($query) use ($provinceId) {
                     $query->whereIn('province_id', Arr::wrap($provinceId));
@@ -45,7 +47,6 @@ class CityRegencyController extends Controller
                 200
             );
         } else {
-
             $cityRegencies = CityRegency::where('is_accepted', $is_accepted)
                 ->where('name', "like", "%$search%")
                 ->when(!empty($provinceId), function ($query) use ($provinceId) {
