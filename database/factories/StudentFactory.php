@@ -19,7 +19,7 @@ class StudentFactory extends Factory
             'name' => $this->faker->name(),
             'date_of_birth' => $this->faker->date('Y-m-d', '-18 years'),
             'gender' => $this->faker->randomElement(['male', 'female']),
-            'phone_number' => $this->faker->regexify('\+62 8[0-9]{2}-[0-9]{4}-[0-9]{4}'),
+            'phone_number' => $this->faker->regexify('/^\+628[0-9]{8,10}$/'),
             'address' => $this->faker->address(),
             'is_verified' => true,
         ];

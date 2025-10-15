@@ -189,16 +189,6 @@ class InternshipApplicationController extends Controller
         ], 201);
     }
 
-    public function updateTestFailed($idInternshipApplication, $idTest)
-    {
-        $internshipApplication = InternshipApplication::find($idInternshipApplication);
-        $test = $internshipApplication->test->pivot;
-
-        $result = $internshipApplication->test()->updateExistingPivot($idTest, ['is_passed' => !$test->is_passed]);
-        return response()->json([
-            "test_status" => $result
-        ], 201);
-    }
 
     /**
      * Display the specified resource.
@@ -246,6 +236,7 @@ class InternshipApplicationController extends Controller
     public function update(Request $request, string $id)
     {
         $internshipApplication = InternshipApplication::find($id);
+        $jobOpeing = $internshipApplication->jobOpening;
 
         if (!$internshipApplication) {
             throw new HttpResponseException(response()->json(
@@ -280,20 +271,12 @@ class InternshipApplicationController extends Controller
 
             $internship->internship_application_id = $internshipApplication->id;
 
-            $internship->start_date = now();
-
-            if ($internshipApplication->jobOpening->duration->duration_unit === "day") {
-                $internship->end_date = now()->addDays($internshipApplication->jobOpening->duration->duration_value);
-            } else if ($internshipApplication->jobOpening->duration->duration_unit === "month") {
-                $internship->end_date = now()->addMonths($internshipApplication->jobOpening->duration->duration_value);
-            } else if ($internshipApplication->jobOpening->duration->duration_unit === "year") {
-                $internship->end_date = now()->addYears($internshipApplication->jobOpening->duration->duration_value);
-            }
+            $internship->start_date = $jobOpeing->start_date;
+            $internship->end_date = $jobOpeing->end_date;
             $internship->student_id = $internshipApplication->curriculumVitae->student_id;
             $internship->company_id = $request->user()->company->id;
 
             $internship->save();
-
 
             $internshipApplication->curriculumVitae->student->status = "ongoing";
             $internshipApplication->curriculumVitae->student->save();

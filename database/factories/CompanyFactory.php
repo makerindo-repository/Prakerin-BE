@@ -21,7 +21,7 @@ class CompanyFactory extends Factory
             'name' => $this->faker->company(),
             'description' => $this->faker->paragraph(),
             'address' => $this->faker->address(),
-            'phone_number' => $this->faker->regexify('\+62 8[0-9]{2}-[0-9]{4}-[0-9]{4}'),
+            'phone_number' => $this->faker->regexify('/^\+628[0-9]{8,10}$/'),
             'is_verified' => $this->faker->boolean(70),
         ];
     }

@@ -5,6 +5,7 @@ namespace App\Http\Requests\User;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class UserUpdateProfileRequest extends FormRequest
@@ -57,9 +58,9 @@ class UserUpdateProfileRequest extends FormRequest
         $rules['phone_number'] = [
             'nullable',
             'string',
-            'regex:/^\+62 8[0-9]{2}-[0-9]{4}-[0-9]{4}$/',
+            'regex:/^\+628[0-9]{8,10}$/',
             'min:10',
-            'max:20'  // Lebih panjang karena ada spasi/strip
+            'max:20',
         ];
         switch ($role) {
             case 'student':
@@ -67,7 +68,7 @@ class UserUpdateProfileRequest extends FormRequest
                 $rules['school_id'] = 'nullable|uuid:4|exists:schools,id';
                 $rules['date_of_birth'] = 'nullable|date_format:Y-m-d';
                 $rules['gender'] = 'nullable|in:male,female';
-                $rules['class'] = 'nullable|in:10,11,12,college';
+                $rules['class'] = 'nullable|in:10,11,12,collage';
                 $rules['skill'] = 'nullable|string|max:255';
                 $rules['portofolio_link'] = 'nullable|url|max:255';
                 $rules['social_media_link'] = 'nullable|url|max:255';

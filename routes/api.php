@@ -7,6 +7,7 @@ use App\Http\Controllers\CommentPrakerinController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\ContactUsController;
 use App\Http\Controllers\CurriculumVitaeController;
+use App\Http\Controllers\DevController;
 use App\Http\Controllers\DurationController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FieldController;
@@ -49,6 +50,11 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::prefix('v1')->group(function () {
+    Route::prefix('dev')
+        ->controller(DevController::class)
+        ->group(function () {
+            Route::post('/', 'devFeed');
+        });
 
     Route::prefix('comment-prakerins')
         ->controller(CommentPrakerinController::class)
@@ -114,7 +120,7 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-    //Contact us    
+    //Contact us
     Route::prefix('/contact-us')
         ->controller(ContactUsController::class)
         ->group(function () {
@@ -213,7 +219,7 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-    // Job Opening 
+    // Job Opening
     Route::prefix('/job-openings')
         ->controller(JobOpeningController::class)
         ->group(function () {
@@ -298,8 +304,10 @@ Route::prefix('v1')->group(function () {
             Route::get('/', 'index');
             Route::post('/', 'store');
             Route::delete('/{id}', 'destroy');
+            Route::get('/ulasan', 'rate');
             Route::get('/check', 'check');
             Route::get('/rating', 'rating');
+            Route::get('/{id}', 'show');
         });
 
     // Duration

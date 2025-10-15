@@ -8,6 +8,7 @@ use App\Models\Province;
 use Auth;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ProvinceController extends Controller
 {
@@ -20,6 +21,7 @@ class ProvinceController extends Controller
         $is_accepted = filter_var($request->query('is_accepted', true), FILTER_VALIDATE_BOOLEAN);
         $search = $request->query('search', '');
         $limit = $request->query('limit', 10);
+        $isLimit = filter_var($request->query('is_limit', false), FILTER_VALIDATE_BOOLEAN);
 
         if ($is_accepted === false && !Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
             throw new HttpResponseException(response([
@@ -27,6 +29,8 @@ class ProvinceController extends Controller
             ], 403));
         }
 
+
+        Log::info("Province Controller limit = $limit");
 
 
         if (Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
@@ -38,12 +42,19 @@ class ProvinceController extends Controller
                 200
             );
         } else {
+            if ($isLimit) {
+            $provinces = Province::where('is_accepted', $is_accepted)
+                ->where('name', "like", "%$search%")
+                ->paginate($limit);
+            return response()->json($provinces, 200);
+            }else{
             $provinces = Province::where('is_accepted', $is_accepted)
                 ->where('name', "like", "%$search%")
                 ->get();
             return response()->json([
                 'data' => $provinces,
             ], 200);
+            }
         }
     }
 

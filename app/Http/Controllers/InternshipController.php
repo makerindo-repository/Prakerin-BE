@@ -60,7 +60,6 @@ class InternshipController extends Controller
                 403
             ));
         }
-
         $validator = Validator::make($request->all(), [
             'start_date' => 'sometimes|required|date',
             'end_date' => 'sometimes|required|date|after:start_date',
@@ -83,6 +82,7 @@ class InternshipController extends Controller
             $certificate = new Certificate();
             $certificate->internship_id = $internship->id;
             $certificate->save();
+            auth()->user->rated()->attach($internship->students->user->id);
         }
 
 

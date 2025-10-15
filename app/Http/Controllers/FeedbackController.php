@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Feedback;
+use App\Models\User;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class FeedbackController extends Controller
@@ -31,6 +34,85 @@ class FeedbackController extends Controller
         return response()->json([
             $feedback
         ]);
+    }
+
+    public function rate(Request $request)
+    {
+        // debug cepat: lihat isi pivot untuk user yang login
+        Log::info('===> FUNCTION RATE DIPANGGIL <===');
+        // debug: lihat query yang akan dieksekusi
+
+        $limit = $request->query('limit', 10);
+        $search = $request->query('search', '');
+
+        $query = $request->user()->with(['toRate', 'feedbacksGiven']);
+        Log::info('toRate sql', [$query->toSql(), $query->getBindings()]);
+
+        // Pastikan kita Eager Load semua relasi yang mungkin dibutuhkan
+        // untuk menghindari N+1 query problem saat transformasi.
+        $query->toRate->with([
+            'company.cityRegency.province',
+            // 'school.someRelation'  // Ganti dengan relasi yang relevan untuk school
+        ]);
+
+        $query->feedbacksGiven([
+            'formUser.student.major'
+        ]);
+
+        if ($search !== '') {
+            $query->where('username', 'like', "%{$search}%");
+        }
+
+        // 1. Eksekusi query dan dapatkan hasil paginasi
+        $paginatedUsers = $query->paginate($limit);
+
+        // 2. Transformasi data menggunakan `through()`
+        // Ini akan mengubah setiap item user di dalam paginator
+        $transformedData = $paginatedUsers->through(function ($user) {
+            // Gunakan switch untuk menentukan struktur berdasarkan role
+            switch ($user->role) {
+                case 'company':
+                    // Pastikan relasi company tidak null untuk menghindari error
+                    if ($user->company) {
+                        return [
+                            'is_done' => $user->pivot->is_done,
+                            'id'       => $user->id,
+                            'name'     => $user->company->name,
+                            'kota'     => $user->company->cityRegency->name ?? 'Data tidak tersedia',
+                            'provinsi' => $user->company->cityRegency->province->name ?? 'Data tidak tersedia',
+                            'user'     => [
+                                'photo_profile' => $user->photo_profile,
+                            ],
+                            // Anda bisa tambahkan data lain jika diperlukan
+                            // 'id' => $user->id,
+                        ];
+                    }
+                    break;
+
+                case 'student':
+                    // Anda bisa definisikan struktur untuk student di sini
+                    return [
+                        'nama_lengkap' => $user->student->full_name ?? $user->username,
+                        'jurusan'      => $user->student->major ?? 'Belum ada jurusan',
+                        'user'         => [
+                            'photo_profile' => $user->photo_profile,
+                        ]
+                    ];
+                    break;
+
+                    // Tambahkan case lain jika ada role lain
+            }
+
+            // Jika role tidak cocok atau data relasi tidak ada, kembalikan null atau data default
+            return null;
+        });
+
+        // 3. Filter hasil yang null (jika ada) dan kembalikan response
+        // Catatan: Jika Anda memfilter, jumlah total item mungkin tidak sesuai lagi.
+        // Opsi lain adalah tidak mem-filter dan biarkan frontend yang menangani item null.
+        // Untuk saat ini kita biarkan apa adanya.
+
+        return response()->json($transformedData, 200);
     }
 
     /**
@@ -75,18 +157,29 @@ class FeedbackController extends Controller
 
         $feedback = Feedback::create($data);
 
+        auth()->user()->toRate()->updateExistingPivot($data['to_user_id'], ['is_done' => true]);
+
         return response()->json([
             'data' => $feedback
         ]);
-
     }
+
+
 
     /**
      * Display the specified resource.
      */
     public function show(string $id)
     {
-        //
+        // $user = auth()->user();
+        // // $company = $user->toRate()->where('related_user_id', $id)->first();
+        $data = Feedback::where('to_user_id', $id)->first();
+        Log::info(response()->json($data, 200));
+        // return response()->json([
+        //     'rating' => $data->rating,
+        //     'text' => $data->text
+        // ], 200);
+        return response()->json($data,200);
     }
 
     /**

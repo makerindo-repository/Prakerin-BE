@@ -173,8 +173,26 @@ class DatabaseSeeder extends Seeder
 
 
         $schoolId = School::factory()->create([
+            'name' => 'super school',
             'user_id' => $school->id,
         ]);
+
+        School::factory()->create([
+            'name' => 'SMKN 3 Banjar',
+        ]);
+        School::factory()->create([
+            'name' => 'SMKS Wikrama Bogor',
+        ]);
+        School::factory()->create([
+            'name' => 'SMKN 2 Sukabumi',
+        ]);
+        School::factory()->create([
+            'name' => 'SMKN 1 Katapang',
+        ]);
+        School::factory()->create([
+            'name' => 'SMKN 1 Subang',
+        ]);
+  
 
         Company::factory()->create([
             'user_id' => $company->id,
@@ -185,7 +203,7 @@ class DatabaseSeeder extends Seeder
             'school_id' => $schoolId->id,
         ]);
 
-        School::factory(20)->create();
+        // School::factory(20)->create();
 
         Company::factory(20)->create();
 
