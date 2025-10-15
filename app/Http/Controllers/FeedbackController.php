@@ -45,25 +45,22 @@ class FeedbackController extends Controller
         $limit = $request->query('limit', 10);
         $search = $request->query('search', '');
 
-        $query = $request->user()->with(['toRate', 'feedbacksGiven']);
+        $query = $request->user()->toRate()
+            ->with([
+                'company.cityRegency.province',
+                'student',
+                // eager load feedback dari current user ke tiap target (opsional)
+                'feedbacksReceived' => function ($q) {
+                    $q->where('from_user_id', auth()->id());
+                },
+            ]);
+
         Log::info('toRate sql', [$query->toSql(), $query->getBindings()]);
-
-        // Pastikan kita Eager Load semua relasi yang mungkin dibutuhkan
-        // untuk menghindari N+1 query problem saat transformasi.
-        $query->toRate->with([
-            'company.cityRegency.province',
-            // 'school.someRelation'  // Ganti dengan relasi yang relevan untuk school
-        ]);
-
-        $query->feedbacksGiven([
-            'formUser.student.major'
-        ]);
 
         if ($search !== '') {
             $query->where('username', 'like', "%{$search}%");
         }
 
-        // 1. Eksekusi query dan dapatkan hasil paginasi
         $paginatedUsers = $query->paginate($limit);
 
         // 2. Transformasi data menggunakan `through()`
