@@ -2,15 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-
-class Partner extends Model
+class GeneratedCv extends Model
 {
-    /** @use HasFactory<\Database\Factories\PartnerFactory> */
-    use HasFactory;
+    // app/Models/GeneratedCv.php
+
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -25,16 +23,11 @@ class Partner extends Model
 
     protected $fillable = [
         'id',
-        'logo',
-        'name',
-        'address',
-        'type',
+        'user_id',
+        'generated_content',
+        'source_prompt'
     ];
-
-    protected $hidden = [
-        'created_at',
-        'updated_at'
+    protected $casts = [
+        'generated_content' => 'array',
     ];
-
-
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\CommentPrakerinController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\ContactUsController;
 use App\Http\Controllers\CurriculumVitaeController;
+use App\Http\Controllers\CvGeneratorController;
 use App\Http\Controllers\DevController;
 use App\Http\Controllers\DurationController;
 use App\Http\Controllers\FeedbackController;
@@ -54,6 +55,7 @@ Route::prefix('v1')->group(function () {
         ->controller(DevController::class)
         ->group(function () {
             Route::post('/', 'devFeed');
+            Route::post('/generate-cv', [CvGeneratorController::class, 'generate'])->middleware('auth:sanctum');
         });
 
     Route::prefix('comment-prakerins')
@@ -65,7 +67,6 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}', 'update');
                 Route::delete('/{id}', 'destroy');
             });
-
         });
 
     Route::prefix('partners')
@@ -185,15 +186,14 @@ Route::prefix('v1')->group(function () {
             Route::middleware('abilities:student-access')->group(function () {
                 Route::get('/', 'index');
                 Route::post('/', 'store');
+                Route::post('/generate-cv', [CvGeneratorController::class, 'generate']);
                 Route::get('/{id}', 'show');
                 Route::patch('/{id}', 'update');
                 Route::delete('/{id}', 'destroy');
-
             });
             Route::get('/{id}/download', 'download');
 
             Route::get('/{id}/preview', 'preview');
-
         });
 
     // Internship Application
@@ -444,12 +444,5 @@ Route::prefix('v1')->group(function () {
 
         Route::apiResource('students', StudentController::class);
         Route::apiResource('companies', CompanyController::class)->except(['store', 'update', 'destroy']);
-
-
     });
-
 });
-
-
-
-
