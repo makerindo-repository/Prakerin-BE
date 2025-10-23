@@ -9,3 +9,206 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* Combined CSS for CV ATS, CV Modern and CV Professional */
+
+/* Shared variables */
+:root{
+  --bg: #ffffff;
+  --accent: #00809d;
+  --accent-dark: #1b2643;
+  --accent-light: #00bee9;
+  --muted: #6b7280;
+  --text: #111827;
+  --aside-bg: #1f2937;
+  --card-shadow: 0 12px 30px rgba(2,6,23,0.08);
+  --card-shadow-soft: 0 10px 25px rgba(2,6,23,0.08);
+  --radius: 8px;
+  --max-width: 900px;
+}
+
+/* Reset / base */
+*{box-sizing:border-box}
+body{
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  background:#f3f4f6;
+  margin:0;
+  color:var(--text);
+}
+
+/* Generic CV container */
+.cv-container,
+.cv-card,
+.cv-wrapper{
+  width:100%;
+  max-width:var(--max-width);
+  margin:0 auto;
+  background:var(--bg);
+  box-shadow:var(--card-shadow);
+  border-radius:8px;
+  overflow:hidden;
+}
+
+/* =========================
+   CV Modern (left-aside)
+   ========================= */
+.cv-modern-container{
+  display:flex;
+  min-height:1123px;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+}
+
+/* aside */
+.cv-modern-aside{
+  width:33.3333%;
+  background:var(--aside-bg);
+  color:white;
+  padding:32px;
+}
+.cv-modern-aside .avatar{
+  width:96px;height:96px;border-radius:50%;
+  background:var(--accent);
+  margin:0 auto 12px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.2);
+}
+.cv-modern-aside .aside-header{text-align:center;margin-bottom:28px}
+.cv-modern-aside h1{font-size:22px;margin:6px 0 2px}
+.cv-modern-aside h2{font-size:14px;color:var(--accent);font-weight:300}
+
+.cv-modern-aside .aside-section{margin-bottom:22px}
+.cv-modern-aside .aside-section h3{
+  font-size:13px;color:var(--accent);letter-spacing:0.08em;margin-bottom:10px;text-transform:uppercase;
+}
+.cv-modern-aside .skills{display:flex;flex-wrap:wrap;gap:8px}
+.cv-modern-aside .skill-chip{
+  background:rgba(0,128,157,0.18);
+  color:white;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+}
+.cv-modern-aside .edu-item{margin-bottom:10px;font-size:13px}
+.cv-modern-aside .edu-degree{font-weight:700}
+.cv-modern-aside .edu-inst{color:rgba(255,255,255,0.8)}
+.cv-modern-aside .edu-year{color:rgba(255,255,255,0.7);font-size:12px;font-style:italic}
+
+/* main */
+.cv-modern-main{
+  width:66.6666%;
+  padding:40px;
+  color:var(--text);
+}
+.cv-modern-main .main-section{margin-bottom:28px}
+.cv-modern-main .main-section h2{
+  font-size:20px;margin-bottom:12px;
+  border-bottom:3px solid var(--accent);
+  padding-bottom:8px;
+  color:var(--accent-dark);
+}
+.cv-modern-main .work-list{display:block}
+.cv-modern-main .job-item{position:relative;padding-left:18px;border-left:3px solid #e5e7eb;margin-bottom:18px}
+.cv-modern-main .job-item .job-head{margin-bottom:8px}
+.cv-modern-main .job-dates{font-size:12px;color:var(--muted)}
+.cv-modern-main .job-title{font-size:16px;color:var(--accent-dark);margin:4px 0}
+.cv-modern-main .job-company{font-size:14px;color:#4b5563;margin-bottom:6px}
+.cv-modern-main .job-points{margin:0;padding-left:18px;color:#374151}
+.cv-modern-main .job-points li{margin-bottom:6px;font-size:14px}
+.cv-modern-main .job-item::before{
+  content:"";
+  position:absolute;
+  left:-10px;
+  top:10px;
+  width:14px;height:14px;border-radius:50%;
+  background:var(--accent);
+  border:4px solid white;
+  box-shadow:0 2px 6px rgba(2,6,23,0.08);
+}
+
+/* =========================
+   CV ATS (single column card)
+   ========================= */
+.cv-ats-card{
+  padding:32px;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  color:#111827;
+  background:var(--bg);
+  border-radius:6px;
+  box-shadow:var(--card-shadow-soft);
+}
+.cv-ats-header{text-align:center;margin-bottom:18px}
+.cv-ats-header h1{font-size:28px;letter-spacing:0.06em;text-transform:uppercase;margin:0 0 6px}
+.cv-ats-header .job-title{margin:0 0 10px;color:var(--muted)}
+.cv-ats-header .contact{font-size:13px;color:var(--muted)}
+.cv-ats-section{margin-bottom:20px}
+.cv-ats-section h2{
+  font-size:16px;text-transform:uppercase;border-bottom:2px solid #cfcfcf;padding-bottom:8px;margin:0 0 12px;color:var(--accent-dark);
+}
+.cv-ats .work-list .job-item{margin-bottom:18px}
+.cv-ats .job-head{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px}
+.cv-ats .job-title{font-size:15px;color:var(--accent-dark);margin:0 0 6px}
+.cv-ats .job-company{font-size:14px;color:#374151;margin-bottom:6px}
+.cv-ats .job-points{margin:0;padding-left:18px;color:#374151}
+.cv-ats .job-points li{margin-bottom:6px;font-size:14px}
+
+.cv-ats .edu-item{margin-bottom:10px}
+.cv-ats .edu-institution{font-weight:700}
+.cv-ats .edu-degree{color:var(--muted)}
+.cv-ats .edu-year{font-style:italic;color:var(--muted);font-size:13px}
+
+.cv-ats .skills-list{display:flex;flex-wrap:wrap;gap:8px}
+.cv-ats .skill-chip{
+  background:rgba(0,128,157,0.12);
+  color:var(--accent-dark);
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:13px;
+}
+
+/* =========================
+   CV Professional (document-like)
+   ========================= */
+.cv-professional{
+  padding:28px;
+  font-family: Georgia, "Times New Roman", serif;
+  color:var(--accent-dark);
+  background:var(--bg);
+}
+.cv-professional header .cv-header-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:16px;
+}
+.cv-professional h1{font-size:32px;margin:0 0 6px;letter-spacing:0.04em;text-transform:uppercase}
+.cv-professional .job-title{color:var(--accent-dark);font-size:16px;margin:0}
+.cv-professional .contacts{display:flex;flex-direction:column;gap:8px}
+.cv-professional .contact-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.cv-professional hr{border:none;border-top:1px solid #e6e6e6;margin-top:18px}
+.cv-professional .section{margin-bottom:22px}
+.cv-professional .section h2{
+  font-size:18px;margin:0 0 10px;color:var(--accent-dark);border-bottom:2px solid #e6e6e6;padding-bottom:8px;
+}
+.cv-professional .work-list .job-item{margin-bottom:18px}
+.cv-professional .job-head{display:flex;justify-content:space-between;align-items:flex-end}
+.cv-professional .job-title{font-size:16px;font-weight:600;color:var(--accent)}
+.cv-professional .job-dates{font-size:13px;color:var(--muted)}
+.cv-professional .job-company{font-size:14px;color:#374151;margin:6px 0}
+.cv-professional .job-points{margin:0;padding-left:18px;color:#333}
+.cv-professional .job-points li{margin-bottom:6px}
+
+/* =========================
+   Utilities & Responsive
+   ========================= */
+.text-muted{color:var(--muted)}
+.uppercase{text-transform:uppercase}
+
+@media (max-width:900px){
+  /* make modern layout stack */
+  .cv-modern-container{flex-direction:column}
+  .cv-modern-aside,.cv-modern-main{width:100%}
+  /* general responsive paddings */
+  .cv-modern-main{padding:24px}
+  .cv-modern-aside{padding:20px}
+  .cv-ats-card{padding:20px}
+  .cv-professional{padding:18px}
+}
