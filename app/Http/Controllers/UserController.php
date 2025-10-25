@@ -47,8 +47,7 @@ class UserController extends Controller
         $user = Auth::guard('sanctum')->user();
 
 
-        $users = User::
-            when($user === null, function ($query) use ($search, $isSchool) {
+        $users = User::when($user === null, function ($query) use ($search, $isSchool) {
                 $query->with(['school']);
                 $query->where('role', 'school');
                 $query->whereHas('school', function ($q) use ($search, $isSchool) {
@@ -57,7 +56,7 @@ class UserController extends Controller
                     $q->where('type', $isSchool ? 'school' : 'university');
                 });
             })
-            ->when($user?->tokenCan('school-access') && ($role === 'student'), function ($query, ) use ($search, $isVerified, $user, $status) {
+            ->when($user?->tokenCan('school-access') && ($role === 'student'), function ($query,) use ($search, $isVerified, $user, $status) {
                 $query->with(
                     'student.curriculumVitae.internshipApplications.jobOpening.company.user',
                     'student.curriculumVitae.internshipApplications.jobOpening.company.cityRegency.province'
@@ -156,7 +155,7 @@ class UserController extends Controller
                     });
                 });
             })
-            ->when($isSchool !== null, function($q) use($isSchool) {
+            ->when($isSchool !== null, function ($q) use ($isSchool) {
                 $q->whereHas('school', fn($q2) => $q2->where('type', $isSchool ? 'school' : 'university'));
             })
             ->orderBy('updated_at', 'desc')
@@ -238,13 +237,10 @@ class UserController extends Controller
                 }
 
                 return $item;
-
-
             });
 
 
         return response()->json($users, 200);
-
     }
 
     public function store(UserCreateRequest $request)
@@ -284,21 +280,18 @@ class UserController extends Controller
             }
             $student->user_id = $user->id;
             $student->save();
-
         } else if ($user->role === "school") {
             $school = new School();
             $school->name = $data['name'];
             $school->address = $data['address'];
             $school->user_id = $user->id;
             $school->save();
-
         } else if ($user->role === "company") {
             $company = new Company();
             $company->name = $data['name'];
             $company->address = $data['address'];
             $company->user_id = $user->id;
             $company->save();
-
         }
 
 
@@ -331,7 +324,6 @@ class UserController extends Controller
         }
         if (!$user->company) {
             $user->makeHidden('company');
-
         }
 
         if ($user->role === 'company') {
@@ -497,7 +489,6 @@ class UserController extends Controller
         return response()->json([
             'data' => $user->load(['student', 'school', 'company']),
         ], 200);
-
     }
     public function destroy(string $id)
     {
@@ -561,7 +552,6 @@ class UserController extends Controller
             $student->user_id = $user->id;
             $student->save();
             $token = $user->createToken('Auth Token', ['student-access'])->plainTextToken;
-
         } else if ($user->role === "school") {
             $school = new School();
             $school->name = $data['name'];
@@ -569,7 +559,6 @@ class UserController extends Controller
             $school->user_id = $user->id;
             $school->save();
             $token = $user->createToken('Auth Token', ['school-access'])->plainTextToken;
-
         } else if ($user->role === "company") {
             $company = new Company();
             $company->name = $data['name'];
@@ -577,7 +566,6 @@ class UserController extends Controller
             $company->user_id = $user->id;
             $company->save();
             $token = $user->createToken('Auth Token', ['company-access'])->plainTextToken;
-
         }
 
         if (!$token) {
@@ -615,32 +603,35 @@ class UserController extends Controller
 
         $token = null;
 
-
+        $isVerified = true;
         if ($user->role === "student") {
             $token = $user->createToken('Auth Token', ['student-access'])->plainTextToken;
+            $isVerified = Student::where('user_id', $user->id)->value('is_verified');
         } else if ($user->role === "school") {
             $token = $user->createToken('Auth Token', ['school-access'])->plainTextToken;
+            $isVerified = School::where('user_id', $user->id)->value('is_verified');
         } else if ($user->role === "company") {
             $token = $user->createToken('Auth Token', ['company-access'])->plainTextToken;
+            $isVerified = Company::where('user_id', $user->id)->value('is_verified');
         } else if ($user->role === "super_admin") {
             $token = $user->createToken('Auth Token', ['admin-access'])->plainTextToken;
         }
 
         if (!$token) {
             throw new HttpResponseException(response([
-                "errors" => "Failed to create token"
+            "errors" => "Failed to create token"
             ], 500));
         }
 
-        return response()->json(['token' => $token, 'role' => $user->role], 200);
-    }
-    public function logout(Request $request)
-    {
+        return response()->json(['token' => $token, 'role' => $user->role, 'is_verified' => $isVerified], 200);
+        }
+        public function logout(Request $request)
+        {
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Logout success'], 200);
-    }
-    public function profile(Request $request)
-    {
+        }
+        public function profile(Request $request)
+        {
         $user = $request->user()->with(['student', 'school', 'company'])->find($request->user()->id);
 
 
@@ -677,7 +668,6 @@ class UserController extends Controller
             } else {
                 $user['student']["school_name"] = null;
             }
-
         }
 
         return response()->json([
@@ -775,7 +765,6 @@ class UserController extends Controller
         return response()->json([
             'message' => 'User deleted successfully',
         ], 200);
-
     }
     public function count(Request $request)
     {
@@ -791,8 +780,7 @@ class UserController extends Controller
             })
             ->count();
 
-        $mouCount = Mou::
-            when($request->user()->tokenCan("company-access"), function ($query) use ($request) {
+        $mouCount = Mou::when($request->user()->tokenCan("company-access"), function ($query) use ($request) {
                 $query->where("company_id", $request->user()->company->id);
             })
             ->when($request->user()->tokenCan("school-access"), function ($query) use ($request) {
@@ -978,6 +966,5 @@ class UserController extends Controller
         return response()->json([
             'data' => true
         ]);
-
     }
 }

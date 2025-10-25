@@ -13,10 +13,11 @@ return new class extends Migration
     {
         Schema::create('generated_cvs', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->uuid('user_id');
             $table->json('generated_content'); // Tipe data JSON sangat cocok untuk ini
             $table->text('source_prompt')->nullable();
             $table->timestamps();
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
         });
     }
 
