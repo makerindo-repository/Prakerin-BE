@@ -307,38 +307,25 @@ class UserController extends Controller
             'company' => fn($q) => $q->where('is_verified', true),
         ])->find($id);
 
-
         if (!$user) {
             throw new HttpResponseException(response([
                 "errors" => "User not found."
             ], 404));
         }
 
+        // Hide empty relationships
+        $user->makeVisible(['student', 'school', 'company']);
 
-
-        if (!$user->student) {
-            $user->makeHidden('student');
-        }
-        if (!$user->school) {
-            $user->makeHidden('school');
-        }
-        if (!$user->company) {
-            $user->makeHidden('company');
-        }
-
-        if ($user->role === 'company') {
-
+        if ($user->role === 'company' && $user->company) {
             $user->company->load([
                 'cityRegency.province',
                 'sector',
                 'jobOpenings' => function ($q) {
                     $q->where('is_available', true)->orderBy('created_at', 'desc');
                 }
-
             ]);
 
             $mou = false;
-
 
             if ($request->user()->tokenCan('school-access')) {
                 $mou = $user->company
@@ -361,19 +348,15 @@ class UserController extends Controller
                 'email_verified_at' => $user->email_verified_at,
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
-                'company' => $user->company->makeHidden(['cityRegency', 'sector', 'jobOpenings']),
-                'city_regency' => $user->company->cityRegency->makeHidden(['province']),
-                'province' => $user->company->cityRegency->province,
-                'sector' => $user->company->sector,
-                'job_openings' => $user->company->jobOpenings,
+                'company' => $user->company ? $user->company->makeHidden(['cityRegency', 'sector', 'jobOpenings']) : null,
+                'city_regency' => $user->company?->cityRegency ? $user->company->cityRegency->makeHidden(['province']) : null,
+                'province' => $user->company?->cityRegency?->province,
+                'sector' => $user->company?->sector,
+                'job_openings' => $user->company?->jobOpenings,
                 'mou' => $mou
-
             ];
-        } else if ($user->role === 'school') {
-
-            $user->school->load([
-                'cityRegency.province',
-            ]);
+        } else if ($user->role === 'school' && $user->school) {
+            $user->school->load(['cityRegency.province']);
 
             $mou = false;
 
@@ -385,45 +368,16 @@ class UserController extends Controller
                     ->exists();
             }
 
-
             $user = [
                 'id' => $user->id,
                 'username' => $user->username,
                 'email' => $user->email,
                 'photo_profile' => $user->photo_profile,
-                'school' => $user->school->makeHidden(['cityRegency',]),
-                'city_regency' => $user->school->cityRegency->makeHidden(['province']),
-                'province' => $user->school->cityRegency->province,
+                'school' => $user->school ? $user->school->makeHidden(['cityRegency']) : null,
+                'city_regency' => $user->school?->cityRegency ? $user->school->cityRegency->makeHidden(['province']) : null,
+                'province' => $user->school?->cityRegency?->province,
                 'mou' => $mou,
             ];
-        } else if ($user->role === 'student') {
-            if ($user->student->status === 'ongoing' && isset($request->user()->company->id)) {
-                $user->student->load([
-                    'internships' => function ($q) use ($request) {
-                        $q->where('is_completed', false)
-                            ->where('company_id', $request->user()->company->id)
-                            ->with('company.user', 'company.cityRegency.province');
-                    },
-                ], 'internships.internshipApplication.jobOpening.field');
-
-                $user = [
-                    'id' => $user->id,
-                    'username' => $user->username,
-                    'email' => $user->email,
-                    'photo_profile' => $user->photo_profile,
-                    'student' => $user->student,
-                    'company' => $user->student->internships->first()?->company?->makeHidden(['cityRegency', 'mous']),
-                    'city_regency' => $user->student->internships->first()?->company?->cityRegency?->makeHidden(['province']),
-                    'province' => $user->student->internships->first()?->company?->cityRegency?->province,
-                    'internship' => $user->student->internships->first(),
-                    'field' => $user->student->internships->first()?->internshipApplication->jobOpening->field?->name ?? null,
-                    'tipe' => $user->student->internships->first()?->internshipApplication->jobOpening->type ?? null,
-                ];
-            } else {
-                $user->student->load([
-                    'major',
-                ]);
-            }
         }
 
         return response()->json([
