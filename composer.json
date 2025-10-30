@@ -17,6 +17,7 @@
         "laravel/reverb": "^1.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
+        "laravolt/indonesia": "^0.38.0",
         "simplesoftwareio/simple-qrcode": "^4.2"
     },
     "require-dev": {

@@ -48,14 +48,14 @@ class UserController extends Controller
 
 
         $users = User::when($user === null, function ($query) use ($search, $isSchool) {
-                $query->with(['school']);
-                $query->where('role', 'school');
-                $query->whereHas('school', function ($q) use ($search, $isSchool) {
-                    $q->where('is_verified', true);
-                    $q->where('name', 'like', "%$search%");
-                    $q->where('type', $isSchool ? 'school' : 'university');
-                });
-            })
+            $query->with(['school']);
+            $query->where('role', 'school');
+            $query->whereHas('school', function ($q) use ($search, $isSchool) {
+                $q->where('is_verified', true);
+                $q->where('name', 'like', "%$search%");
+                $q->where('type', $isSchool ? 'school' : 'university');
+            });
+        })
             ->when($user?->tokenCan('school-access') && ($role === 'student'), function ($query,) use ($search, $isVerified, $user, $status) {
                 $query->with(
                     'student.curriculumVitae.internshipApplications.jobOpening.company.user',
@@ -285,6 +285,7 @@ class UserController extends Controller
             $school->name = $data['name'];
             $school->address = $data['address'];
             $school->user_id = $user->id;
+            $school->type = $data['type'];
             $school->save();
         } else if ($user->role === "company") {
             $company = new Company();
@@ -573,19 +574,19 @@ class UserController extends Controller
 
         if (!$token) {
             throw new HttpResponseException(response([
-            "errors" => "Failed to create token"
+                "errors" => "Failed to create token"
             ], 500));
         }
 
         return response()->json(['token' => $token, 'role' => $user->role, 'is_verified' => $isVerified], 200);
-        }
-        public function logout(Request $request)
-        {
+    }
+    public function logout(Request $request)
+    {
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Logout success'], 200);
-        }
-        public function profile(Request $request)
-        {
+    }
+    public function profile(Request $request)
+    {
         $user = $request->user()->with(['student', 'school', 'company'])->find($request->user()->id);
 
 
@@ -735,8 +736,8 @@ class UserController extends Controller
             ->count();
 
         $mouCount = Mou::when($request->user()->tokenCan("company-access"), function ($query) use ($request) {
-                $query->where("company_id", $request->user()->company->id);
-            })
+            $query->where("company_id", $request->user()->company->id);
+        })
             ->when($request->user()->tokenCan("school-access"), function ($query) use ($request) {
                 $query->where("school_id", $request->user()->school->id);
             })
