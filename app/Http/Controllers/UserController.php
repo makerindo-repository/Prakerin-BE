@@ -512,6 +512,7 @@ class UserController extends Controller
             $school->name = $data['name'];
             $school->address = $data['address'];
             $school->user_id = $user->id;
+            $school->type = $data['type'];
             $school->save();
             $token = $user->createToken('Auth Token', ['school-access'])->plainTextToken;
         } else if ($user->role === "company") {
