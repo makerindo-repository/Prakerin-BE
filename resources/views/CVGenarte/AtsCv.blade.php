@@ -1,126 +1,85 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CV ATS - Demo</title>
-  <link rel="stylesheet" href="AtsCV.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CV ATS</title>
+  <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+  @vite('resources/css/app.css')
 </head>
-<body>
-  <div class="cv-ats-card cv-card" id="cv-root">
-    <header class="cv-ats-header cv-header">
-      <h1 id="fullName">Nama Lengkap Anda</h1>
-      <p id="jobTitle" class="job-title">Frontend Developer</p>
-      <div class="contact" id="contactLine">
-        <span id="phone">081234567890</span>
-        <span class="sep">|</span>
-        <span id="email">email@anda.com</span>
-        <span class="sep">|</span>
-        <span id="linkedin">linkedin.com/in/username</span>
-      </div>
-    </header>
+<body class="bg-white text-gray-800 p-8 font-sans text-sm">
 
-    <main class="cv-main">
-      <section class="section">
-        <h2>Ringkasan</h2>
-        <p id="summary">Ringkasan singkat tentang pengalaman profesional Anda.</p>
-      </section>
+  {{-- HEADER --}}
+  <header class="text-center mb-6">
+    <h1 class="text-3xl font-bold tracking-wider uppercase">
+      {{ $data->full_name ?? 'Nama Lengkap Anda' }}
+    </h1>
+    <p class="text-md mt-1">
+      {{ $data->work_experience[0]->job_title ?? 'Frontend Developer' }}
+    </p>
+    <div class="flex justify-center space-x-4 text-xs mt-2">
+      <span>{{ $data->phone_number ?? '081234567890' }}</span>
+      <span>|</span>
+      <span>{{ $data->email ?? 'email@anda.com' }}</span>
+      <span>|</span>
+      <span>{{ $data->linkedin_url ?? 'linkedin.com/in/username' }}</span>
+    </div>
+  </header>
 
-      <section class="section">
-        <h2>Pengalaman Kerja</h2>
-        <div id="workList" class="work-list"></div>
-      </section>
+  <main>
+    {{-- RINGKASAN --}}
+    <section class="mb-6">
+      <h2 class="text-lg font-bold uppercase border-b-2 border-gray-400 pb-1 mb-2">Ringkasan</h2>
+      <p class="text-justify">
+        {{ $data->summary ?? 'Belum ada ringkasan yang ditulis.' }}
+      </p>
+    </section>
 
-      <section class="section">
-        <h2>Pendidikan</h2>
-        <div id="educationList" class="edu-list"></div>
-      </section>
-
-      <section class="section">
-        <h2>Keterampilan</h2>
-        <div id="skillsList" class="skills-list"></div>
-      </section>
-    </main>
-  </div>
-
-  <script>
-    // contoh data sesuai interface CVResult
-    const cvData = {
-      full_name: "Siti Nurhaliza",
-      email: "siti@example.com",
-      phone_number: "081234567890",
-      linkedin_url: "linkedin.com/in/sitinur",
-      summary: "Frontend developer dengan pengalaman membuat UI aksesibel dan performa tinggi.",
-      skills: ["React", "TypeScript", "Accessibility", "Testing"],
-      work_experience: [
-        {
-          job_title: "Frontend Developer",
-          company: "PT Teknologi Contoh",
-          start_date: "Feb 2023",
-          end_date: "Sekarang",
-          description_points: [
-            "Membangun interface SPA menggunakan React + TypeScript.",
-            "Mengimplementasikan test unit & e2e untuk komponen kritis."
-          ]
-        }
-      ],
-      education: [
-        {
-          degree: "S1 Teknik Informatika",
-          field_of_study: "Teknik Informatika",
-          graduation_year: "2022",
-          institution: "Universitas Contoh"
-        }
-      ]
-    };
-
-    (function renderCV(data) {
-      if (!data) return;
-      document.getElementById('fullName').textContent = data.full_name || '';
-      const firstJob = (data.work_experience && data.work_experience[0]) || {};
-      document.getElementById('jobTitle').textContent = firstJob.job_title || 'Frontend Developer';
-      document.getElementById('phone').textContent = data.phone_number || '';
-      document.getElementById('email').textContent = data.email || '';
-      document.getElementById('linkedin').textContent = data.linkedin_url || '';
-      document.getElementById('summary').textContent = data.summary || '';
-
-      const skillsWrap = document.getElementById('skillsList');
-      skillsWrap.innerHTML = '';
-      (data.skills || []).slice(0, 10).forEach(s => {
-        const el = document.createElement('span');
-        el.className = 'skill-chip';
-        el.textContent = s;
-        skillsWrap.appendChild(el);
-      });
-
-      const eduWrap = document.getElementById('educationList');
-      eduWrap.innerHTML = '';
-      (data.education || []).forEach(edu => {
-        const div = document.createElement('div');
-        div.className = 'edu-item';
-        div.innerHTML = `<div class="edu-institution">${edu.institution || ''}</div>
-                         <div class="edu-degree">${edu.degree || ''} — ${edu.field_of_study || ''}</div>
-                         <div class="edu-year">Lulus: ${edu.graduation_year || ''}</div>`;
-        eduWrap.appendChild(div);
-      });
-
-      const workWrap = document.getElementById('workList');
-      workWrap.innerHTML = '';
-      (data.work_experience || []).forEach(job => {
-        const jobEl = document.createElement('div');
-        jobEl.className = 'job-item';
-        const points = (job.description_points || []).map(p => `<li>${p}</li>`).join('');
-        jobEl.innerHTML = `
-          <div class="job-head">
-            <div class="job-company">${job.company || ''}</div>
-            <div class="job-dates">${job.start_date || ''} - ${job.end_date || ''}</div>
+    {{-- PENGALAMAN KERJA --}}
+    <section class="mb-6">
+      <h2 class="text-lg font-bold uppercase border-b-2 border-gray-400 pb-1 mb-2">Pengalaman Kerja</h2>
+      @foreach($data->work_experience ?? [] as $job)
+        <div class="mb-4">
+          <h3 class="text-md font-bold">{{ $job['job_title'] ?? '-' }}</h3>
+          <div class="flex justify-between text-sm">
+            <p class="font-semibold">{{ $job['company'] ?? '-' }}</p>
+            <p class="italic">{{ $job['start_date'] ?? '-' }} - {{ $job->end_date ?? 'Sekarang' }}</p>
           </div>
-          <h3 class="job-title">${job.job_title || ''}</h3>
-          <ul class="job-points">${points}</ul>
-        `;
-        workWrap.appendChild(jobEl);
-      });
-    })(cvData);
-  </script>
+          @if(!empty($job['description_points']))
+            <ul class="list-disc list-inside mt-1 text-sm space-y-1">
+              @foreach($job['description_points'] as $point)
+                <li>{{ $point }}</li>
+              @endforeach
+            </ul>
+          @endif
+        </div>
+      @endforeach
+    </section>
+
+    {{-- PENDIDIKAN --}}
+    <section class="mb-6">
+      <h2 class="text-lg font-bold uppercase border-b-2 border-gray-400 pb-1 mb-2">Pendidikan</h2>
+      @foreach($data->education ?? [] as $edu)
+        <div class="mb-2">
+          <h3 class="text-md font-bold">{{ $edu['institution'] ?? '-' }}</h3>
+          <p>{{ $edu['degree'] ?? '-' }}, {{ $edu['field_of_study'] ?? '-' }}</p>
+          <p class="text-sm italic">Lulus: {{ $edu['graduation_year'] ?? '-' }}</p>
+        </div>
+      @endforeach
+    </section>
+
+    {{-- KETERAMPILAN --}}
+    <section>
+      <h2 class="text-lg font-bold uppercase border-b-2 border-gray-400 pb-1 mb-2">Keterampilan</h2>
+      <p>
+        @if(!empty($data->skills))
+          {{ implode(', ', $data->skills) }}
+        @else
+          Belum ada keterampilan yang ditambahkan.
+        @endif
+      </p>
+    </section>
+  </main>
+
 </body>
 </html>

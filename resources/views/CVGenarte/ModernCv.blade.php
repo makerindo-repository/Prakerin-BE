@@ -1,143 +1,126 @@
 <!doctype html>
 <html lang="id">
+
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CV Modern - Demo</title>
-  {{-- <link rel="stylesheet" href="ModernCV.css" /> --}}
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CV Modern</title>
+    {{-- <link rel="stylesheet" href="{{ asset('css/app.css') }}"> --}}
+    @php
+        $manifest = json_decode(file_get_contents(public_path('build/manifest.json')), true);
+        $cssFile = $manifest['resources/css/app.css']['file'];
+        $cssPath = public_path('build/' . $cssFile);
+    @endphp
+
+    <style>
+        {!! file_get_contents($cssPath) !!}
+    </style>
+
 </head>
+
 <body>
-  <div class="cv-container" id="cv-root">
-    <aside class="cv-aside">
-      <header class="aside-header">
-        <div class="avatar"></div>
-        <h1 id="fullName">Nama Lengkap Anda</h1>
-        <h2 id="jobTitle">Frontend Developer</h2>
-      </header>
+    <div class="flex min-h-[1123px] bg-white shadow-lg font-sans">
 
-      <section class="aside-section">
-        <h3>Kontak</h3>
-        <div class="contact">
-          <div><strong>Email:</strong> <span id="email">email@anda.com</span></div>
-          <div><strong>Telepon:</strong> <span id="phone">081234567890</span></div>
-          <div><strong>LinkedIn:</strong> <span id="linkedin">linkedin.com/in/username</span></div>
-        </div>
-      </section>
+        {{-- === SIDEBAR KIRI === --}}
+        <aside class="w-1/3 bg-gray-800 text-white p-8">
+            {{-- HEADER --}}
+            <header class="text-center mb-12">
+                <div class="w-32 h-32 bg-accent rounded-full mx-auto mb-4"></div>
+                <h1 class="text-3xl font-bold text-white">
+                    {{ $data->full_name ?? 'Nama Lengkap Anda' }}
+                </h1>
+                <h2 class="text-lg text-accent font-light">
+                    {{ $data->work_experience[0]->job_title ?? 'Frontend Developer' }}
+                </h2>
+            </header>
 
-      <section class="aside-section">
-        <h3>Keterampilan</h3>
-        <div id="skills" class="skills"></div>
-      </section>
+            {{-- KONTAK --}}
+            <section class="mb-10">
+                <h3 class="text-lg font-semibold text-accent uppercase tracking-wider mb-3">Kontak</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-center gap-3">
+                        {{-- Icon mail --}}
+                        <x-lucide-mail class="w-4 h-4" />
+                        <p>{{ $data->email ?? 'email@anda.com' }}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        {{-- Icon phone --}}
+                        <x-lucide-phone class="w-4 h-4" />
+                        <p>{{ $data->phone_number ?? '081234567890' }}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        {{-- Icon linkedin --}}
+                        <x-lucide-linkedin class="w-4 h-4" />
+                        <p>{{ $data->linkedin_url ?? 'linkedin.com/in/username' }}</p>
+                    </div>
+                </div>
+            </section>
 
-      <section class="aside-section">
-        <h3>Pendidikan</h3>
-        <div id="education" class="education"></div>
-      </section>
-    </aside>
+            {{-- KETERAMPILAN --}}
+            <section class="mb-10">
+                <h3 class="text-lg font-semibold text-accent uppercase tracking-wider mb-3">Keterampilan</h3>
+                <div class="flex flex-wrap gap-2">
+                    @foreach ($data->skills ?? [] as $index => $skill)
+                        @if ($index < 10)
+                            <span
+                                class="bg-accent/20 text-white text-xs font-medium px-3 py-1 rounded-full">{{ $skill }}</span>
+                        @endif
+                    @endforeach
+                </div>
+            </section>
 
-    <main class="cv-main">
-      <section class="main-section">
-        <h2>Ringkasan</h2>
-        <p id="summary">Ringkasan singkat tentang profesionalitas Anda.</p>
-      </section>
+            {{-- PENDIDIKAN --}}
+            <section>
+                <h3 class="text-lg font-semibold text-accent uppercase tracking-wider mb-3">Pendidikan</h3>
+                @foreach ($data->education ?? [] as $edu)
+                    <div class="text-sm mb-3">
+                        <p class="font-bold">{{ $edu->degree ?? '-' }}</p>
+                        <p class="text-gray-300">{{ $edu->institution ?? '-' }}</p>
+                        <p class="text-gray-400 text-xs italic">{{ $edu->graduation_year ?? '-' }}</p>
+                    </div>
+                @endforeach
+            </section>
+        </aside>
 
-      <section class="main-section">
-        <h2>Pengalaman Kerja</h2>
-        <div id="work" class="work-list"></div>
-      </section>
-    </main>
-  </div>
+        {{-- === KONTEN UTAMA === --}}
+        <main class="w-2/3 p-10 text-gray-800">
 
-  <script>
-    // contoh data sesuai interface CVResult (src/models/CV.ts)
-    const cvData = {
-      full_name: "Andi Pratama",
-      email: "andi@example.com",
-      phone_number: "081298765432",
-      linkedin_url: "linkedin.com/in/andipratama",
-      summary: "Frontend developer berpengalaman membangun aplikasi web dengan React dan TypeScript.",
-      skills: ["React", "TypeScript", "HTML", "CSS", "Tailwind", "Node.js"],
-      work_experience: [
-        {
-          job_title: "Frontend Developer",
-          company: "PT Contoh Teknologi",
-          start_date: "Jan 2022",
-          end_date: "Sekarang",
-          description_points: [
-            "Membangun UI responsif menggunakan React + Tailwind.",
-            "Mengoptimalkan performa aplikasi sehingga waktu load turun 30%.",
-            "Koordinasi dengan tim desain untuk implementasi pixel-perfect."
-          ]
-        },
-        {
-          job_title: "Junior Frontend",
-          company: "Startup ABC",
-          start_date: "Jul 2020",
-          end_date: "Des 2021",
-          description_points: [
-            "Mengembangkan modul form & validasi.",
-            "Menulis unit test untuk komponen penting."
-          ]
-        }
-      ],
-      education: [
-        {
-          degree: "S1 Teknik Informatika",
-          field_of_study: "Teknik Informatika",
-          graduation_year: "2020",
-          institution: "Universitas Contoh"
-        }
-      ]
-    };
+            {{-- RINGKASAN --}}
+            <section class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-accent pb-2 mb-4">Ringkasan</h2>
+                <p class="text-base leading-relaxed">
+                    {{ $data->summary ?? 'Belum ada ringkasan yang ditulis.' }}
+                </p>
+            </section>
 
-    // fungsi bantu rendering
-    (function renderCV(data) {
-      if (!data) return;
-      document.getElementById('fullName').textContent = data.full_name || '';
-      const firstJob = (data.work_experience && data.work_experience[0]) || {};
-      document.getElementById('jobTitle').textContent = firstJob.job_title || 'Frontend Developer';
-      document.getElementById('email').textContent = data.email || '';
-      document.getElementById('phone').textContent = data.phone_number || '';
-      document.getElementById('linkedin').textContent = data.linkedin_url || '';
-      document.getElementById('summary').textContent = data.summary || '';
+            {{-- PENGALAMAN KERJA --}}
+            <section>
+                <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-accent pb-2 mb-6">Pengalaman Kerja</h2>
+                <div class="space-y-6">
+                    @foreach ($data->work_experience ?? [] as $job)
+                        <div class="relative pl-6 border-l-2 border-gray-200">
+                            <div
+                                class="absolute -left-[9px] top-1 w-4 h-4 bg-accent rounded-full border-4 border-white">
+                            </div>
+                            <p class="text-xs text-gray-500">
+                                {{ $job->start_date ?? '-' }} - {{ $job->end_date ?? 'Sekarang' }}
+                            </p>
+                            <h3 class="text-lg font-semibold text-accent-dark">{{ $job->job_title ?? '-' }}</h3>
+                            <p class="text-md font-medium text-gray-600 mb-2">{{ $job->company ?? '-' }}</p>
+                            @if (!empty($job->description_points))
+                                <ul class="list-disc list-outside ml-4 text-sm space-y-1 text-gray-700">
+                                    @foreach ($job->description_points as $point)
+                                        <li>{{ $point }}</li>
+                                    @endforeach
+                                </ul>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </section>
 
-      const skillsWrap = document.getElementById('skills');
-      skillsWrap.innerHTML = '';
-      (data.skills || []).slice(0,10).forEach(s => {
-        const el = document.createElement('span');
-        el.className = 'skill-chip';
-        el.textContent = s;
-        skillsWrap.appendChild(el);
-      });
-
-      const eduWrap = document.getElementById('education');
-      eduWrap.innerHTML = '';
-      (data.education || []).forEach(edu => {
-        const div = document.createElement('div');
-        div.className = 'edu-item';
-        div.innerHTML = `<div class="edu-degree">${edu.degree || ''}</div>
-                         <div class="edu-inst">${edu.institution || ''}</div>
-                         <div class="edu-year">${edu.graduation_year || ''}</div>`;
-        eduWrap.appendChild(div);
-      });
-
-      const workWrap = document.getElementById('work');
-      workWrap.innerHTML = '';
-      (data.work_experience || []).forEach(job => {
-        const jobEl = document.createElement('div');
-        jobEl.className = 'job-item';
-        const points = (job.description_points || []).map(p => `<li>${p}</li>`).join('');
-        jobEl.innerHTML = `
-          <div class="job-head">
-            <div class="job-dates">${job.start_date || ''} - ${job.end_date || ''}</div>
-            <h3 class="job-title">${job.job_title || ''}</h3>
-            <div class="job-company">${job.company || ''}</div>
-          </div>
-          <ul class="job-points">${points}</ul>
-        `;
-        workWrap.appendChild(jobEl);
-      });
-    })(cvData);
-  </script>
+        </main>
+    </div>
 </body>
+
 </html>

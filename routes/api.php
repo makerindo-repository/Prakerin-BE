@@ -28,6 +28,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\HomepageController;
+use App\Http\Controllers\PdfController;
 use Illuminate\Support\Facades\Route;
 
 // Route::get('/docs', function () {
@@ -56,6 +57,7 @@ Route::prefix('v1')->group(function () {
         ->group(function () {
             Route::post('/', 'devFeed');
             Route::post('/generate-cv', [CvGeneratorController::class, 'generate'])->middleware('auth:sanctum');
+            Route::post('/download-cv', [PdfController::class, 'generateCv'])->middleware('auth:sanctum');
         });
 
     Route::prefix('comment-prakerins')
