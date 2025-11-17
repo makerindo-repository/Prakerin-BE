@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AchievementController;
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CityRegencyController;
 use App\Http\Controllers\CommentPrakerinController;
@@ -52,6 +53,9 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::prefix('v1')->group(function () {
+    // Admin Dashboard
+    Route::get('/admin/dashboard', [AdminDashboardController::class, 'getDashboardData'])
+        ->middleware(['auth:sanctum', 'abilities:admin-access']);
     Route::prefix('dev')
         ->controller(DevController::class)
         ->group(function () {

@@ -579,6 +579,10 @@ class UserController extends Controller
             ], 500));
         }
 
+        // Update last login timestamp
+        $user->last_login_at = now();
+        $user->save();
+
         return response()->json(['token' => $token, 'role' => $user->role, 'is_verified' => $isVerified], 200);
     }
     public function logout(Request $request)

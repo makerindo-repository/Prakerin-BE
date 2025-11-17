@@ -11,7 +11,7 @@ class PdfController extends Controller
     public function generateCv(Request $request, PDF $PDF) {
         $user = $request->user();
         // dd($request->work_experience);
-        $pdf = $PDF->loadView('CVGenarte.ModernCv', ['data' => $request]);
+        $pdf = $PDF->loadView('CVGenarte.ModernCv', ['data' => $request])->setOptions(['isHtml5ParserEnabled' => true, 'isRemoteEnabled' => true]);
         $filename = 'cv_'.$user->id.'.pdf';
         $path = storage_path('app/public'.$filename);
         $pdf->save($path);

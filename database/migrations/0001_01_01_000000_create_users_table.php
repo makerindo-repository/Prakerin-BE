@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->string('email')->unique();
             $table->string('password');
             $table->enum('role', ['student', 'school', 'company', 'super_admin']);
+            $table->boolean('is_pro')->default(false);
             $table->string('photo_profile')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
