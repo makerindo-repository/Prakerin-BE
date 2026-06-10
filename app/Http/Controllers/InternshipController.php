@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Certificate;
 use App\Models\Internship;
+use App\Models\User;
+use App\Models\Student;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -36,7 +38,32 @@ class InternshipController extends Controller
     public function show(string $id)
     {
 
+        //Look for the student based on user id
+        $student = Student::where('user_id', $id)->first();
+        if (!$student) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => 'Student not found.'],
+                404
+            ));
+        }
 
+        //Then look for internship based on student id
+        $internship = Internship::where('student_id', $student->id)->first();
+        if (!$internship) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => 'Internship not found.'],
+                404
+            ));
+        }
+        
+        //Then return the data
+        return response()->json([
+            'data' => [
+                'id' => $internship->id,
+                'start_date' => $internship->start_date,
+                'end_date' => $internship->end_date
+            ]
+        ]);
 
     }
 

@@ -25,7 +25,11 @@ class UserUpdateRequest extends FormRequest
     {
 
 
-        return [
+        return [ //filling the whole rules to user's columns
+            'username' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email',
+            'password' => 'nullable|min:6|confirmed',
+            'photo_profile' => 'nullable|image',
             'is_verified' => 'required|boolean',
         ];
 

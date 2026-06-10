@@ -137,15 +137,26 @@ class UserController extends Controller
                 });
             })
             ->when($user?->tokenCan('admin-access'), function ($query) use ($role, $request, $isSchool) {
+                $schoolId = $request->query('school_id');
                 $isVerified = $request->has('is_verified')
                     ? filter_var($request->query('is_verified'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
                     : null;
-
 
                 $query->with(['student', 'school', 'company']);
                 $query->when($role, function ($query, $role) {
                     return $query->where('role', $role);
                 });
+
+                $query->when(
+                    $role === 'student' && $schoolId,
+                    function ($query) use ($schoolId) {
+                        $query->where('role', 'student');
+                        $query->whereHas('student', function ($q) use ($schoolId) {
+                            $q->where('school_id', $schoolId);
+                        });
+                    }
+                );
+
                 $query->when($isVerified !== null, function ($query) use ($isVerified,) {
                     $query->where(function ($q) use ($isVerified) {
 
@@ -344,6 +355,7 @@ class UserController extends Controller
 
             $user = [
                 'id' => $user->id,
+                'username' => $user->username,
                 'email' => $user->email,
                 'photo_profile' => $user->photo_profile,
                 'email_verified_at' => $user->email_verified_at,
@@ -444,6 +456,7 @@ class UserController extends Controller
         return response()->json([
             'data' => $user->load(['student', 'school', 'company']),
         ], 200);
+
     }
     public function destroy(string $id)
     {
@@ -549,7 +562,7 @@ class UserController extends Controller
             ], 400));
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $data['email'])->first();
 
         if (!$user || !Hash::check($data['password'], $user->password)) {
             throw new HttpResponseException(response([
@@ -579,8 +592,8 @@ class UserController extends Controller
             ], 500));
         }
 
-        // Update last login timestamp
-        $user->last_login_at = now();
+        // Update last login timestamp ADD: removed due to causing error, there is no last_login_at column at any tables?
+       // $user->last_login_at = now();
         $user->save();
 
         return response()->json(['token' => $token, 'role' => $user->role, 'is_verified' => $isVerified], 200);
@@ -634,23 +647,56 @@ class UserController extends Controller
             'data' => $user,
         ], 200);
     }
-    public function updateProfile(UserUpdateProfileRequest $request)
+    public function updateProfile(UserUpdateProfileRequest $request, $id = null)
     {
 
         $data = $request->validated();
 
+        //always fetch fresh from database to ensure relationships are loaded
+        if ($id === null) {
+            $userId = $request->user()->id;
+        } else {
+            $userId = $id;
+            //user can only update their own profile, or admin can update anyone, or school can update their students
+            if ($request->user()->id !== $userId && !$request->user()->tokenCan('admin-access')) {
+                // Check if school is trying to update one of their students
+                if ($request->user()->tokenCan('school-access')) {
+                    $targetUser = User::find($userId);
+                    if (!$targetUser || $targetUser->role !== 'student') {
+                        throw new HttpResponseException(response([
+                            "errors" => "Unauthorized. You can only update your own profile or your school's students."
+                        ], 403));
+                    }
+                    // Verify the student belongs to this school
+                    if (!$targetUser->student || $targetUser->student->school_id !== $request->user()->school->id) {
+                        throw new HttpResponseException(response([
+                            "errors" => "Unauthorized. This student does not belong to your school."
+                        ], 403));
+                    }
+                } else {
+                    throw new HttpResponseException(response([
+                        "errors" => "Unauthorized. You can only update your own profile."
+                    ], 403));
+                }
+            }
+        }
 
-        $user = $request->user();
+        $user = User::with(['student', 'school', 'company'])->find($userId);
+        if (!$user) {
+            throw new HttpResponseException(response([
+                "errors" => "User not found."
+            ], 404));
+        }
 
         $user->username = $data['username'] ?? $user->username;
         $user->email = $data['email'] ?? $user->email;
-        $user->password = $data['password'] ?? $user->password;
+        if (isset($data['password']) && !empty($data['password'])) {
+            $user->password = Hash::make($data['password']);
+        }
 
         if (isset($data['email'])) {
             $user->email_verified_at = null;
         }
-
-
 
         if ($request->file('photo_profile')) {
             $filename = now()->format('Ymd_His') . '.' . $request->file('photo_profile')->getClientOriginalExtension();
@@ -658,56 +704,72 @@ class UserController extends Controller
             $request->file('photo_profile')->storeAs('photo-profile', $filename, 'public');
         }
 
-
-
-        if ($user->tokenCan('student-access')) {
+        if ($user->role === 'student') { //updating the previous for what role is updating, refer to previous commit for reference
             $student = $user->student;
-            $student->name = $data['name'] ?? $student->name;
-            $student->address = $data['address'] ?? $student->address;
-            $student->phone_number = $data['phone_number'] ?? $student->phone_number;
-            $student->school_id = $data['school_id'] ?? $student->school_id;
-            $student->date_of_birth = $data['date_of_birth'] ?? $student->date_of_birth;
-            $student->gender = $data['gender'] ?? $student->gender;
-            $student->class = $data['class'] ?? $student->class;
-            $student->skill = $data['skill'] ?? $student->skill;
-            $student->portofolio_link = $data['portofolio_link'] ?? $student->portofolio_link;
-            $student->social_media_link = $data['social_media_link'] ?? $student->social_media_link;
-            $student->major_id = $data['major_id'] ?? $student->major_id;
-            $student->save();
-        } else if ($user->tokenCan('school-access')) {
-
+            if ($student) {
+                $student->name = $data['name'] ?? $student->name;
+                $student->address = $data['address'] ?? $student->address;
+                $student->phone_number = $data['phone_number'] ?? $student->phone_number;
+                $student->school_id = $data['school_id'] ?? $student->school_id;
+                $student->date_of_birth = $data['date_of_birth'] ?? $student->date_of_birth;
+                $student->gender = $data['gender'] ?? $student->gender;
+                $student->class = $data['class'] ?? $student->class;
+                $student->skill = $data['skill'] ?? $student->skill;
+                $student->portofolio_link = $data['portofolio_link'] ?? $student->portofolio_link;
+                $student->social_media_link = $data['social_media_link'] ?? $student->social_media_link;
+                $student->major_id = $data['major_id'] ?? $student->major_id;
+                // Admin can update is_verified for students
+                if (isset($data['is_verified'])) {
+                    $student->is_verified = $data['is_verified'];
+                }
+                $student->save();
+                \Log::info('UpdateProfile - Student updated', ['student_id' => $student->id]);
+            }
+        } else if ($user->role === 'school') {
             $school = $user->school;
-            $school->name = $data['name'] ?? $school->name;
-            $school->address = $data['address'] ?? $school->address;
-            $school->phone_number = $data['phone_number'] ?? $school->phone_number;
-            $school->website = $data['website'] ?? $school->website;
-            $school->npsn = $data['npsn'] ?? $school->npsn;
-            $school->accreditation = $data['accreditation'] ?? $school->accreditation;
-            $school->status = $data['status'] ?? $school->status;
-            $school->description = $data['description'] ?? $school->description;
-            $school->city_regency_id = $data['city_regency_id'] ?? $school->city_regency_id;
-
-
-            $school->save();
-        } else if ($user->tokenCan('company-access')) {
+            if ($school) {
+                $school->name = $data['name'] ?? $school->name;
+                $school->address = $data['address'] ?? $school->address;
+                $school->phone_number = $data['phone_number'] ?? $school->phone_number;
+                $school->website = $data['website'] ?? $school->website;
+                $school->npsn = $data['npsn'] ?? $school->npsn;
+                $school->accreditation = $data['accreditation'] ?? $school->accreditation;
+                $school->status = $data['status'] ?? $school->status;
+                $school->description = $data['description'] ?? $school->description;
+                $school->city_regency_id = $data['city_regency_id'] ?? $school->city_regency_id;
+                // Admin can update is_verified for schools
+                if (isset($data['is_verified'])) {
+                    $school->is_verified = $data['is_verified'];
+                }
+                $school->save();
+                \Log::info('UpdateProfile - School updated', ['school_id' => $school->id]);
+            }
+        } else if ($user->role === 'company') {
             $company = $user->company;
-            $company->name = $data['name'] ?? $company->name;
-            $company->address = $data['address'] ?? $company->address;
-            $company->phone_number = $data['phone_number'] ?? $company->phone_number;
-            $company->city_regency_id = $data['city_regency_id'] ?? $company->city_regency_id;
-            $company->sector_id = $data['sector_id'] ?? $company->sector_id;
-            $company->description = $data['description'] ?? $company->description;
-            $company->website = $data['website'] ?? $company->website;
-
-            $company->save();
+            if ($company) {
+                $company->name = $data['name'] ?? $company->name;
+                $company->address = $data['address'] ?? $company->address;
+                $company->phone_number = $data['phone_number'] ?? $company->phone_number;
+                $company->city_regency_id = $data['city_regency_id'] ?? $company->city_regency_id;
+                $company->sector_id = $data['sector_id'] ?? $company->sector_id;
+                $company->description = $data['description'] ?? $company->description;
+                $company->website = $data['website'] ?? $company->website;
+                // Admin can update is_verified for companies
+                if (isset($data['is_verified'])) {
+                    $company->is_verified = $data['is_verified'];
+                }
+                $company->save();
+                \Log::info('UpdateProfile - Company updated', ['company_id' => $company->id]);
+            }
         }
-
 
         $user->save();
 
+        //refresh from database to ensure it returns the actual saved data
+        $user = User::with(['student', 'school', 'company'])->find($userId);
 
         return response()->json([
-            'data' => $user->load(['student', 'school', 'company']),
+            'data' => $user,
         ], 200);
     }
     public function deleteProfile(Request $request)

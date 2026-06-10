@@ -19,6 +19,7 @@ return new class extends Migration {
             $table->boolean('is_pro')->default(false);
             $table->string('photo_profile')->nullable();
             $table->timestamp('email_verified_at')->nullable();
+            $table->timestamp('last_login_at')->nullable(); //decomment this and rerun migration in case the separate file did not work, just just decomment it now?
             $table->rememberToken();
             $table->timestamps();
         });

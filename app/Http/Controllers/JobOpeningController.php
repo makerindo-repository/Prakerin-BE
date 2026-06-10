@@ -15,7 +15,7 @@ class JobOpeningController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(Request $request) //This function is 80% overhauled as the previous one cannot load any job openings
     {
         $limit = $request->query('limit', 10);
         $search = $request->query('search', '');
@@ -28,200 +28,126 @@ class JobOpeningController extends Controller
 
         $user = Auth::guard('sanctum')->user();
 
+        // If user is a company, show only their job openings
+        if ($user?->company) {
+            $jobOpenings = JobOpening::with([
+                'company.user',
+                'company.cityRegency.province',
+                'field',
+                'duration',
+                'test'
+            ])
+                ->where('company_id', $user->company->id)
+                ->where('title', 'like', "%{$search}%")
+                ->when($grade, function ($query) use ($grade) {
+                    $gradeArray = Arr::wrap($grade);
+                    return $query->whereIn('grade', $gradeArray);
+                })
+                ->when($field_id, function ($query) use ($field_id) {
+                    return $query->whereIn('field_id', Arr::wrap($field_id));
+                })
+                ->when($duration_id, function ($query) use ($duration_id) {
+                    return $query->whereIn('duration_id', Arr::wrap($duration_id));
+                })
+                ->paginate($limit);
 
-        $jobOpenings = JobOpening::with(
-            [
+            $jobOpenings->getCollection()->transform(function ($item) {
+                return [
+                    "id" => $item->id,
+                    "company_id" => $item->company_id,
+                    "field_id" => $item->field_id,
+                    "duration_id" => $item->duration_id,
+                    "title" => $item->title,
+                    "description" => $item->description,
+                    "grade" => $item->grade,
+                    "type" => $item->type,
+                    "location" => $item->location,
+                    "qouta" => $item->qouta,
+                    "is_paid" => $item->is_paid,
+                    "is_available" => $item->is_available,
+                    "start_date" => $item->start_date,
+                    "closing_date" => $item->closing_date,
+                    "created_at" => $item->created_at,
+                    "updated_at" => $item->updated_at,
+                    "company" => $item->company->makeHidden(['user', 'cityRegency']),
+                    "city_regency" => $item->company->cityRegency?->makeHidden(['province']),
+                    "province" => $item->company->cityRegency?->province,
+                    'user' => $item->company->user,
+                    'field' => $item->field,
+                    'duration' => $item->duration,
+                    'test' => $item->test,
+                ];
+            });
+        } else {
+            // If user is a student, show available job openings with filters
+            $jobOpenings = JobOpening::with([
                 'company.user',
                 'company.cityRegency.province',
                 'saveJobOpening' => function ($query) use ($user) {
                     $query->where('student_id', $user?->student?->id);
-                }
-            ]
-        )
-            ->where('title', 'like', "%{$search}%")
-            ->whereHas('company', function ($query) use ($province_id, $city_regency_id) {
-
-
-                if ($province_id) {
-                    $query->whereHas('cityRegency', function ($query) use ($province_id) {
-                        $query->whereIn('province_id', Arr::wrap($province_id));
-                    });
-                }
-                if ($city_regency_id) {
-                    $query->where('city_regency_id', Arr::wrap($city_regency_id));
-                }
-            })
-            ->when($user, function ($query) use ($user, $isSaved) {
-                if ($user->student) {
-                    $query->when($isSaved, function ($query) {
-                        $query->whereHas('saveJobOpening', function ($q) {
-                            $q->where('student_id', Auth::guard('sanctum')->user()?->student->id);
+                },
+                'field',
+                'duration',
+                'test'
+            ])
+                ->whereHas('company', function ($query) use ($province_id, $city_regency_id) {
+                    if ($province_id) {
+                        $query->whereHas('cityRegency', function ($query) use ($province_id) {
+                            $query->whereIn('province_id', Arr::wrap($province_id));
                         });
-                    });
-                }
-
-                if ($user->company) {
-                    $query->where('company_id', $user->company->id);
-                } else {
-                    $query->where('is_available', true);
-                }
-            })
-
-            ->when(
-                collect(Arr::wrap($grade))->intersect(['smk', 'mahasiswa', 'all'])->isNotEmpty(),
-                function ($query) use ($grade) {
+                    }
+                    if ($city_regency_id) {
+                        $query->whereIn('city_regency_id', Arr::wrap($city_regency_id));
+                    }
+                })
+                ->where('title', 'like', "%{$search}%")
+                ->where('is_available', true)
+                ->when($grade, function ($query) use ($grade) {
                     $gradeArray = Arr::wrap($grade);
-                    return $query->whereIn('grade', Arr::wrap($gradeArray));
-                }
-            )
-            ->when($field_id, function ($query, $field_id) {
-                return $query->whereIn('field_id', Arr::wrap($field_id));
-            })
-            ->when($duration_id, function ($query, $duration_id) {
-                return $query->whereIn('duration_id', Arr::wrap($duration_id));
-            })
-            ->paginate($limit);
+                    return $query->whereIn('grade', $gradeArray);
+                })
+                ->when($field_id, function ($query) use ($field_id) {
+                    return $query->whereIn('field_id', Arr::wrap($field_id));
+                })
+                ->when($duration_id, function ($query) use ($duration_id) {
+                    return $query->whereIn('duration_id', Arr::wrap($duration_id));
+                })
+                ->when($isSaved, function ($query) use ($user) {
+                    $query->whereHas('saveJobOpening', function ($q) use ($user) {
+                        $q->where('student_id', $user?->student?->id);
+                    });
+                })
+                ->paginate($limit);
 
-        $jobOpenings->getCollection()->transform(function ($item) use ($field_id, $user) {
-            return [
-                "id" => $item->id,
-                "title" => $item->title,
-                "description" => $item->description,
-                "grade" => $item->grade,
-                "type" => $item->type,
-                "location" => $item->location,
-                "qouta" => $item->qouta,
-                "is_paid" => $item->is_paid,
-                "is_available" => $item->is_available,
-                "created_at" => $item->created_at,
-                "updated_at" => $item->updated_at,
-                "company" => $item->company->makeHidden(['user', 'cityRegency']),
-                'user' => $item->company->user,
-                'save_job_opening' => $item->saveJobOpening->isNotEmpty() ? true : false,
-                'city_regency' => $item->company?->cityRegency->makeHidden(['province']),
-                'province' => $item->company->cityRegency->province,
-                "duration" => $item->duration,
-            ];
-        });
-
-
-
-        // if (Auth::guard('sanctum')->user()?->tokenCan('company-access')) {
-
-        //     $jobOpenings = JobOpening::with(
-        //         [
-        //             'company.user',
-        //             'company.cityRegency.province',
-        //         ]
-        //     )
-        //         ->where('company_id', Auth::guard('sanctum')->user()?->company->id)
-        //         ->whereHas('company', function ($query) use ($province_id, $city_regency_id) {
-        //             if ($province_id && !$city_regency_id) {
-        //                 $query->whereHas('cityRegency', function ($query) use ($province_id) {
-        //                     $query->where('province_id', $province_id);
-        //                 });
-        //             }
-        //             if ($city_regency_id) {
-        //                 $query->where('city_regency_id', $city_regency_id);
-        //             }
-        //         })
-        //         ->where('title', 'like', "%{$search}%")
-        //         ->when($grade === 'smk' || $grade === 'mahasiswa' || $grade === 'all', function ($query, $grade) {
-        //             return $query->where('grade', $grade);
-        //         })
-        //         ->when($field_id, function ($query, $field_id) {
-        //             return $query->where('field_id', $field_id);
-        //         })
-        //         ->when($duration_id, function ($query, $duration_id) {
-        //             return $query->where('duration_id', $duration_id);
-        //         })
-        //         ->paginate($limit);
-
-        //     $jobOpenings->getCollection()->transform(function ($item) {
-        //         return [
-        //             "id" => $item->id,
-        //             "company_id" => $item->company_id,
-        //             "field_id" => $item->field_id,
-        //             "duration_id" => $item->duration_id,
-        //             "title" => $item->title,
-        //             "description" => $item->description,
-        //             "grade" => $item->grade,
-        //             "type" => $item->type,
-        //             "location" => $item->location,
-        //             "qouta" => $item->qouta,
-        //             "is_paid" => $item->is_paid,
-        //             "is_available" => $item->is_available,
-        //             "created_at" => $item->created_at,
-        //             "updated_at" => $item->updated_at,
-        //             "company" => $item->company->makeHidden(['user', 'cityRegency']),
-        //             "city_regency" => $item->company->cityRegency->makeHidden(['province']),
-        //             "province" => $item->company->cityRegency->province,
-        //             'user' => $item->company->user,
-        //         ];
-        //     });
-        // } else {
-
-
-        //     $jobOpenings = JobOpening::with([
-        //         'company.user',
-        //         'saveJobOpening' => function ($query) {
-        //             $query->where('student_id', Auth::guard('sanctum')->user()?->student->id);
-        //         }
-        //     ])
-        //         ->whereHas('company', function ($query) use ($province_id, $city_regency_id) {
-        //             if ($province_id && !$city_regency_id) {
-        //                 $query->whereHas('cityRegency', function ($query) use ($province_id) {
-        //                     $query->whereIn('province_id', Arr::wrap($province_id));
-        //                 });
-        //             }
-        //             if ($city_regency_id) {
-        //                 $query->where('city_regency_id', $city_regency_id);
-        //             }
-        //         })
-        //         ->where('title', 'like', "%{$search}%")
-        //         ->when($grade === 'smk' || $grade === 'mahasiswa' || $grade === 'all', function ($query, $grade) {
-        //             return $query->where('grade', $grade);
-        //         })
-        //         ->when($field_id, function ($query, $field_id) {
-        //             return $query->where('field_id', $field_id);
-        //         })
-        //         ->when($duration_id, function ($query, $duration_id) {
-        //             return $query->where('duration_id', $duration_id);
-        //         })
-        //         ->where('is_available', true)
-        //         ->when($isSaved, function ($query) {
-        //             $query->whereHas('saveJobOpening', function ($q) {
-        //                 $q->where('student_id', Auth::guard('sanctum')->user()?->student->id);
-        //             });
-        //         })
-        //         ->paginate($limit);
-
-
-
-        //     $jobOpenings->getCollection()->transform(function ($item) use ($province_id) {
-        //         return [
-        //             "id" => $item->id,
-        //             "company_id" => $item->company_id,
-        //             "field_id" => $item->field_id,
-        //             "title" => $item->title,
-        //             "description" => $item->description,
-        //             "grade" => $item->grade,
-        //             "type" => $item->type,
-        //             "location" => $item->location,
-        //             "qouta" => $item->qouta,
-        //             "is_paid" => $item->is_paid,
-        //             "is_available" => $item->is_available,
-        //             "created_at" => $item->created_at,
-        //             "updated_at" => $item->updated_at,
-        //             "company" => $item->company->makeHidden(['user', 'cityRegency']),
-        //             'user' => $item->company->user,
-        //             'save_job_opening' => $item->saveJobOpening->isNotEmpty() ? true : false,
-        //             'city_regency' => $item->company->cityRegency->makeHidden(['province']),
-        //             'province' => $item->company->cityRegency->province,
-        //             "duration" => $item->duration,
-        //         ];
-        //     });
-        // }
+            $jobOpenings->getCollection()->transform(function ($item) {
+                return [
+                    "id" => $item->id,
+                    "company_id" => $item->company_id,
+                    "field_id" => $item->field_id,
+                    "duration_id" => $item->duration_id,
+                    "title" => $item->title,
+                    "description" => $item->description,
+                    "grade" => $item->grade,
+                    "type" => $item->type,
+                    "location" => $item->location,
+                    "qouta" => $item->qouta,
+                    "is_paid" => $item->is_paid,
+                    "is_available" => $item->is_available,
+                    "start_date" => $item->start_date,
+                    "closing_date" => $item->closing_date,
+                    "created_at" => $item->created_at,
+                    "updated_at" => $item->updated_at,
+                    "company" => $item->company->makeHidden(['user', 'cityRegency']),
+                    'user' => $item->company->user,
+                    'save_job_opening' => $item->saveJobOpening->isNotEmpty() ? true : false,
+                    'city_regency' => $item->company->cityRegency?->makeHidden(['province']),
+                    'province' => $item->company->cityRegency?->province,
+                    'field' => $item->field,
+                    'duration' => $item->duration,
+                    'test' => $item->test,
+                ];
+            });
+        }
 
         return response()->json($jobOpenings);
     }
@@ -231,7 +157,6 @@ class JobOpeningController extends Controller
      */
     public function store(Request $request)
     {
-
         $validator = Validator::make($request->all(), [
             'field_id' => 'required|exists:fields,id',
             'duration_id' => 'required|exists:durations,id',
@@ -240,8 +165,8 @@ class JobOpeningController extends Controller
             'is_paid' => 'required|boolean',
             'grade' => 'required|in:smk,mahasiswa,all',
             'type' => 'required|in:part_time,full_time',
-            'location' => 'required|in:onsite,remote,hybrid,field',
-            'quota' => 'required|integer|min:1',
+            'location' => 'required|in:onsite,remote,hybrid', //removing field as migration has no field in the enum
+            'qouta' => 'required|integer|min:1', //renaming quota to qouta to sync with migration
             'is_available' => 'required|boolean',
             'tests' => 'array',
             'start_date' => 'required|date',
@@ -258,6 +183,11 @@ class JobOpeningController extends Controller
         // return response()->json($data['company_id'], 400);
         // Default: 14 hari setelah start_date
         $duration = Duration::where('id', $data['duration_id'])->where('is_accepted', true)->first();
+        if (!$duration) { //added handler if duration adding fail
+            throw new HttpResponseException(response()->json([
+                'errors' => 'Invalid duration'
+            ], 400));
+        }
         $startDate = \Carbon\Carbon::parse($data['start_date']);
         // Jika request mengandung 'duration_type', gunakan 3 bulan jika '3_month', selain itu 14 hari
         if ($duration->duration_unit == 'month') {
@@ -273,10 +203,12 @@ class JobOpeningController extends Controller
         // ], 400);
         $jobOpening = JobOpening::create($data);
 
-        $jobOpening->test()->attach($data['tests']);
+        if (!empty($data['tests'])) { //added handler if tests return empty (remove if actually required)
+            $jobOpening->test()->attach($data['tests']);
+        }
 
         return response()->json([
-            'data' => $jobOpening->with('test')
+            'data' => $jobOpening->load('test') //changed 'with' to 'load' because 'with' is builder not instance
             // 'test' => $data
         ], 201);
     }
@@ -300,13 +232,15 @@ class JobOpeningController extends Controller
             ]
         )->find($id);
 
+        $cityRegency = $jobOpening->company->cityRegency;
+
 
         if (!$jobOpening) {
             throw new HttpResponseException(response()->json(['errors' => 'Job opening not found'], 404));
         }
 
-        $jobOpening["city_regency"] = $jobOpening->company->cityRegency->makeHidden(['province']);
-        $jobOpening["province"] = $jobOpening->company->cityRegency->province;
+        $jobOpening["city_regency"] = $cityRegency ? $cityRegency->makeHidden("province") : null;
+        $jobOpening["province"] = $cityRegency?->province;
         $jobOpening["company"] = $jobOpening->company->makeHidden(['user', 'cityRegency']);
         $jobOpening["user"] = $jobOpening->company->user;
         $jobOpening["start_date"] = \Carbon\Carbon::parse($jobOpening->start_date)->toDateString();

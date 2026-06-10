@@ -32,7 +32,7 @@ class UserRegisterRequest extends FormRequest
             'recaptcha_token' => 'required',
             'name' => 'required|string|max:255',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'type' => 'required|in:university,school'
+            'type' => 'required_if:role,school|in:university,school' //from required to required_if (student and company has no type)
         ];
 
         $this->addConditionalRule($rules);

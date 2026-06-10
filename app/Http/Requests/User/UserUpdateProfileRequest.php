@@ -25,7 +25,8 @@ class UserUpdateProfileRequest extends FormRequest
      */
     public function rules(): array
     {
-        $userId = $this->user()->id; // ambil id user sekarang
+        //Added $this->route('id') for admin updating user so it'll use the route's id instead
+        $userId = $this->route('id') ?? $this->user()->id;
 
         $rules = [
             'username' => [
@@ -42,7 +43,10 @@ class UserUpdateProfileRequest extends FormRequest
             'photo_profile' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
 
-        if ($this->user()->tokenCant('admin-access')) {
+        // Admin and school can update is_verified field 
+        if ($this->user()->tokenCan('admin-access') || $this->user()->tokenCan('school-access')) {
+            $rules['is_verified'] = 'nullable|boolean';
+        } else {
             $this->addConditionalRule($rules);
         }
 

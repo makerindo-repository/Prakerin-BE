@@ -20,7 +20,7 @@ class AdminDashboardController extends Controller
     public function getDashboardData()
     {
         // Get summary data
-        $summary = [
+        $summary = [ //added the pro summaries but still defaulted to 0
             'total_users' => User::count(),
             'total_schools' => School::count(),
             'total_companies' => Company::count(),
@@ -28,6 +28,10 @@ class AdminDashboardController extends Controller
             'total_job_openings' => JobOpening::count(),
             'total_achievements' => Achievement::count(),
             'active_internships' => InternshipApplication::where('status', 'active')->count(),
+            'total_users_with_pro_account' => 0,
+            'total_users_without_pro_account' => User::count(),
+            'total_companies_with_pro_account' => 0,
+            'total_schools_with_pro_account' => 0,
             'total_feedback' => Feedback::count(),
         ];
 
@@ -61,9 +65,8 @@ class AdminDashboardController extends Controller
     private function calculateSuccessRate()
     {
         $totalInternships = InternshipApplication::where('status', 'completed')->count();
-        $successfulInternships = InternshipApplication::where('status', 'completed')
-            // ->where('rating', '>=', 4)
-            ->count();
+        $successfulInternships = 0;
+        //$successfulInternships = InternshipApplication::where('status', 'completed')->where('rating', '>=', 4)->count();
 
         if ($totalInternships === 0) {
             return 0;

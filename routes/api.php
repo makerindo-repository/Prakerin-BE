@@ -152,6 +152,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/email/verify/{id}/{hash}', 'verifyEmail')->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
 
             Route::get('/', 'index');
+            Route::get('/{id}', 'show');
 
 
 
@@ -162,8 +163,9 @@ Route::prefix('v1')->group(function () {
                 Route::delete('/profile', 'deleteProfile');
                 Route::get("/count", "count");
 
+                // Allow updating profiles by ID (users can update their own, admins can update anyone)
+                Route::patch('/{id}', 'updateProfile');
 
-                Route::patch('/{id}', 'update');
                 Route::middleware('abilities:admin-access')->group(function () {
                     Route::delete('/{id}', 'destroy');
                 });
@@ -377,6 +379,8 @@ Route::prefix('v1')->group(function () {
             Route::middleware('ability:company-access')->group(function () {
                 Route::get('/', 'index');
                 Route::get("/count", "count");
+                Route::post('/', 'store');
+                Route::get('/{id}', 'show');
                 Route::patch('/{id}', 'update');
                 Route::delete('/{id}', 'destroy');
             });
