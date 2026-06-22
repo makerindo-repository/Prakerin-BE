@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\HomePage\HomePageRequest;
 use App\Models\CommentPrakerin;
 use App\Models\Partner;
+use App\Models\JobOpening;
 use DB;
 use App\Models\Hompage;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +19,7 @@ class HomepageController extends Controller
             ->get();
         $partner = Partner::orderBy('created_at', 'ASC')->get();
         $commentPrakerin = CommentPrakerin::orderBy('created_at', 'ASC')->get();
-
+        $jobOpenings = JobOpening::orderBy('created_at', 'DESC')->get();
 
         $formatted = [];
         if ((!Auth::guard('sanctum')->user())) {
@@ -35,6 +36,7 @@ class HomepageController extends Controller
                 'homepages' => $formatted,
                 'partners' => $partner,
                 'comment_prakerins' => $commentPrakerin,
+                'job_openings' => $jobOpenings
             ]
         ], 200);
     }

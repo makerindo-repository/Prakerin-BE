@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+//TODO: Buat lowongan bisa masuk ke homepage, frontendnya udah jadi, tinggal datanya dioper ke depan
+//Sebenernya untuk dioper udah, tapi hasilnya keluar company.id, jadi harus pake eloquent atau begitunya
+//Bisa cek di frontend gimana cara kerjanya, spesifiknya Landingpage.tsx dan page.tsx
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
