@@ -41,7 +41,11 @@ class HomepageController extends Controller
 
     public function about()
     {
-        $data = Hompage::where('name', 'LIKE', '%about%');
+        $data = Hompage::where('name', 'LIKE', '%about%')->get();
+
+        return response()->json([
+        'data' => $data
+    ], 200);
     }
 
     public function update(HomePageRequest $request)

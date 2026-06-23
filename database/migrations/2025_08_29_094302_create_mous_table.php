@@ -19,7 +19,7 @@ return new class extends Migration {
             $table->string('file');
             $table->date('start_date');
             $table->date('end_date');
-            $table->enum('status', ['pending ', 'accepted ', 'rejected'])->default('pending');
+            $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending');
             $table->boolean('is_company_accepted')->nullable();
             $table->boolean('is_school_accepted')->nullable();
             $table->timestamps();

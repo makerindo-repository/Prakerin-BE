@@ -127,6 +127,7 @@ class MouController extends Controller
             $mou->is_company_accepted = true;
         }
 
+        $mou->status = 'pending';
         $mou->save();
 
         return response()->json(['data' => $mou], 201);

@@ -27,6 +27,7 @@ use App\Models\Hompage;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Queue\Jobs\Job;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -155,6 +156,7 @@ class DatabaseSeeder extends Seeder
 
         User::factory()->create([
             'email' => 'superadmin@makerindo.id',
+            'password' => Hash::make('rahasia123'),
             'role' => 'super_admin',
         ]);
 

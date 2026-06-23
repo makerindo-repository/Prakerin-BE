@@ -17,7 +17,7 @@ class JobOpeningController extends Controller
      */
     public function index(Request $request) //This function is 80% overhauled as the previous one cannot load any job openings
     {
-        $limit = $request->query('limit', 10);
+        // $limit = $request->query('limit', 10);
         $search = $request->query('search', '');
         $province_id = $request->query('province_id', []);
         $city_regency_id = $request->query('city_regency_id', []);
@@ -49,7 +49,7 @@ class JobOpeningController extends Controller
                 ->when($duration_id, function ($query) use ($duration_id) {
                     return $query->whereIn('duration_id', Arr::wrap($duration_id));
                 })
-                ->paginate($limit);
+                ->paginate(10);
 
             $jobOpenings->getCollection()->transform(function ($item) {
                 return [
@@ -117,7 +117,7 @@ class JobOpeningController extends Controller
                         $q->where('student_id', $user?->student?->id);
                     });
                 })
-                ->paginate($limit);
+                ->paginate(10);
 
             $jobOpenings->getCollection()->transform(function ($item) {
                 return [

@@ -142,6 +142,7 @@ Route::prefix('v1')->group(function () {
         });
 
 
+
     // User
     Route::prefix('/users')
         ->controller(UserController::class)
@@ -151,24 +152,12 @@ Route::prefix('v1')->group(function () {
 
             Route::get('/email/verify/{id}/{hash}', 'verifyEmail')->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
 
-            Route::get('/', 'index');
-            Route::get('/{id}', 'show');
-
-
-
             Route::middleware('auth:sanctum')->group(function () {
                 Route::post('/logout', 'logout');
                 Route::get('/profile', 'profile');
                 Route::patch('/profile', 'updateProfile');
                 Route::delete('/profile', 'deleteProfile');
-                Route::get("/count", "count");
-
-                // Allow updating profiles by ID (users can update their own, admins can update anyone)
-                Route::patch('/{id}', 'updateProfile');
-
-                Route::middleware('abilities:admin-access')->group(function () {
-                    Route::delete('/{id}', 'destroy');
-                });
+                Route::get('/count', 'count');
 
                 Route::middleware('abilities:school-access')->group(function () {
                     Route::get('/student/summary', 'studentSummary');
@@ -180,10 +169,19 @@ Route::prefix('v1')->group(function () {
                     Route::post('/', 'store');
                 });
 
+                Route::middleware('abilities:admin-access')->group(function () {
+                    Route::delete('/{id}', 'destroy');
+                });
+
+                Route::patch('/{id}', 'updateProfile');
+
                 Route::middleware('ability:admin-access,student-access,school-access,company-access')->group(function () {
                     Route::get('/{id}', 'show');
                 });
             });
+
+            // Public routes — TANPA auth, taruh /{id} dan / di paling akhir
+            Route::get('/', 'index');
         });
 
     // Curriculum Vitae

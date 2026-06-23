@@ -15,6 +15,7 @@ use App\Models\User;
 use Auth;
 use DB;
 use Http;
+use Log;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
@@ -79,6 +80,7 @@ class UserController extends Controller
                 $query->whereHas('company', function ($q) use ($search, $isMou, $user) {
                     $q->where('is_verified', true);
                     $q->where('name', 'like', "%$search%");
+                    $q->whereNotNull('city_regency_id');
 
                     if ($isMou === true) {
                         $q->whereHas('mous', function ($q2) use ($user) {
@@ -144,8 +146,11 @@ class UserController extends Controller
 
                 $query->with(['student', 'school', 'company']);
                 $query->when($role, function ($query, $role) {
-                    return $query->where('role', $role);
-                });
+                    return $query->where('role', $role)
+                        ->when($role === 'school', fn($q) => $q->whereHas('school'))
+                        ->when($role === 'company', fn($q) => $q->whereHas('company'))
+                        ->when($role === 'student', fn($q) => $q->whereHas('student'));
+            });
 
                 $query->when(
                     $role === 'student' && $schoolId,
@@ -174,8 +179,8 @@ class UserController extends Controller
             ->through(function ($item) use ($user, $role) {
                 if ($user === null) {
                     return [
-                        'id' => $item->school->id,
-                        'name' => $item->school->name,
+                        'id' => $item->school?->id,
+                        'name' => $item->school?->name,
                     ];
                 } else if (($user?->tokenCan('school-access') && ($role === 'student'))) {
 
@@ -190,23 +195,25 @@ class UserController extends Controller
                             'name' => $item->student?->name,
                             'class' => $item->student?->class,
                             'company' => $item->student?->curriculumVitae
-                                ->flatMap->internshipApplications
-                                ->map->jobOpening
-                                ->map->company
-                                ->unique('id')
-                                ->map(function ($company) {
+                                ?->flatMap->internshipApplications
+                                ?->map->jobOpening
+                                ?->map->company
+                                ?->unique('id')
+                                ?->map(function ($company) {
+                                    if (!$company) return null;
                                     $data = $company->toArray();
                                     $data['item'] = $company->item?->toArray();
                                     $data['city_regency'] = $company->cityRegency?->toArray();
                                     $data['province'] = $company->cityRegency?->province?->toArray();
                                     return $data;
                                 })
-                                ->values(),
+                                ?->filter()
+                                ?->values() ?? [],
                         ],
                         'major' => [
-                            'name' => $item->student->major?->name
+                            'name' => $item->student?->major?->name
                         ],
-                        'status' => $item->student->status, // ✅ tambahin status magang
+                        'status' => $item->student?->status,
                     ];
                 } else if (($user?->tokenCan('school-access') || $user?->tokenCan('student-access')) && ($role === 'company')) {
                     return [
@@ -215,10 +222,10 @@ class UserController extends Controller
                         'email' => $item->email,
                         'role' => $item->role,
                         'photo_profile' => $item->photo_profile,
-                        'company' => $item->company->makeHidden(['cityRegency', 'mous']),
-                        'city_regency' => $item->company->cityRegency->makeHidden(['province']),
-                        'province' => $item->company->cityRegency->province,
-                        'mou' => !$item->company->mous->where('status', 'accepted')->isEmpty(),
+                        'company' => $item->company?->makeHidden(['cityRegency', 'mous']),
+                        'city_regency' => $item->company?->cityRegency?->makeHidden(['province']),
+                        'province' => $item->company?->cityRegency?->province,
+                        'mou' => $item->company ? !$item->company->mous->where('status', 'accepted')->isEmpty() : false,
                     ];
                 } else if ($user?->tokenCan('company-access') && ($role === 'school')) {
                     return [
@@ -227,11 +234,11 @@ class UserController extends Controller
                         'email' => $item->email,
                         'role' => $item->role,
                         'photo_profile' => $item->photo_profile,
-                        'name' => $item->school->name,
-                        'school' => $item->school->makeHidden(['mous', 'cityRegency']),
-                        'mou' => !$item->school->mous->where('status', 'accepted')->isEmpty(),
-                        'city_regency' => $item->school->cityRegency->makeHidden(['province']),
-                        'province' => $item->school->cityRegency->province
+                        'name' => $item->school?->name,
+                        'school' => $item->school?->makeHidden(['mous', 'cityRegency']),
+                        'mou' => $item->school ? !$item->school->mous->where('status', 'accepted')->isEmpty() : false,
+                        'city_regency' => $item->school?->cityRegency?->makeHidden(['province']),
+                        'province' => $item->school?->cityRegency?->province
                     ];
                 } else if ($user?->tokenCan('company-access') && ($role === 'student')) {
                     return [
@@ -241,9 +248,9 @@ class UserController extends Controller
                         'phone_number' => $item->phone_number,
                         'photo_profile' => $item->photo_profile,
                         'student' => $item->student,
-                        'school' => $item->student->school,
-                        'internship' => $item->student->internships->first(),
-                        'field' => $item->student->internships->first()?->internshipApplication->jobOpening->field?->name ?? null
+                        'school' => $item->student?->school,
+                        'internship' => $item->student?->internships?->first(),
+                        'field' => $item->student?->internships?->first()?->internshipApplication?->jobOpening?->field?->name ?? null
                     ];
                 }
 
@@ -554,20 +561,22 @@ class UserController extends Controller
             'response' => $data['recaptcha_token'],
         ]);
 
+        \Log::info('Recaptcha verify response', $response->json()); // ADD THIS TEMPORARILY
+
         if (!$response->json('success')) {
-            throw new HttpResponseException(response([
-                "errors" => [
-                    "message" => "Captcha failed"
-                ]
-            ], 400));
+            return response()->json([
+                "message" => "Captcha failed",
+                "errors" => $response->json('error-codes'),
+            ], 400);
         }
 
         $user = User::where('email', $data['email'])->first();
 
         if (!$user || !Hash::check($data['password'], $user->password)) {
-            throw new HttpResponseException(response([
-                "errors" => "Email atau password salah!"
-            ], 400));
+            return response()->json([
+                "message" => "Email atau password salah!",
+                "errors" => null
+            ], 401);
         }
 
         $token = null;

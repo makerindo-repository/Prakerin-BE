@@ -18,6 +18,15 @@ class UserUpdateProfileRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    protected function prepareForValidation()
+    {
+        if ($this->has('is_verified')) {
+            $this->merge([
+                'is_verified' => filter_var($this->is_verified, FILTER_VALIDATE_BOOLEAN),
+            ]);
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -46,9 +55,9 @@ class UserUpdateProfileRequest extends FormRequest
         // Admin and school can update is_verified field 
         if ($this->user()->tokenCan('admin-access') || $this->user()->tokenCan('school-access')) {
             $rules['is_verified'] = 'nullable|boolean';
-        } else {
-            $this->addConditionalRule($rules);
         }
+
+        $this->addConditionalRule($rules);
 
         return $rules;
     }
