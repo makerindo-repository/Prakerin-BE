@@ -27,9 +27,4 @@ class CommentPrakerin extends Model
         'position',
         'comment',
     ];
-
-    protected $hidden = [
-        'created_at',
-        'updated_at'
-    ];
 }
