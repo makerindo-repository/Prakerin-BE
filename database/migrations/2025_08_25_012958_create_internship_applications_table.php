@@ -16,7 +16,7 @@ return new class extends Migration {
             $table->uuid('job_opening_id');
 
             $table->enum('status', ['in_progress', 'accepted', 'rejected'])->default('in_progress');
-            $table->integer('rating'); //there is a successful internship in the admindashboardcontroller where it looks for internship application with rating over 4 yet there is no such column?
+            $table->integer('rating')->nullable(); //there is a successful internship in the admindashboardcontroller where it looks for internship application with rating over 4 yet there is no such column?
             $table->text('cover_letter');
             $table->text('message_rejected')->nullable();
 
