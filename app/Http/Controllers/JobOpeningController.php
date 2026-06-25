@@ -52,7 +52,7 @@ class JobOpeningController extends Controller
                 ->limit(999)
                 ->get();
 
-            $jobOpenings->getCollection()->transform(function ($item) {
+            $jobOpenings = $jobOpenings->map(function ($item) {
                 return [
                     "id" => $item->id,
                     "company_id" => $item->company_id,
@@ -121,7 +121,7 @@ class JobOpeningController extends Controller
                 ->limit(999)
                 ->get();
 
-            $jobOpenings->getCollection()->transform(function ($item) {
+            $jobOpenings = $jobOpenings->map(function ($item) {
                 return [
                     "id" => $item->id,
                     "company_id" => $item->company_id,

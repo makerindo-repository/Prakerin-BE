@@ -12,6 +12,28 @@ use Log;
 class PartnerController extends Controller
 {
 
+
+    /**
+     * Display a listing of the resource.
+     */
+
+    public function index(Request $request)
+    {
+        $search = $request->query('search', '');
+        $type = $request->query('type', null);
+
+        $partners = Partner::where('name', 'like', "%{$search}%")
+            ->when($type, function ($query, $type) {
+                return $query->where('type', $type);
+            })
+            ->orderBy('created_at', 'ASC')
+            ->get();
+
+        return response()->json([
+            'data' => $partners,
+        ], 200);
+    }
+
     /**
      * Store a newly created resource in storage.
      */
@@ -22,7 +44,7 @@ class PartnerController extends Controller
             'name' => 'required|string|max:255',
             'logo' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'address' => 'required|string|max:255',
-            'type' => 'required|in:school,company',
+            'type' => 'required|in:school,company,university'
         ]);
 
         if ($validator->fails()) {
@@ -73,7 +95,7 @@ class PartnerController extends Controller
             'name' => 'required|string|max:255',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'address' => 'required|string|max:255',
-            'type' => 'required|in:school,company',
+            'type' => 'required|in:school,company,university',
         ]);
 
         if ($validator->fails()) {
