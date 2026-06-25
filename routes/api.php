@@ -77,6 +77,12 @@ Route::prefix('v1')->group(function () {
 
     Route::prefix('partners')
         ->controller(PartnerController::class)
+        ->group(function () {
+            Route::get('/', 'index');
+        });
+
+    Route::prefix('partners')
+        ->controller(PartnerController::class)
         ->middleware('auth:sanctum')
         ->group(function () {
             Route::middleware('abilities:admin-access')->group(function () {

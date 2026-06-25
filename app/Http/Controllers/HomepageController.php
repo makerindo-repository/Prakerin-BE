@@ -19,7 +19,38 @@ class HomepageController extends Controller
             ->get();
         $partner = Partner::orderBy('created_at', 'ASC')->get();
         $commentPrakerin = CommentPrakerin::orderBy('created_at', 'ASC')->get();
-        $jobOpenings = JobOpening::orderBy('created_at', 'DESC')->get();
+        $jobOpenings = JobOpening::with([
+    'company.user',
+    'company.cityRegency.province',
+    'field',
+    'duration',
+])
+    ->where('is_available', true)
+    ->orderBy('created_at', 'DESC')
+    ->limit(6)
+    ->get()
+    ->map(function ($item) {
+        return [
+            "id" => $item->id,
+            "title" => $item->title,
+            "grade" => $item->grade,
+            "type" => $item->type,
+            "location" => $item->location,
+            "qouta" => $item->qouta,
+            "is_paid" => $item->is_paid,
+            "is_available" => $item->is_available,
+            "start_date" => $item->start_date,
+            "closing_date" => $item->closing_date,
+            "created_at" => $item->created_at,
+            "updated_at" => $item->updated_at,
+            "company" => $item->company?->makeHidden(['user', 'cityRegency']),
+            "city_regency" => $item->company?->cityRegency?->makeHidden(['province']),
+            "province" => $item->company?->cityRegency?->province,
+            "user" => $item->company?->user,
+            "field" => $item->field,
+            "duration" => $item->duration,
+        ];
+    });
 
         $formatted = [];
         if ((!Auth::guard('sanctum')->user())) {
