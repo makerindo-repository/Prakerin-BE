@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Http\Requests\Student\StudentCreateRequest;
 use App\Http\Requests\Student\StudentUpdateRequest;
 use App\Models\ProfileImage;
@@ -16,6 +17,45 @@ class StudentController extends Controller
     /**
      * Display a listing of the resource.
      */
+    #[OA\Get(
+    path: '/student',
+    summary: 'Get student list',
+    tags: ['Student'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'search',
+            in: 'query',
+            required: false,
+            description: 'Search student name',
+            schema: new OA\Schema(type: 'string')
+        ),
+        new OA\Parameter(
+            name: 'limit',
+            in: 'query',
+            required: false,
+            description: 'Pagination limit',
+            schema: new OA\Schema(type: 'integer', default: 10)
+        ),
+        new OA\Parameter(
+            name: 'is_verified',
+            in: 'query',
+            required: false,
+            description: 'Filter verified students',
+            schema: new OA\Schema(type: 'boolean', default: true)
+        )
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Student list retrieved successfully'
+        ),
+        new OA\Response(
+            response: 401,
+            description: 'Unauthorized'
+        )
+    ]
+)]
     public function index(Request $request)
     {
         // dd(Student::where('school_id', $request->user()->school->id)->get());
@@ -41,6 +81,53 @@ class StudentController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    #[OA\Post(
+    path: '/student',
+    summary: 'Create student',
+    tags: ['Student'],
+    security: [['bearerAuth' => []]],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(
+                required: [
+                    'username',
+                    'email',
+                    'password',
+                    'name'
+                ],
+                properties: [
+                    new OA\Property(property: 'username', type: 'string'),
+                    new OA\Property(property: 'email', type: 'string', format: 'email'),
+                    new OA\Property(property: 'password', type: 'string', format: 'password'),
+                    new OA\Property(property: 'name', type: 'string'),
+                    new OA\Property(
+                        property: 'school_id',
+                        type: 'integer',
+                        nullable: true
+                    ),
+                    new OA\Property(
+                        property: 'image',
+                        type: 'string',
+                        format: 'binary',
+                        nullable: true
+                    )
+                ]
+            )
+        )
+    ),
+    responses: [
+        new OA\Response(
+            response: 201,
+            description: 'Student created successfully'
+        ),
+        new OA\Response(
+            response: 422,
+            description: 'Validation Error'
+        )
+    ]
+)]
     public function store(StudentCreateRequest $request)
     {
 
@@ -81,6 +168,34 @@ class StudentController extends Controller
     /**
      * Display the specified resource.
      */
+    #[OA\Get(
+    path: '/student/{id}',
+    summary: 'Get student detail',
+    tags: ['Student'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'integer')
+        )
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Student retrieved successfully'
+        ),
+        new OA\Response(
+            response: 403,
+            description: 'Forbidden'
+        ),
+        new OA\Response(
+            response: 404,
+            description: 'Student not found'
+        )
+    ]
+)]
     public function show(string $id, Request $request)
     {
         $student = Student::with(['user.profileImage'])->find($id);
@@ -105,6 +220,55 @@ class StudentController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    #[OA\Put(
+    path: '/student/{id}',
+    summary: 'Update student',
+    tags: ['Student'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'integer')
+        )
+    ],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(
+                properties: [
+                    new OA\Property(property: 'name', type: 'string'),
+                    new OA\Property(property: 'email', type: 'string'),
+                    new OA\Property(property: 'username', type: 'string'),
+                    new OA\Property(property: 'password', type: 'string'),
+                    new OA\Property(property: 'school_id', type: 'integer'),
+                    new OA\Property(
+                        property: 'image',
+                        type: 'string',
+                        format: 'binary',
+                        nullable: true
+                    )
+                ]
+            )
+        )
+    ),
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Student updated successfully'
+        ),
+        new OA\Response(
+            response: 404,
+            description: 'Student not found'
+        ),
+        new OA\Response(
+            response: 422,
+            description: 'Validation Error'
+        )
+    ]
+)]
     public function update(int $id, StudentUpdateRequest $request, )
     {
         $student = Student::find($id);
@@ -132,6 +296,30 @@ class StudentController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    #[OA\Delete(
+    path: '/student/{id}',
+    summary: 'Delete student',
+    tags: ['Student'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'integer')
+        )
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Student deleted successfully'
+        ),
+        new OA\Response(
+            response: 404,
+            description: 'Student not found'
+        )
+    ]
+)]
     public function destroy(int $id)
     {
         $student = Student::find($id);
@@ -149,6 +337,21 @@ class StudentController extends Controller
         ], 200);
     }
 
+    /**
+     * Get student count by status for the authenticated user's school.
+     */
+    #[OA\Get(
+    path: '/student/count',
+    summary: 'Get student count by internship status',
+    tags: ['Student'],
+    security: [['bearerAuth' => []]],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Student count retrieved successfully'
+        )
+    ]
+)]
     public function studentCount(Request $request)
     {
 

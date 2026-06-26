@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Models\Internship;
 use App\Models\InternshipApplication;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -15,6 +16,20 @@ class InternshipApplicationController extends Controller
     /**
      * Display a listing of the resource.
      */
+    #[OA\Get(
+    path: '/internship-applications',
+    summary: 'Get internship applications',
+    tags: ['Internship Application'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(name: 'limit', in: 'query', required: false, schema: new OA\Schema(type: 'integer')),
+        new OA\Parameter(name: 'status', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
+        new OA\Parameter(name: 'search', in: 'query', required: false, schema: new OA\Schema(type: 'string'))
+    ],
+    responses: [
+        new OA\Response(response: 200, description: 'Success')
+    ]
+)]
     public function index()
     {
         $limit = request()->query('limit', 10);
@@ -128,6 +143,27 @@ class InternshipApplicationController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    #[OA\Post(
+        path: '/internship-applications',
+        summary: 'Apply internship',
+        tags: ['Internship Application'],
+        security: [['bearerAuth' => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['curriculum_vitae_id','job_opening_id','cover_letter'],
+                properties: [
+                    new OA\Property(property: 'curriculum_vitae_id', type: 'integer'),
+                    new OA\Property(property: 'job_opening_id', type: 'integer'),
+                    new OA\Property(property: 'cover_letter', type: 'string')
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 201, description: 'Application created'),
+            new OA\Response(response: 400, description: 'Validation failed')
+        ]
+    )]
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -176,6 +212,29 @@ class InternshipApplicationController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    #[OA\Patch(
+    path: '/internship-applications/{idInternshipApplication}/tests/{idTest}',
+    summary: 'Update test passed status',
+    tags: ['Internship Application'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'idInternshipApplication',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'integer')
+        ),
+        new OA\Parameter(
+            name: 'idTest',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'integer')
+        )
+    ],
+    responses: [
+        new OA\Response(response: 201, description: 'Updated successfully')
+    ]
+)]
     public function updateTestPassed($idInternshipApplication, $idTest)
     {
         $internshipApplication = InternshipApplication::find($idInternshipApplication);
@@ -193,6 +252,25 @@ class InternshipApplicationController extends Controller
     /**
      * Display the specified resource.
      */
+    #[OA\Get(
+    path: '/internship-applications/{id}',
+    summary: 'Get internship application detail',
+    tags: ['Internship Application'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'integer')
+        )
+    ],
+    responses: [
+        new OA\Response(response: 200, description: 'Success'),
+        new OA\Response(response: 403, description: 'Forbidden'),
+        new OA\Response(response: 404, description: 'Not found')
+    ]
+)]
     public function show(string $id)
     {
         $internshipApplication = InternshipApplication::
@@ -233,6 +311,47 @@ class InternshipApplicationController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    #[OA\Post(
+    path: '/internship-applications/{id}',
+    summary: 'Accept or reject internship application',
+    tags: ['Internship Application'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'integer')
+        )
+    ],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(
+                required: ['status','file'],
+                properties: [
+                    new OA\Property(
+                        property: 'status',
+                        type: 'string',
+                        enum: ['accepted','rejected']
+                    ),
+                    new OA\Property(
+                        property: 'file',
+                        type: 'string',
+                        format: 'binary'
+                    )
+                ]
+            )
+        )
+    ),
+    responses: [
+        new OA\Response(response: 200, description: 'Updated'),
+        new OA\Response(response: 400, description: 'Validation failed'),
+        new OA\Response(response: 403, description: 'Forbidden'),
+        new OA\Response(response: 404, description: 'Not found')
+    ]
+)]
     public function update(Request $request, string $id)
     {
         $internshipApplication = InternshipApplication::find($id);
@@ -306,6 +425,25 @@ class InternshipApplicationController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    #[OA\Delete(
+    path: '/internship-applications/{id}',
+    summary: 'Delete internship application',
+    tags: ['Internship Application'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'integer')
+        )
+    ],
+    responses: [
+        new OA\Response(response: 200, description: 'Deleted'),
+        new OA\Response(response: 403, description: 'Forbidden'),
+        new OA\Response(response: 404, description: 'Not found')
+    ]
+)]
     public function destroy(string $id)
     {
         $internshipApplication = InternshipApplication::find($id);
@@ -331,6 +469,19 @@ class InternshipApplicationController extends Controller
         ], 200);
     }
 
+    
+    #[OA\Get(
+    path: '/internship-applications/count',
+    summary: 'Get internship application statistics',
+    tags: ['Internship Application'],
+    security: [['bearerAuth' => []]],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Statistics retrieved successfully'
+        )
+    ]
+)]
     public function count()
     {
 

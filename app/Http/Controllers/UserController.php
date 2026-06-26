@@ -26,6 +26,30 @@ use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
+    /**
+ * @OA\Get(
+ *     path="/api/users",
+ *     tags={"User"},
+ *     summary="Get list of users",
+ *     description="Retrieve users based on role, verification status, internship status, MOU status, and search filters.",
+ *     security={{"bearerAuth":{}}},
+ *
+ *     @OA\Parameter(name="role", in="query", @OA\Schema(type="string", enum={"student","school","company"})),
+ *     @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
+ *     @OA\Parameter(name="limit", in="query", @OA\Schema(type="integer", default=10)),
+ *     @OA\Parameter(name="is_verified", in="query", @OA\Schema(type="boolean")),
+ *     @OA\Parameter(name="status", in="query", @OA\Schema(type="string")),
+ *     @OA\Parameter(name="is_mou", in="query", @OA\Schema(type="boolean")),
+ *     @OA\Parameter(name="is_completed", in="query", @OA\Schema(type="boolean")),
+ *     @OA\Parameter(name="is_school", in="query", @OA\Schema(type="boolean")),
+ *
+ *     @OA\Response(
+ *         response=200,
+ *         description="User list retrieved successfully"
+ *     ),
+ *     @OA\Response(response=401, description="Unauthorized")
+ * )
+ */
     public function index(Request $request)
     {
         $isVerified = filter_var($request->query('is_verified', true), FILTER_VALIDATE_BOOLEAN);
@@ -261,6 +285,37 @@ class UserController extends Controller
         return response()->json($users, 200);
     }
 
+
+    /**
+ * @OA\Post(
+ *     path="/api/users",
+ *     tags={"User"},
+ *     summary="Create new user",
+ *     security={{"bearerAuth":{}}},
+ *
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\MediaType(
+ *             mediaType="multipart/form-data",
+ *             @OA\Schema(
+ *                 required={"username","email","password","role","name"},
+ *                 @OA\Property(property="username",type="string"),
+ *                 @OA\Property(property="email",type="string",format="email"),
+ *                 @OA\Property(property="password",type="string"),
+ *                 @OA\Property(property="role",type="string",enum={"student","school","company"}),
+ *                 @OA\Property(property="name",type="string"),
+ *                 @OA\Property(property="address",type="string"),
+ *                 @OA\Property(property="school_id",type="string"),
+ *                 @OA\Property(property="type",type="string"),
+ *                 @OA\Property(property="image",type="string",format="binary")
+ *             )
+ *         )
+ *     ),
+ *
+ *     @OA\Response(response=201,description="User created successfully"),
+ *     @OA\Response(response=400,description="Validation error")
+ * )
+ */
     public function store(UserCreateRequest $request)
     {
 
@@ -318,6 +373,26 @@ class UserController extends Controller
             'data' => $user->load('student', 'school', 'company')
         ], 201);
     }
+
+
+    /**
+ * @OA\Get(
+ *     path="/api/users/{id}",
+ *     tags={"User"},
+ *     summary="Get user detail",
+ *     security={{"bearerAuth":{}}},
+ *
+ *     @OA\Parameter(
+ *         name="id",
+ *         in="path",
+ *         required=true,
+ *         @OA\Schema(type="string")
+ *     ),
+ *
+ *     @OA\Response(response=200,description="User detail"),
+ *     @OA\Response(response=404,description="User not found")
+ * )
+ */
     public function show(string $id, Request $request)
     {
         $user = User::with([
@@ -404,6 +479,32 @@ class UserController extends Controller
             'data' => $user,
         ], 200);
     }
+
+    /**
+ * @OA\Put(
+ *     path="/api/users/{id}",
+ *     tags={"User"},
+ *     summary="Verify or update user",
+ *     security={{"bearerAuth":{}}},
+ *
+ *     @OA\Parameter(
+ *         name="id",
+ *         in="path",
+ *         required=true,
+ *         @OA\Schema(type="string")
+ *     ),
+ *
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\JsonContent(
+ *             @OA\Property(property="is_verified",type="boolean")
+ *         )
+ *     ),
+ *
+ *     @OA\Response(response=200,description="User updated"),
+ *     @OA\Response(response=404,description="User not found")
+ * )
+ */
     public function update(Request $request, UserUpdateRequest $userUpdateRequest, string $id)
     {
         $user = User::with(['student', 'school', 'company'])->find($id);
@@ -465,6 +566,25 @@ class UserController extends Controller
         ], 200);
 
     }
+
+    /**
+ * @OA\Delete(
+ *     path="/api/users/{id}",
+ *     tags={"User"},
+ *     summary="Delete user",
+ *     security={{"bearerAuth":{}}},
+ *
+ *     @OA\Parameter(
+ *         name="id",
+ *         in="path",
+ *         required=true,
+ *         @OA\Schema(type="string")
+ *     ),
+ *
+ *     @OA\Response(response=200,description="User deleted"),
+ *     @OA\Response(response=404,description="User not found")
+ * )
+ */
     public function destroy(string $id)
     {
         $user = User::find($id);
@@ -486,6 +606,34 @@ class UserController extends Controller
             'message' => 'User deleted successfully',
         ], 200);
     }
+
+    /**
+ * @OA\Post(
+ *     path="/api/register",
+ *     tags={"Authentication"},
+ *     summary="Register new user",
+ *
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\MediaType(
+ *             mediaType="multipart/form-data",
+ *             @OA\Schema(
+ *                 required={"username","email","password","role","name","recaptcha_token"},
+ *                 @OA\Property(property="username",type="string"),
+ *                 @OA\Property(property="email",type="string",format="email"),
+ *                 @OA\Property(property="password",type="string"),
+ *                 @OA\Property(property="role",type="string"),
+ *                 @OA\Property(property="name",type="string"),
+ *                 @OA\Property(property="recaptcha_token",type="string"),
+ *                 @OA\Property(property="image",type="string",format="binary")
+ *             )
+ *         )
+ *     ),
+ *
+ *     @OA\Response(response=201,description="Register success"),
+ *     @OA\Response(response=400,description="Captcha failed")
+ * )
+ */
     public function register(UserRegisterRequest $request, User $user)
     {
         $data = $request->validated();
@@ -552,6 +700,27 @@ class UserController extends Controller
 
         return response()->json(['token' => $token, 'role' => $user->role], 201);
     }
+
+    /**
+ * @OA\Post(
+ *     path="/api/login",
+ *     tags={"Authentication"},
+ *     summary="Login",
+ *
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\JsonContent(
+ *             required={"email","password","recaptcha_token"},
+ *             @OA\Property(property="email",type="string",format="email"),
+ *             @OA\Property(property="password",type="string"),
+ *             @OA\Property(property="recaptcha_token",type="string")
+ *         )
+ *     ),
+ *
+ *     @OA\Response(response=200,description="Login success"),
+ *     @OA\Response(response=401,description="Invalid credentials")
+ * )
+ */
     public function login(UserLoginRequest $request)
     {
         $data = $request->validated();
@@ -607,11 +776,33 @@ class UserController extends Controller
 
         return response()->json(['token' => $token, 'role' => $user->role, 'is_verified' => $isVerified], 200);
     }
+
+    /**
+ * @OA\Post(
+ *     path="/api/logout",
+ *     tags={"Authentication"},
+ *     summary="Logout",
+ *     security={{"bearerAuth":{}}},
+ *
+ *     @OA\Response(response=200,description="Logout success")
+ * )
+ */
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Logout success'], 200);
     }
+
+    /**
+ * @OA\Get(
+ *     path="/api/profile",
+ *     tags={"User"},
+ *     summary="Current user profile",
+ *     security={{"bearerAuth":{}}},
+ *
+ *     @OA\Response(response=200,description="Profile retrieved")
+ * )
+ */
     public function profile(Request $request)
     {
         $user = $request->user()->with(['student', 'school', 'company'])->find($request->user()->id);
@@ -656,6 +847,33 @@ class UserController extends Controller
             'data' => $user,
         ], 200);
     }
+
+/**
+ * @OA\Post(
+ *     path="/api/profile",
+ *     tags={"User"},
+ *     summary="Update profile",
+ *     security={{"bearerAuth":{}}},
+ *
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\MediaType(
+ *             mediaType="multipart/form-data",
+ *             @OA\Schema(
+ *                 @OA\Property(property="username",type="string"),
+ *                 @OA\Property(property="email",type="string"),
+ *                 @OA\Property(property="password",type="string"),
+ *                 @OA\Property(property="name",type="string"),
+ *                 @OA\Property(property="address",type="string"),
+ *                 @OA\Property(property="phone_number",type="string"),
+ *                 @OA\Property(property="photo_profile",type="string",format="binary")
+ *             )
+ *         )
+ *     ),
+ *
+ *     @OA\Response(response=200,description="Profile updated")
+ * )
+ */
     public function updateProfile(UserUpdateProfileRequest $request, $id = null)
     {
 
@@ -781,6 +999,17 @@ class UserController extends Controller
             'data' => $user,
         ], 200);
     }
+
+    /**
+ * @OA\Delete(
+ *     path="/api/profile",
+ *     tags={"User"},
+ *     summary="Delete own profile",
+ *     security={{"bearerAuth":{}}},
+ *
+ *     @OA\Response(response=200,description="Profile deleted")
+ * )
+ */
     public function deleteProfile(Request $request)
     {
         $user = $request->user();
@@ -797,6 +1026,17 @@ class UserController extends Controller
             'message' => 'User deleted successfully',
         ], 200);
     }
+
+    /**
+ * @OA\Get(
+ *     path="/api/users/count",
+ *     tags={"User"},
+ *     summary="Dashboard statistics",
+ *     security={{"bearerAuth":{}}},
+ *
+ *     @OA\Response(response=200,description="Statistics retrieved")
+ * )
+ */
     public function count(Request $request)
     {
         $companyCount = User::where('role', 'company')
@@ -861,6 +1101,17 @@ class UserController extends Controller
             ],
         ], 200);
     }
+
+    /**
+ * @OA\Get(
+ *     path="/api/users/student-summary",
+ *     tags={"User"},
+ *     summary="Student summary",
+ *     security={{"bearerAuth":{}}},
+ *
+ *     @OA\Response(response=200,description="Student summary retrieved")
+ * )
+ */
     public function studentSummary(Request $request)
     {
         $studentQuery = Student::where('school_id', $request->user()?->school?->id)
@@ -892,6 +1143,20 @@ class UserController extends Controller
             ],
         ], 200);
     }
+
+    /**
+ * @OA\Get(
+ *     path="/api/email/verify/{id}/{hash}",
+ *     tags={"Authentication"},
+ *     summary="Verify email",
+ *
+ *     @OA\Parameter(name="id",in="path",required=true,@OA\Schema(type="string")),
+ *     @OA\Parameter(name="hash",in="path",required=true,@OA\Schema(type="string")),
+ *
+ *     @OA\Response(response=200,description="Email verified"),
+ *     @OA\Response(response=403,description="Invalid verification link")
+ * )
+ */
     public function verifyEmail(Request $request)
     {
         // Middleware "signed" sudah memvalidasi signature & expiry
@@ -918,6 +1183,17 @@ class UserController extends Controller
 
         return response()->json(['message' => 'Email berhasil diverifikasi!']);
     }
+
+    /**
+ * @OA\Get(
+ *     path="/api/students/import-template",
+ *     tags={"Student"},
+ *     summary="Download CSV template",
+ *     security={{"bearerAuth":{}}},
+ *
+ *     @OA\Response(response=200,description="CSV template downloaded")
+ * )
+ */
     public function importStudentTemplate(Request $request)
     {
         $path = Storage::path('/import-template/csv-template.csv');
@@ -926,6 +1202,33 @@ class UserController extends Controller
             'Content-Type' => 'text/csv'
         ]);
     }
+
+    /**
+ * @OA\Post(
+ *     path="/api/students/import",
+ *     tags={"Student"},
+ *     summary="Import students from CSV",
+ *     security={{"bearerAuth":{}}},
+ *
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\MediaType(
+ *             mediaType="multipart/form-data",
+ *             @OA\Schema(
+ *                 required={"file"},
+ *                 @OA\Property(
+ *                     property="file",
+ *                     type="string",
+ *                     format="binary"
+ *                 )
+ *             )
+ *         )
+ *     ),
+ *
+ *     @OA\Response(response=200,description="Import successful"),
+ *     @OA\Response(response=400,description="Invalid CSV")
+ * )
+ */
     public function importStudent(Request $request)
     {
         $request->validate([

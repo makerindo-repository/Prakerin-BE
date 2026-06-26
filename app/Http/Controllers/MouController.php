@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Models\Mou;
 use Carbon\Carbon;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -14,6 +15,44 @@ class MouController extends Controller
     /**g
      * Display a listing of the resource.
      */
+    #[OA\Get(
+    path: '/mou',
+    summary: 'Get list of MoU',
+    tags: ['MoU'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'search',
+            in: 'query',
+            required: false,
+            description: 'Search partner name',
+            schema: new OA\Schema(type: 'string')
+        ),
+        new OA\Parameter(
+            name: 'type',
+            in: 'query',
+            required: false,
+            description: 'Filter status',
+            schema: new OA\Schema(
+                type: 'string',
+                enum: ['pending', 'accepted', 'rejected']
+            )
+        ),
+        new OA\Parameter(
+            name: 'limit',
+            in: 'query',
+            required: false,
+            description: 'Pagination limit',
+            schema: new OA\Schema(type: 'integer', default: 10)
+        ),
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'MoU list retrieved successfully'
+        )
+    ]
+)]
     public function index(Request $request)
     {
 
@@ -74,6 +113,62 @@ class MouController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    #[OA\Post(
+    path: '/mou',
+    summary: 'Create new MoU',
+    tags: ['MoU'],
+    security: [['bearerAuth' => []]],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(
+                required: ['start_date','end_date','file','message'],
+                properties: [
+                    new OA\Property(
+                        property: 'start_date',
+                        type: 'string',
+                        format: 'date'
+                    ),
+                    new OA\Property(
+                        property: 'end_date',
+                        type: 'string',
+                        format: 'date'
+                    ),
+                    new OA\Property(
+                        property: 'message',
+                        type: 'string'
+                    ),
+                    new OA\Property(
+                        property: 'company_id',
+                        type: 'integer',
+                        nullable: true
+                    ),
+                    new OA\Property(
+                        property: 'school_id',
+                        type: 'integer',
+                        nullable: true
+                    ),
+                    new OA\Property(
+                        property: 'file',
+                        type: 'string',
+                        format: 'binary'
+                    )
+                ]
+            )
+        )
+    ),
+    responses: [
+        new OA\Response(
+            response: 201,
+            description: 'MoU created successfully'
+        ),
+        new OA\Response(
+            response: 400,
+            description: 'Validation Error'
+        )
+    ]
+)]
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -136,6 +231,30 @@ class MouController extends Controller
     /**
      * Display the specified resource.
      */
+    #[OA\Get(
+    path: '/mou/{id}',
+    summary: 'Get MoU detail',
+    tags: ['MoU'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'string')
+        )
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'MoU detail retrieved successfully'
+        ),
+        new OA\Response(
+            response: 404,
+            description: 'MoU not found'
+        )
+    ]
+)]
     public function show(Request $request, string $id)
     {
         $mou = Mou::with(['company.user', 'company.cityRegency.province', 'school.user', 'school.cityRegency.province'])
@@ -190,6 +309,47 @@ class MouController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    #[OA\Put(
+    path: '/mou/{id}',
+    summary: 'Accept or Reject MoU',
+    tags: ['MoU'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'string')
+        )
+    ],
+    requestBody: new OA\RequestBody(
+        required: false,
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(
+                    property: 'reason',
+                    type: 'string',
+                    nullable: true,
+                    example: 'Proposal rejected because requirements are incomplete.'
+                )
+            ]
+        )
+    ),
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'MoU updated successfully'
+        ),
+        new OA\Response(
+            response: 403,
+            description: 'Unauthorized'
+        ),
+        new OA\Response(
+            response: 404,
+            description: 'MoU not found'
+        )
+    ]
+)]
     public function update(Request $request, string $id)
     {
         $mou = Mou::find($id);
@@ -245,6 +405,34 @@ class MouController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    #[OA\Delete(
+    path: '/mou/{id}',
+    summary: 'Delete MoU',
+    tags: ['MoU'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'string')
+        )
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'MoU deleted successfully'
+        ),
+        new OA\Response(
+            response: 403,
+            description: 'Unauthorized'
+        ),
+        new OA\Response(
+            response: 404,
+            description: 'MoU not found'
+        )
+    ]
+)]
     public function destroy(string $id)
     {
         $mou = Mou::find($id);
@@ -270,6 +458,31 @@ class MouController extends Controller
         return response()->json(['message' => 'Mou deleted successfully'], 200);
     }
 
+
+    #[OA\Get(
+    path: '/mou/{id}/preview',
+    summary: 'Preview MoU PDF',
+    tags: ['MoU'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'string')
+        )
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'PDF preview'
+        ),
+        new OA\Response(
+            response: 404,
+            description: 'File not found'
+        )
+    ]
+)]
     public function preview(Request $request, string $id)
     {
         $mou = Mou::find($id);
@@ -298,6 +511,31 @@ class MouController extends Controller
         ]);
     }
 
+
+    #[OA\Get(
+    path: '/mou/{id}/download',
+    summary: 'Download MoU PDF',
+    tags: ['MoU'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'string')
+        )
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'PDF downloaded'
+        ),
+        new OA\Response(
+            response: 404,
+            description: 'File not found'
+        )
+    ]
+)]
     public function download(Request $request, string $id)
     {
         $mou = Mou::find($id);

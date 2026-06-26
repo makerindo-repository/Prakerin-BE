@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Models\Test;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
@@ -12,6 +13,48 @@ class TestController extends Controller
     /**
      * Display a listing of the resource.
      */
+    #[OA\Get(
+    path: '/test',
+    summary: 'Get test list',
+    tags: ['Test'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'search',
+            in: 'query',
+            required: false,
+            description: 'Search by test title',
+            schema: new OA\Schema(type: 'string')
+        ),
+        new OA\Parameter(
+            name: 'type',
+            in: 'query',
+            required: false,
+            description: 'Filter by test type',
+            schema: new OA\Schema(
+                type: 'string',
+                enum: ['theory', 'practice', 'other']
+            )
+        ),
+        new OA\Parameter(
+            name: 'limit',
+            in: 'query',
+            required: false,
+            description: 'Pagination limit',
+            schema: new OA\Schema(type: 'integer', default: 10)
+        )
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Test list retrieved successfully'
+        ),
+        new OA\Response(
+            response: 401,
+            description: 'Unauthorized'
+        )
+    ]
+)]
     public function index(Request $request)
     {
         $search = $request->query('search', '');
@@ -33,6 +76,47 @@ class TestController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    #[OA\Post(
+    path: '/test',
+    summary: 'Create new test',
+    tags: ['Test'],
+    security: [['bearerAuth' => []]],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: [
+                'title',
+                'link',
+                'description',
+                'type'
+            ],
+            properties: [
+                new OA\Property(property: 'title', type: 'string'),
+                new OA\Property(
+                    property: 'link',
+                    type: 'string',
+                    format: 'uri'
+                ),
+                new OA\Property(property: 'description', type: 'string'),
+                new OA\Property(
+                    property: 'type',
+                    type: 'string',
+                    enum: ['theory', 'practice', 'other']
+                )
+            ]
+        )
+    ),
+    responses: [
+        new OA\Response(
+            response: 201,
+            description: 'Test created successfully'
+        ),
+        new OA\Response(
+            response: 400,
+            description: 'Validation Error'
+        )
+    ]
+)]
     public function store(Request $request)
     {
         $validated = Validator::make($request->all(), [
@@ -67,6 +151,57 @@ class TestController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    #[OA\Put(
+    path: '/test/{id}',
+    summary: 'Update test',
+    tags: ['Test'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'integer')
+        )
+    ],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'title', type: 'string'),
+                new OA\Property(
+                    property: 'link',
+                    type: 'string',
+                    format: 'uri'
+                ),
+                new OA\Property(property: 'description', type: 'string'),
+                new OA\Property(
+                    property: 'type',
+                    type: 'string',
+                    enum: ['theory', 'practice', 'other']
+                )
+            ]
+        )
+    ),
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Test updated successfully'
+        ),
+        new OA\Response(
+            response: 400,
+            description: 'Validation Error'
+        ),
+        new OA\Response(
+            response: 403,
+            description: 'Forbidden'
+        ),
+        new OA\Response(
+            response: 404,
+            description: 'Test not found'
+        )
+    ]
+)]
     public function update(Request $request, string $id)
     {
         $test = Test::find($id);
@@ -113,6 +248,34 @@ class TestController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    #[OA\Delete(
+    path: '/test/{id}',
+    summary: 'Delete test',
+    tags: ['Test'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'integer')
+        )
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Test deleted successfully'
+        ),
+        new OA\Response(
+            response: 403,
+            description: 'Forbidden'
+        ),
+        new OA\Response(
+            response: 404,
+            description: 'Test not found'
+        )
+    ]
+)]
     public function destroy(string $id, Request $request)
     {
         $test = Test::find($id);

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Models\User;
 use App\Models\School;
 use App\Models\Company;
@@ -17,6 +18,25 @@ use App\Models\Province;
 
 class AdminDashboardController extends Controller
 {
+
+    #[OA\Get(
+        path: '/admin/dashboard',
+        summary: 'Menampilkan data dashboard admin',
+        description: 'Mengambil seluruh data ringkasan dashboard admin seperti summary, system metrics, dan regional data.',
+        tags: ['Admin Dashboard']
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Berhasil mengambil data dashboard'
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized'
+    )]
+    #[OA\Response(
+        response: 403,
+        description: 'Forbidden'
+    )]
     public function getDashboardData()
     {
         // Get summary data

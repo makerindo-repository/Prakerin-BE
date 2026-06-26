@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Events\MessageSent;
 use App\Models\ReportTask;
 use App\Models\ReportTaskMessage;
@@ -23,6 +24,52 @@ class ReportTaskController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    #[OA\Post(
+    path: '/report-task/{id}',
+    summary: 'Send report task message',
+    tags: ['Report Task'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            description: 'Report Task ID',
+            schema: new OA\Schema(type: 'string')
+        )
+    ],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['message'],
+            properties: [
+                new OA\Property(
+                    property: 'message',
+                    type: 'string',
+                    example: 'Laporan tugas telah selesai dikerjakan.'
+                )
+            ]
+        )
+    ),
+    responses: [
+        new OA\Response(
+            response: 201,
+            description: 'Message sent successfully'
+        ),
+        new OA\Response(
+            response: 403,
+            description: 'Forbidden'
+        ),
+        new OA\Response(
+            response: 404,
+            description: 'Report task not found'
+        ),
+        new OA\Response(
+            response: 422,
+            description: 'Validation Error'
+        )
+    ]
+)]
     public function store(string $id, Request $request)
     {
         $reportTask = ReportTask::find($id);
@@ -97,6 +144,35 @@ class ReportTaskController extends Controller
     /**
      * Display the specified resource.
      */
+    #[OA\Get(
+    path: '/report-task/{id}',
+    summary: 'Get report task detail',
+    tags: ['Report Task'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            description: 'Report Task ID',
+            schema: new OA\Schema(type: 'string')
+        )
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Report task retrieved successfully'
+        ),
+        new OA\Response(
+            response: 403,
+            description: 'Forbidden'
+        ),
+        new OA\Response(
+            response: 404,
+            description: 'Report task not found'
+        )
+    ]
+)]
     public function show(string $id)
     {
         $reportTask = ReportTask::find($id);

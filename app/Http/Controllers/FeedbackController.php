@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Models\Feedback;
 use App\Models\User;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -15,6 +16,25 @@ class FeedbackController extends Controller
     /**
      * Display a listing of the resource.
      */
+    #[OA\Get(
+    path: '/feedbacks',
+    summary: 'Menampilkan daftar feedback',
+    tags: ['Feedback']
+)]
+#[OA\Parameter(
+    name: 'limit',
+    in: 'query',
+    schema: new OA\Schema(type: 'integer', default: 10)
+)]
+#[OA\Parameter(
+    name: 'search',
+    in: 'query',
+    schema: new OA\Schema(type: 'string')
+)]
+#[OA\Response(
+    response: 200,
+    description: 'Berhasil mengambil daftar feedback'
+)]
     public function index(Request $request)
     {
         $limit = $request->query('limit', 10);
@@ -36,6 +56,26 @@ class FeedbackController extends Controller
         ]);
     }
 
+
+    #[OA\Get(
+        path: '/feedbacks/rate',
+        summary: 'Menampilkan daftar user yang harus diberi feedback',
+        tags: ['Feedback']
+    )]
+    #[OA\Parameter(
+        name: 'limit',
+        in: 'query',
+        schema: new OA\Schema(type: 'integer', default: 10)
+    )]
+    #[OA\Parameter(
+        name: 'search',
+        in: 'query',
+        schema: new OA\Schema(type: 'string')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Berhasil mengambil data user yang akan dirating'
+    )]
     public function rate(Request $request)
     {
         // debug cepat: lihat isi pivot untuk user yang login
@@ -115,6 +155,35 @@ class FeedbackController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    #[OA\Post(
+        path: '/feedbacks',
+        summary: 'Memberikan feedback',
+        tags: ['Feedback']
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['to_user_id', 'to_type', 'rating', 'text'],
+            properties: [
+                new OA\Property(property: 'to_user_id', type: 'string'),
+                new OA\Property(
+                    property: 'to_type',
+                    type: 'string',
+                    enum: ['student', 'company', 'school', 'super_admin']
+                ),
+                new OA\Property(property: 'rating', type: 'integer', minimum: 1, maximum: 5),
+                new OA\Property(property: 'text', type: 'string')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Feedback berhasil dibuat'
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Validation Error'
+    )]
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -166,6 +235,21 @@ class FeedbackController extends Controller
     /**
      * Display the specified resource.
      */
+    #[OA\Get(
+        path: '/feedbacks/{id}',
+        summary: 'Menampilkan detail feedback',
+        tags: ['Feedback']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'string')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Berhasil mengambil feedback'
+    )]
     public function show(string $id)
     {
         // $user = auth()->user();
@@ -190,6 +274,25 @@ class FeedbackController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    #[OA\Delete(
+        path: '/feedbacks/{id}',
+        summary: 'Menghapus feedback',
+        tags: ['Feedback']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'string')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Feedback berhasil dihapus'
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'Feedback tidak ditemukan'
+    )]
     public function destroy(Request $request, string $id)
     {
         $feedback = Feedback::where('id', $id)
@@ -209,6 +312,32 @@ class FeedbackController extends Controller
         ]);
     }
 
+
+    #[OA\Post(
+        path: '/feedbacks/check',
+        summary: 'Cek apakah user sudah memberikan feedback',
+        tags: ['Feedback']
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['to_user_id'],
+            properties: [
+                new OA\Property(
+                    property: 'to_user_id',
+                    type: 'string'
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Status feedback berhasil diambil'
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Belum memberikan feedback atau validasi gagal'
+    )]
     public function check(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -239,6 +368,16 @@ class FeedbackController extends Controller
         ]);
     }
 
+
+    #[OA\Get(
+        path: '/feedbacks/rating',
+        summary: 'Menampilkan statistik rating user',
+        tags: ['Feedback']
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Statistik rating berhasil diambil'
+    )]
     public function rating(Request $request)
     {
         $ratings = Feedback::where('to_user_id', $request->user()->id)->select('rating')->get();

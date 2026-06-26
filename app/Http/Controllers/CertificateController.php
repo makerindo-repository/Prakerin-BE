@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Models\Certificate;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -10,10 +11,26 @@ use Illuminate\Http\Request;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class CertificateController extends Controller
-{
+{   
     /**
      * Display a listing of the resource.
      */
+    #[OA\Get(
+        path: '/certificates',
+        summary: 'Menampilkan daftar certificate',
+        tags: ['Certificate']
+    )]
+    #[OA\Parameter(
+        name: 'limit',
+        in: 'query',
+        required: false,
+        description: 'Jumlah data per halaman',
+        schema: new OA\Schema(type: 'integer', default: 10)
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Berhasil mengambil data certificate'
+    )]
     public function index(Request $request)
     {
         $limit = $request->query('limit', 10);
@@ -31,9 +48,29 @@ class CertificateController extends Controller
         //
     }
 
+    
     /**
      * Display the specified resource.
      */
+    #[OA\Get(
+        path: '/certificates/{id}',
+        summary: 'Menampilkan detail certificate',
+        tags: ['Certificate']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Berhasil mengambil detail certificate'
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'Certificate tidak ditemukan'
+    )]
     public function show(string $id)
     {
         $certificate = Certificate::with(
@@ -68,6 +105,25 @@ class CertificateController extends Controller
         //
     }
 
+    #[OA\Get(
+        path: '/certificates/{id}/preview',
+        summary: 'Preview PDF Certificate',
+        tags: ['Certificate']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'PDF berhasil dibuat'
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'Certificate tidak ditemukan'
+    )]
     public function preview(string $id)
     {
         $certificate = Certificate::with(
@@ -119,6 +175,26 @@ class CertificateController extends Controller
             ->header('Content-Disposition', 'inline; filename="certificate_' . $certificate->id . '.pdf"');
     }
 
+
+    #[OA\Get(
+        path: '/certificates/{id}/download',
+        summary: 'Download Certificate PDF',
+        tags: ['Certificate']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'PDF berhasil didownload'
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'Certificate tidak ditemukan'
+    )]
     public function download(string $id)
     {
         $certificate = Certificate::with(
@@ -171,6 +247,19 @@ class CertificateController extends Controller
 
     }
 
+    #[OA\Get(
+        path: '/certificates/count',
+        summary: 'Menghitung jumlah certificate',
+        tags: ['Certificate']
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Berhasil mengambil jumlah certificate'
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Unauthorized'
+    )]
     public function count(Request $request)
     {
         

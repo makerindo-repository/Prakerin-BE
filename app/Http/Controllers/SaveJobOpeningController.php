@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Models\SaveJobOpening;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
@@ -12,6 +13,34 @@ class SaveJobOpeningController extends Controller
     /**
      * Display a listing of the resource.
      */
+    #[OA\Get(
+    path: '/save-job-opening',
+    summary: 'Get saved job openings',
+    tags: ['Save Job Opening'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'limit',
+            in: 'query',
+            required: false,
+            description: 'Pagination limit',
+            schema: new OA\Schema(
+                type: 'integer',
+                default: 10
+            )
+        )
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Saved job openings retrieved successfully'
+        ),
+        new OA\Response(
+            response: 401,
+            description: 'Unauthorized'
+        )
+    ]
+)]
     public function index()
     {
         $limit = request()->query('limit', 10);
@@ -62,6 +91,43 @@ class SaveJobOpeningController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    #[OA\Post(
+    path: '/save-job-opening',
+    summary: 'Save or unsave job opening',
+    tags: ['Save Job Opening'],
+    security: [['bearerAuth' => []]],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['job_opening_id'],
+            properties: [
+                new OA\Property(
+                    property: 'job_opening_id',
+                    type: 'integer',
+                    example: 1
+                )
+            ]
+        )
+    ),
+    responses: [
+        new OA\Response(
+            response: 201,
+            description: 'Job opening saved successfully'
+        ),
+        new OA\Response(
+            response: 200,
+            description: 'Saved job opening removed successfully'
+        ),
+        new OA\Response(
+            response: 400,
+            description: 'Validation Error'
+        ),
+        new OA\Response(
+            response: 401,
+            description: 'Unauthorized'
+        )
+    ]
+)]
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [

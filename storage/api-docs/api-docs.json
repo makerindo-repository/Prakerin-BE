@@ -1,0 +1,5260 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Prakerin API",
+        "description": "Dokumentasi API Prakerin",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000/api",
+            "description": "Local Server"
+        }
+    ],
+    "paths": {
+        "/admin/dashboard": {
+            "get": {
+                "tags": [
+                    "Admin Dashboard"
+                ],
+                "summary": "Menampilkan data dashboard admin",
+                "description": "Mengambil seluruh data ringkasan dashboard admin seperti summary, system metrics, dan regional data.",
+                "operationId": "d2009149a7e902da3bc80b2a3530448a",
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil data dashboard"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                }
+            }
+        },
+        "/applications": {
+            "get": {
+                "tags": [
+                    "Application"
+                ],
+                "summary": "List Application",
+                "description": "Display a listing of the resource.",
+                "operationId": "53a774224a5bb97dd3d5e1c1d0055cd9",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Application"
+                ],
+                "summary": "Menambahkan application",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "c8746709b6a737b932ae65fd891652ad",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "internship_id",
+                                    "cv"
+                                ],
+                                "properties": {
+                                    "internship_id": {
+                                        "type": "integer"
+                                    },
+                                    "cv": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Application berhasil dibuat"
+                    }
+                }
+            }
+        },
+        "/applications/{id}": {
+            "get": {
+                "tags": [
+                    "Application"
+                ],
+                "summary": "Menampilkan detail application",
+                "description": "Display the specified resource.",
+                "operationId": "12af326a6890c6f3c85dc278a9362bd3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID Application",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "404": {
+                        "description": "Application tidak ditemukan"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Application"
+                ],
+                "summary": "Update application",
+                "description": "Update the specified resource in storage.",
+                "operationId": "b58976ea13a0905d9335c6d74b6dfc72",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID Application",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "internship_id": {
+                                        "type": "integer"
+                                    },
+                                    "cv": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Application berhasil diupdate"
+                    },
+                    "404": {
+                        "description": "Application tidak ditemukan"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Application"
+                ],
+                "summary": "Hapus application",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "b9e499ea5afd15c2c6419dfd2434ed75",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID Application",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Application berhasil dihapus"
+                    },
+                    "404": {
+                        "description": "Application tidak ditemukan"
+                    }
+                }
+            }
+        },
+        "/certificates": {
+            "get": {
+                "tags": [
+                    "Certificate"
+                ],
+                "summary": "Menampilkan daftar certificate",
+                "description": "Display a listing of the resource.",
+                "operationId": "3e30daa72268597f6003e4bf40a3706b",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Jumlah data per halaman",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil data certificate"
+                    }
+                }
+            }
+        },
+        "/certificates/{id}": {
+            "get": {
+                "tags": [
+                    "Certificate"
+                ],
+                "summary": "Menampilkan detail certificate",
+                "description": "Display the specified resource.",
+                "operationId": "3a93cdae4cfa83bdf8ea760efa19a347",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil detail certificate"
+                    },
+                    "404": {
+                        "description": "Certificate tidak ditemukan"
+                    }
+                }
+            }
+        },
+        "/certificates/{id}/preview": {
+            "get": {
+                "tags": [
+                    "Certificate"
+                ],
+                "summary": "Preview PDF Certificate",
+                "operationId": "b63fa2602220b85ce207fbf4ac15c3b3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF berhasil dibuat"
+                    },
+                    "404": {
+                        "description": "Certificate tidak ditemukan"
+                    }
+                }
+            }
+        },
+        "/certificates/{id}/download": {
+            "get": {
+                "tags": [
+                    "Certificate"
+                ],
+                "summary": "Download Certificate PDF",
+                "operationId": "ab5608b28cc4b17e2d01f2218dc4f106",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF berhasil didownload"
+                    },
+                    "404": {
+                        "description": "Certificate tidak ditemukan"
+                    }
+                }
+            }
+        },
+        "/certificates/count": {
+            "get": {
+                "tags": [
+                    "Certificate"
+                ],
+                "summary": "Menghitung jumlah certificate",
+                "operationId": "78cf2600190bf2a5c2e3727e094aa96f",
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil jumlah certificate"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/city-regencies": {
+            "get": {
+                "tags": [
+                    "City Regency"
+                ],
+                "summary": "Menampilkan daftar city regency",
+                "description": "Display a listing of the resource.",
+                "operationId": "325f5905427c8a3acce59fb152059570",
+                "parameters": [
+                    {
+                        "name": "is_accepted",
+                        "in": "query",
+                        "description": "Filter status accepted",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Pencarian berdasarkan nama",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "province_id",
+                        "in": "query",
+                        "description": "Filter berdasarkan Province ID",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Jumlah data per halaman",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil data"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "City Regency"
+                ],
+                "summary": "Menambahkan city regency",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "724b82837add86b1bf371e5496255859",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "province_id"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "province_id": {
+                                        "type": "integer"
+                                    },
+                                    "is_accepted": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "City Regency berhasil dibuat"
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    }
+                }
+            }
+        },
+        "/city-regencies/{id}": {
+            "put": {
+                "tags": [
+                    "City Regency"
+                ],
+                "summary": "Update city regency",
+                "description": "Update the specified resource in storage.",
+                "operationId": "672b8ebe9e317b789cc5b1ad2ba7a3f1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "province_id": {
+                                        "type": "integer"
+                                    },
+                                    "is_accepted": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "City Regency berhasil diupdate"
+                    },
+                    "404": {
+                        "description": "City Regency tidak ditemukan"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "City Regency"
+                ],
+                "summary": "Hapus city regency",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "fcf4d7dabdb8321ffea49c4eff238b7d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "City Regency berhasil dihapus"
+                    },
+                    "404": {
+                        "description": "City Regency tidak ditemukan"
+                    }
+                }
+            }
+        },
+        "/comment-prakerin": {
+            "post": {
+                "tags": [
+                    "Comment Prakerin"
+                ],
+                "summary": "Menambahkan komentar prakerin",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "51203f380d7d1ea887e6f58dfb7a8b0c",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "photo_profile",
+                                    "name",
+                                    "position",
+                                    "comment"
+                                ],
+                                "properties": {
+                                    "photo_profile": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "position": {
+                                        "type": "string"
+                                    },
+                                    "comment": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Komentar berhasil ditambahkan"
+                    },
+                    "400": {
+                        "description": "Validation Error"
+                    }
+                }
+            }
+        },
+        "/comment-prakerin/{id}": {
+            "put": {
+                "tags": [
+                    "Comment Prakerin"
+                ],
+                "summary": "Mengubah komentar prakerin",
+                "description": "Update the specified resource in storage.",
+                "operationId": "fc04db701174d290b90b30c7d0566a46",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "position",
+                                    "comment"
+                                ],
+                                "properties": {
+                                    "photo_profile": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "position": {
+                                        "type": "string"
+                                    },
+                                    "comment": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Komentar berhasil diubah"
+                    },
+                    "400": {
+                        "description": "Komentar tidak ditemukan atau validasi gagal"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Comment Prakerin"
+                ],
+                "summary": "Menghapus komentar prakerin",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "ce564778fa7ca6bfd7daf3205c4a4e30",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Komentar berhasil dihapus"
+                    },
+                    "400": {
+                        "description": "Komentar tidak ditemukan"
+                    }
+                }
+            }
+        },
+        "/companies": {
+            "get": {
+                "tags": [
+                    "Company"
+                ],
+                "summary": "Menampilkan daftar perusahaan",
+                "description": "Display a listing of the resource.",
+                "operationId": "8af1177352a157e9228c00f023616d87",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Jumlah data per halaman",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Cari perusahaan berdasarkan nama",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil daftar perusahaan"
+                    }
+                }
+            }
+        },
+        "/companies/{id}": {
+            "get": {
+                "tags": [
+                    "Company"
+                ],
+                "summary": "Menampilkan detail perusahaan",
+                "description": "Display the specified resource.",
+                "operationId": "662432d4be675d549b84ca1bf7e56b8d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID Company",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil detail perusahaan"
+                    },
+                    "404": {
+                        "description": "Company tidak ditemukan"
+                    }
+                }
+            }
+        },
+        "/companies/count": {
+            "get": {
+                "tags": [
+                    "Company"
+                ],
+                "summary": "Menghitung jumlah perusahaan",
+                "description": "Get the count of companies.",
+                "operationId": "ae0e7565f9301bc23934732b066aef6e",
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil jumlah perusahaan"
+                    }
+                }
+            }
+        },
+        "/contact-us": {
+            "get": {
+                "tags": [
+                    "Contact Us"
+                ],
+                "summary": "Menampilkan daftar pesan Contact Us",
+                "description": "Display a listing of the resource.",
+                "operationId": "ba4578f89651e04db6deebe752efa5be",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Jumlah data per halaman",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Cari berdasarkan nama, email, atau pesan",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "is_read",
+                        "in": "query",
+                        "description": "Filter status pesan",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil data Contact Us"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Contact Us"
+                ],
+                "summary": "Mengirim pesan Contact Us",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "a02fa36edf88e0e52bf574c354e965f3",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "message",
+                                    "recaptcha_token"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "message": {
+                                        "type": "string"
+                                    },
+                                    "recaptcha_token": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Pesan berhasil dikirim"
+                    },
+                    "400": {
+                        "description": "Validasi gagal atau Captcha gagal"
+                    }
+                }
+            }
+        },
+        "/contact-us/{id}": {
+            "put": {
+                "tags": [
+                    "Contact Us"
+                ],
+                "summary": "Mengubah status pesan Contact Us",
+                "description": "Update the specified resource in storage.",
+                "operationId": "fa737125a3f606ee1d074bdb7dd21126",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "is_read"
+                                ],
+                                "properties": {
+                                    "is_read": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Status pesan berhasil diubah"
+                    },
+                    "404": {
+                        "description": "Contact Us message tidak ditemukan"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Contact Us"
+                ],
+                "summary": "Menghapus pesan Contact Us",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "19b3cdc6011038f3eecef826ab3c5bdd",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pesan berhasil dihapus"
+                    },
+                    "404": {
+                        "description": "Contact Us message tidak ditemukan"
+                    }
+                }
+            }
+        },
+        "/curriculum-vitaes": {
+            "get": {
+                "tags": [
+                    "Curriculum Vitae"
+                ],
+                "summary": "Menampilkan daftar Curriculum Vitae",
+                "description": "Display a listing of the resource.",
+                "operationId": "92b5e595f205e00a5415539ca5e41166",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil daftar Curriculum Vitae"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Curriculum Vitae"
+                ],
+                "summary": "Menambahkan Curriculum Vitae",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "13c114cfd1eca4b28ecb66d7ff44490e",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "file"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Curriculum Vitae berhasil dibuat"
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    }
+                }
+            }
+        },
+        "/curriculum-vitaes/{id}": {
+            "get": {
+                "tags": [
+                    "Curriculum Vitae"
+                ],
+                "summary": "Menampilkan detail Curriculum Vitae",
+                "description": "Display the specified resource.",
+                "operationId": "9120bf452251fd0e264be89e05473ba7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil detail Curriculum Vitae"
+                    },
+                    "401": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Curriculum Vitae tidak ditemukan"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Curriculum Vitae"
+                ],
+                "summary": "Mengubah Curriculum Vitae",
+                "description": "Update the specified resource in storage.",
+                "operationId": "af30ce657794fd291659ba6d89a0d4f2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Curriculum Vitae berhasil diubah"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Curriculum Vitae tidak ditemukan"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Curriculum Vitae"
+                ],
+                "summary": "Menghapus Curriculum Vitae",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "65e50a8a78ceb8bb72bd9649f49897f5",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Curriculum Vitae berhasil dihapus"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Curriculum Vitae tidak ditemukan"
+                    }
+                }
+            }
+        },
+        "/curriculum-vitaes/{id}/preview": {
+            "get": {
+                "tags": [
+                    "Curriculum Vitae"
+                ],
+                "summary": "Preview file Curriculum Vitae",
+                "operationId": "a3c847f03c1df8df6a78b6c8e9ef6d8a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Preview PDF berhasil"
+                    },
+                    "404": {
+                        "description": "File atau Curriculum Vitae tidak ditemukan"
+                    }
+                }
+            }
+        },
+        "/curriculum-vitaes/{id}/download": {
+            "get": {
+                "tags": [
+                    "Curriculum Vitae"
+                ],
+                "summary": "Download file Curriculum Vitae",
+                "operationId": "a11a80ecff14fb93562f09cc7ddbba7a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File berhasil didownload"
+                    },
+                    "404": {
+                        "description": "File atau Curriculum Vitae tidak ditemukan"
+                    }
+                }
+            }
+        },
+        "/cv-generator": {
+            "post": {
+                "tags": [
+                    "CV Generator"
+                ],
+                "summary": "Generate Curriculum Vitae menggunakan AI Gemini",
+                "description": "Menghasilkan ringkasan CV profesional berdasarkan data profil pengguna menggunakan Google Gemini AI.",
+                "operationId": "4f4d0066e333b6adf3dad60b87dbec73",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "profile_user"
+                                ],
+                                "properties": {
+                                    "profile_user": {
+                                        "description": "Data profil pengguna",
+                                        "type": "object"
+                                    },
+                                    "prompt_user": {
+                                        "description": "Instruksi tambahan untuk AI",
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "CV berhasil dibuat oleh AI"
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    },
+                    "502": {
+                        "description": "Terjadi kesalahan saat menghubungi layanan Gemini AI"
+                    }
+                }
+            }
+        },
+        "/dev/feed": {
+            "post": {
+                "tags": [
+                    "Developer"
+                ],
+                "summary": "Developer Feed Testing",
+                "description": "Endpoint untuk kebutuhan testing developer dalam memberikan relasi/rating antar user.",
+                "operationId": "1cf3536aea55713631fd4bbec5265560",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "id",
+                                    "to_id"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "description": "ID User yang memberikan rating",
+                                        "type": "string"
+                                    },
+                                    "to_id": {
+                                        "description": "ID User yang menerima rating",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Berhasil memberikan rating"
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    }
+                }
+            }
+        },
+        "/durations": {
+            "get": {
+                "tags": [
+                    "Duration"
+                ],
+                "summary": "Menampilkan daftar durasi",
+                "description": "Display a listing of the resource.",
+                "operationId": "8378614ede2e4964514004a5ce82686d",
+                "parameters": [
+                    {
+                        "name": "is_accepted",
+                        "in": "query",
+                        "description": "Filter status approval",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Jumlah data per halaman",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "unit",
+                        "in": "query",
+                        "description": "Filter satuan durasi",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "day",
+                                "month",
+                                "year"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil data Duration"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Duration"
+                ],
+                "summary": "Menambahkan Duration",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "e639f1ae0dba2558af1f8bdf8432d8c9",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "duration_value",
+                                    "duration_unit"
+                                ],
+                                "properties": {
+                                    "duration_value": {
+                                        "type": "integer",
+                                        "example": 6
+                                    },
+                                    "duration_unit": {
+                                        "type": "string",
+                                        "example": "month",
+                                        "enum": [
+                                            "day",
+                                            "month",
+                                            "year"
+                                        ]
+                                    },
+                                    "is_accepted": {
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Duration berhasil dibuat"
+                    },
+                    "400": {
+                        "description": "Validation Error"
+                    }
+                }
+            }
+        },
+        "/durations/{id}": {
+            "put": {
+                "tags": [
+                    "Duration"
+                ],
+                "summary": "Mengubah Duration",
+                "description": "Update the specified resource in storage.",
+                "operationId": "6b300ac6ca912425ac3be77e2db1fab2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "duration_value": {
+                                        "type": "integer",
+                                        "example": 12
+                                    },
+                                    "duration_unit": {
+                                        "type": "string",
+                                        "enum": [
+                                            "day",
+                                            "month",
+                                            "year"
+                                        ]
+                                    },
+                                    "is_accepted": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Duration berhasil diupdate"
+                    },
+                    "400": {
+                        "description": "Validation Error"
+                    },
+                    "404": {
+                        "description": "Duration tidak ditemukan"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Duration"
+                ],
+                "summary": "Menghapus Duration",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "80dad359a495505f5fba52298fa80502",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Duration berhasil dihapus"
+                    },
+                    "404": {
+                        "description": "Duration tidak ditemukan"
+                    }
+                }
+            }
+        },
+        "/feedbacks": {
+            "get": {
+                "tags": [
+                    "Feedback"
+                ],
+                "summary": "Menampilkan daftar feedback",
+                "description": "Display a listing of the resource.",
+                "operationId": "2a36c585876dbe2b107ee1eca25452d4",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil daftar feedback"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Feedback"
+                ],
+                "summary": "Memberikan feedback",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "1a1a79efc6cbe218c6741ed01413fdda",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "to_user_id",
+                                    "to_type",
+                                    "rating",
+                                    "text"
+                                ],
+                                "properties": {
+                                    "to_user_id": {
+                                        "type": "string"
+                                    },
+                                    "to_type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "student",
+                                            "company",
+                                            "school",
+                                            "super_admin"
+                                        ]
+                                    },
+                                    "rating": {
+                                        "type": "integer",
+                                        "maximum": 5,
+                                        "minimum": 1
+                                    },
+                                    "text": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Feedback berhasil dibuat"
+                    },
+                    "400": {
+                        "description": "Validation Error"
+                    }
+                }
+            }
+        },
+        "/feedbacks/rate": {
+            "get": {
+                "tags": [
+                    "Feedback"
+                ],
+                "summary": "Menampilkan daftar user yang harus diberi feedback",
+                "operationId": "22fbc4f433b31d4d7a1419e2f81db7d7",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil data user yang akan dirating"
+                    }
+                }
+            }
+        },
+        "/feedbacks/{id}": {
+            "get": {
+                "tags": [
+                    "Feedback"
+                ],
+                "summary": "Menampilkan detail feedback",
+                "description": "Display the specified resource.",
+                "operationId": "8094bfb21f11e6ff5db38515e5b5e38d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil feedback"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Feedback"
+                ],
+                "summary": "Menghapus feedback",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "90e9fd5ff51a294ec9e5da9f1c70fc67",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Feedback berhasil dihapus"
+                    },
+                    "404": {
+                        "description": "Feedback tidak ditemukan"
+                    }
+                }
+            }
+        },
+        "/feedbacks/check": {
+            "post": {
+                "tags": [
+                    "Feedback"
+                ],
+                "summary": "Cek apakah user sudah memberikan feedback",
+                "operationId": "5a87937caa79d90720c791e463f48de8",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "to_user_id"
+                                ],
+                                "properties": {
+                                    "to_user_id": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Status feedback berhasil diambil"
+                    },
+                    "400": {
+                        "description": "Belum memberikan feedback atau validasi gagal"
+                    }
+                }
+            }
+        },
+        "/feedbacks/rating": {
+            "get": {
+                "tags": [
+                    "Feedback"
+                ],
+                "summary": "Menampilkan statistik rating user",
+                "operationId": "889cd80c6c8f4eb70ac92a95b8452faf",
+                "responses": {
+                    "200": {
+                        "description": "Statistik rating berhasil diambil"
+                    }
+                }
+            }
+        },
+        "/fields": {
+            "get": {
+                "tags": [
+                    "Field"
+                ],
+                "summary": "Menampilkan daftar field",
+                "description": "Display a listing of the resource.",
+                "operationId": "98adbf5cfe27f69f4d91cbd015f58235",
+                "parameters": [
+                    {
+                        "name": "is_accepted",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil daftar field"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Field"
+                ],
+                "summary": "Menambahkan field",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "5067df0d90e2096b52df7fcaa12de418",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "is_accepted": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Field berhasil dibuat"
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    }
+                }
+            }
+        },
+        "/fields/{id}": {
+            "put": {
+                "tags": [
+                    "Field"
+                ],
+                "summary": "Mengubah field",
+                "description": "Update the specified resource in storage.",
+                "operationId": "9f08fd4f07082843fd76b9f2a59e2292",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "is_accepted": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Field berhasil diupdate"
+                    },
+                    "404": {
+                        "description": "Field tidak ditemukan"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Field"
+                ],
+                "summary": "Menghapus field",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "db5139dc7ca136160c2c6fcfe10c9cad",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Field berhasil dihapus"
+                    },
+                    "404": {
+                        "description": "Field tidak ditemukan"
+                    }
+                }
+            }
+        },
+        "/homepage": {
+            "get": {
+                "tags": [
+                    "Homepage"
+                ],
+                "summary": "Get homepage data",
+                "operationId": "ecbc9f3e500de3d85a56d15e08420eac",
+                "responses": {
+                    "200": {
+                        "description": "Homepage data retrieved successfully"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Homepage"
+                ],
+                "summary": "Update homepage content",
+                "operationId": "e98fd84d5de9d6a15783281153281350",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "data"
+                                ],
+                                "properties": {
+                                    "data": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "value": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Homepage updated successfully"
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/homepage/about": {
+            "get": {
+                "tags": [
+                    "Homepage"
+                ],
+                "summary": "Get about page data",
+                "operationId": "370c30881fcc6a5cfd367874075aa411",
+                "responses": {
+                    "200": {
+                        "description": "About page retrieved successfully"
+                    }
+                }
+            }
+        },
+        "/internship-applications": {
+            "get": {
+                "tags": [
+                    "Internship Application"
+                ],
+                "summary": "Get internship applications",
+                "description": "Display a listing of the resource.",
+                "operationId": "bf16d7d190c9d44a32fd380a14c4fae4",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Internship Application"
+                ],
+                "summary": "Apply internship",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "36e7ba29c1fcaf5428dd2f1728f1ac55",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "curriculum_vitae_id",
+                                    "job_opening_id",
+                                    "cover_letter"
+                                ],
+                                "properties": {
+                                    "curriculum_vitae_id": {
+                                        "type": "integer"
+                                    },
+                                    "job_opening_id": {
+                                        "type": "integer"
+                                    },
+                                    "cover_letter": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Application created"
+                    },
+                    "400": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/internship-applications/{idInternshipApplication}/tests/{idTest}": {
+            "patch": {
+                "tags": [
+                    "Internship Application"
+                ],
+                "summary": "Update test passed status",
+                "description": "Update the specified resource in storage.",
+                "operationId": "a68e8a85a57b5dda949bdfa664f15dea",
+                "parameters": [
+                    {
+                        "name": "idInternshipApplication",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "idTest",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/internship-applications/{id}": {
+            "get": {
+                "tags": [
+                    "Internship Application"
+                ],
+                "summary": "Get internship application detail",
+                "description": "Display the specified resource.",
+                "operationId": "ea1f344a72b1ba1beffa5a77ecb0d9f3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Internship Application"
+                ],
+                "summary": "Accept or reject internship application",
+                "description": "Update the specified resource in storage.",
+                "operationId": "3446484e9faf0774a3f6da11abcd07a3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "status",
+                                    "file"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "accepted",
+                                            "rejected"
+                                        ]
+                                    },
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated"
+                    },
+                    "400": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Internship Application"
+                ],
+                "summary": "Delete internship application",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "6bc697a30f63459264fe6d038149adbd",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deleted"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/internship-applications/count": {
+            "get": {
+                "tags": [
+                    "Internship Application"
+                ],
+                "summary": "Get internship application statistics",
+                "operationId": "01365ee55dc9bfa3ba2be108c39bc27d",
+                "responses": {
+                    "200": {
+                        "description": "Statistics retrieved successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/internships": {
+            "get": {
+                "tags": [
+                    "Internship"
+                ],
+                "summary": "Get internship list",
+                "description": "Display a listing of the resource.",
+                "operationId": "c2b4dd9ce2006f898d5e57a0e4273f43",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/internships/{id}": {
+            "get": {
+                "tags": [
+                    "Internship"
+                ],
+                "summary": "Get internship by user id",
+                "description": "Display the specified resource.",
+                "operationId": "82f1dbf83636e227fc433033ef42d347",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "404": {
+                        "description": "Student or Internship not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Internship"
+                ],
+                "summary": "Update internship",
+                "description": "Update the specified resource in storage.",
+                "operationId": "9fac48685b3f1148815dd74a6473243a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "start_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "end_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "is_completed": {
+                                        "type": "boolean"
+                                    },
+                                    "role_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    },
+                    "400": {
+                        "description": "Validation Error"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Internship not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Internship"
+                ],
+                "summary": "Delete internship",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "b19f22ec896a8ec5b8bb14be252ebc0c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deleted successfully"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Internship not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/internships/count": {
+            "get": {
+                "tags": [
+                    "Internship"
+                ],
+                "summary": "Count active internships",
+                "operationId": "48ededea5b8b71ce18eb67d5f27c7014",
+                "responses": {
+                    "200": {
+                        "description": "Count retrieved successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/job-openings": {
+            "get": {
+                "tags": [
+                    "Job Opening"
+                ],
+                "summary": "List Job Opening",
+                "description": "Display a listing of the resource.",
+                "operationId": "4fd7c867d1647617d984c3413a97bb82",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "province_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    {
+                        "name": "city_regency_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    {
+                        "name": "grade",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    {
+                        "name": "field_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    {
+                        "name": "duration_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    {
+                        "name": "is_saved",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Job Opening"
+                ],
+                "summary": "Create Job Opening",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "f69b8e95fa58b4ffaf82efbc1f6220cf",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "field_id",
+                                    "duration_id",
+                                    "title",
+                                    "description",
+                                    "is_paid",
+                                    "grade",
+                                    "type",
+                                    "location",
+                                    "qouta",
+                                    "is_available",
+                                    "start_date",
+                                    "closing_date"
+                                ],
+                                "properties": {
+                                    "field_id": {
+                                        "type": "integer"
+                                    },
+                                    "duration_id": {
+                                        "type": "integer"
+                                    },
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "is_paid": {
+                                        "type": "boolean"
+                                    },
+                                    "grade": {
+                                        "type": "string",
+                                        "enum": [
+                                            "smk",
+                                            "mahasiswa",
+                                            "all"
+                                        ]
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "part_time",
+                                            "full_time"
+                                        ]
+                                    },
+                                    "location": {
+                                        "type": "string",
+                                        "enum": [
+                                            "onsite",
+                                            "remote",
+                                            "hybrid"
+                                        ]
+                                    },
+                                    "qouta": {
+                                        "type": "integer"
+                                    },
+                                    "is_available": {
+                                        "type": "boolean"
+                                    },
+                                    "tests": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "start_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "closing_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    },
+                    "400": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/job-openings/{id}": {
+            "get": {
+                "tags": [
+                    "Job Opening"
+                ],
+                "summary": "Detail Job Opening",
+                "description": "Display the specified resource.",
+                "operationId": "e27cf6d76f539c5090b558256baa068a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "404": {
+                        "description": "Job Opening not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Job Opening"
+                ],
+                "summary": "Update Job Opening",
+                "description": "Update the specified resource in storage.",
+                "operationId": "a80248115f14bef4e649ff0f5e906fbb",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "field_id": {
+                                        "type": "integer"
+                                    },
+                                    "duration_id": {
+                                        "type": "integer"
+                                    },
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "is_paid": {
+                                        "type": "boolean"
+                                    },
+                                    "grade": {
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "type": "string"
+                                    },
+                                    "qouta": {
+                                        "type": "integer"
+                                    },
+                                    "is_available": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Job Opening"
+                ],
+                "summary": "Delete Job Opening",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "6817173744762145fddede449a7e1c7d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deleted"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/job-openings/count": {
+            "get": {
+                "tags": [
+                    "Job Opening"
+                ],
+                "summary": "Count Job Opening",
+                "operationId": "453f0a51100402082c22356ccce1d0ff",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/majors": {
+            "get": {
+                "tags": [
+                    "Major"
+                ],
+                "summary": "List Major",
+                "description": "Display a listing of the resource.",
+                "operationId": "fcc8d057e3478b8051b67b8e878d3fe1",
+                "parameters": [
+                    {
+                        "name": "is_accepted",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "level",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "smk",
+                                "college"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Major"
+                ],
+                "summary": "Create Major",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "67a8118b7e26faf8b6e95aca47c23c7a",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "level"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "level": {
+                                        "type": "string",
+                                        "enum": [
+                                            "smk",
+                                            "college"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    },
+                    "400": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/majors/{id}": {
+            "put": {
+                "tags": [
+                    "Major"
+                ],
+                "summary": "Update Major",
+                "description": "Update the specified resource in storage.",
+                "operationId": "05661fb5dbc96170c0d0bb918087de30",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "level": {
+                                        "type": "string",
+                                        "enum": [
+                                            "smk",
+                                            "college"
+                                        ]
+                                    },
+                                    "is_accepted": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated"
+                    },
+                    "404": {
+                        "description": "Major not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Major"
+                ],
+                "summary": "Delete Major",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "35f8c151a6eac2b35bc81e5e155b2811",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deleted"
+                    },
+                    "404": {
+                        "description": "Major not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/mou": {
+            "get": {
+                "tags": [
+                    "MoU"
+                ],
+                "summary": "Get list of MoU",
+                "operationId": "68ad936daed5d3dd3a29faaebc7343cb",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search partner name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "description": "Filter status",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "pending",
+                                "accepted",
+                                "rejected"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Pagination limit",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "MoU list retrieved successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "MoU"
+                ],
+                "summary": "Create new MoU",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "26e1d550eaba62f418bbc4ae3c42218d",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "start_date",
+                                    "end_date",
+                                    "file",
+                                    "message"
+                                ],
+                                "properties": {
+                                    "start_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "end_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "message": {
+                                        "type": "string"
+                                    },
+                                    "company_id": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "school_id": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "MoU created successfully"
+                    },
+                    "400": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/mou/{id}": {
+            "get": {
+                "tags": [
+                    "MoU"
+                ],
+                "summary": "Get MoU detail",
+                "description": "Display the specified resource.",
+                "operationId": "04a2ad9ec1930e18805aefb04fe58ad6",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "MoU detail retrieved successfully"
+                    },
+                    "404": {
+                        "description": "MoU not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "MoU"
+                ],
+                "summary": "Accept or Reject MoU",
+                "description": "Update the specified resource in storage.",
+                "operationId": "f09f960c49866d882624592bdb95f552",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "reason": {
+                                        "type": "string",
+                                        "example": "Proposal rejected because requirements are incomplete.",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "MoU updated successfully"
+                    },
+                    "403": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "MoU not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "MoU"
+                ],
+                "summary": "Delete MoU",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "0c7ddbe8a0c79c7dda39bed670c5b6a1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "MoU deleted successfully"
+                    },
+                    "403": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "MoU not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/mou/{id}/preview": {
+            "get": {
+                "tags": [
+                    "MoU"
+                ],
+                "summary": "Preview MoU PDF",
+                "operationId": "0cacd1e21f5c87247da2fa7bd962696a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF preview"
+                    },
+                    "404": {
+                        "description": "File not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/mou/{id}/download": {
+            "get": {
+                "tags": [
+                    "MoU"
+                ],
+                "summary": "Download MoU PDF",
+                "operationId": "f7fed061517db2a4ea521b793d0f6af5",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF downloaded"
+                    },
+                    "404": {
+                        "description": "File not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/partner": {
+            "get": {
+                "tags": [
+                    "Partner"
+                ],
+                "summary": "Get partner list",
+                "description": "Display a listing of the resource.",
+                "operationId": "6cff609d5efe079403a6ff5ab2428c0f",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search partner by name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "description": "Filter partner type",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "school",
+                                "company",
+                                "university"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Partner list retrieved successfully"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Partner"
+                ],
+                "summary": "Create new partner",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "3917b189874e129b732fc1f742490636",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "logo",
+                                    "address",
+                                    "type"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "SMK Negeri 1 Jakarta"
+                                    },
+                                    "logo": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "example": "Jl. Sudirman No. 1 Jakarta"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "school",
+                                            "company",
+                                            "university"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Partner created successfully"
+                    },
+                    "400": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/partner/{id}": {
+            "post": {
+                "tags": [
+                    "Partner"
+                ],
+                "summary": "Update partner",
+                "description": "Update the specified resource in storage.",
+                "operationId": "5bec92f3141d5e5a431e0dee4fc30b4b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "address",
+                                    "type"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "logo": {
+                                        "type": "string",
+                                        "format": "binary",
+                                        "nullable": true
+                                    },
+                                    "address": {
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "school",
+                                            "company",
+                                            "university"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Partner updated successfully"
+                    },
+                    "400": {
+                        "description": "Validation Error"
+                    },
+                    "404": {
+                        "description": "Partner not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Partner"
+                ],
+                "summary": "Delete partner",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "0ee2336931b914376b7dfcd71562df7e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Partner deleted successfully"
+                    },
+                    "404": {
+                        "description": "Partner not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/pdf/generate-cv": {
+            "post": {
+                "tags": [
+                    "PDF"
+                ],
+                "summary": "Generate CV PDF",
+                "description": "Generate a PDF of the user's CV.",
+                "operationId": "38f5b4c2ed838921fa2c3b0ce3d5b4c7",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "full_name": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "example": "john@example.com"
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "example": "08123456789"
+                                    },
+                                    "address": {
+                                        "type": "string"
+                                    },
+                                    "summary": {
+                                        "type": "string"
+                                    },
+                                    "education": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "work_experience": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "skills": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "CV PDF generated successfully",
+                        "content": {
+                            "application/pdf": {}
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/province": {
+            "get": {
+                "tags": [
+                    "Province"
+                ],
+                "summary": "Get province list",
+                "description": "Display a listing of the resource.",
+                "operationId": "783fd12e61373da59c8c8eeca09e75d0",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search province name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "is_accepted",
+                        "in": "query",
+                        "description": "Filter accepted province",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Pagination limit",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "is_limit",
+                        "in": "query",
+                        "description": "Return paginated data",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Province list retrieved successfully"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Province"
+                ],
+                "summary": "Create province",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "6f8c202ab5735314f2ce731b62df1f14",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Jawa Barat"
+                                    },
+                                    "is_accepted": {
+                                        "type": "boolean",
+                                        "example": true,
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Province created successfully"
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/province/{id}": {
+            "put": {
+                "tags": [
+                    "Province"
+                ],
+                "summary": "Update province",
+                "description": "Update the specified resource in storage.",
+                "operationId": "0c6b9228e613d4f5b9221b737330b7a4",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Jawa Tengah",
+                                        "nullable": true
+                                    },
+                                    "is_accepted": {
+                                        "type": "boolean",
+                                        "example": true,
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Province updated successfully"
+                    },
+                    "404": {
+                        "description": "Province not found"
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Province"
+                ],
+                "summary": "Delete province",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "44feae4afe734035a0eff8cf5f60e89b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Province deleted successfully"
+                    },
+                    "404": {
+                        "description": "Province not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/report-task/{id}": {
+            "get": {
+                "tags": [
+                    "Report Task"
+                ],
+                "summary": "Get report task detail",
+                "description": "Display the specified resource.",
+                "operationId": "4d31ef7af392e5f72c11ed5e71e14be1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Report Task ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Report task retrieved successfully"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Report task not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Report Task"
+                ],
+                "summary": "Send report task message",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "91189da1d8878583b9688406b12c3860",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Report Task ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "message"
+                                ],
+                                "properties": {
+                                    "message": {
+                                        "type": "string",
+                                        "example": "Laporan tugas telah selesai dikerjakan."
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Message sent successfully"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Report task not found"
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/role": {
+            "get": {
+                "tags": [
+                    "Role"
+                ],
+                "summary": "Get role list",
+                "description": "Display a listing of the resource.",
+                "operationId": "5ae980647177516a097667b5837ac267",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search role name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "is_accepted",
+                        "in": "query",
+                        "description": "Filter accepted role",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Pagination limit",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role list retrieved successfully"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Role"
+                ],
+                "summary": "Create role",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "c23a819ac374c804cb71e2a52cc8b8de",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Software Engineer"
+                                    },
+                                    "is_accepted": {
+                                        "type": "boolean",
+                                        "example": true,
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Role created successfully"
+                    },
+                    "400": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/role/{id}": {
+            "put": {
+                "tags": [
+                    "Role"
+                ],
+                "summary": "Update role",
+                "description": "Update the specified resource in storage.",
+                "operationId": "0a13d6e6536712163430c7495115c8a7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Role ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Backend Developer",
+                                        "nullable": true
+                                    },
+                                    "is_accepted": {
+                                        "type": "boolean",
+                                        "example": true,
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Role updated successfully"
+                    },
+                    "400": {
+                        "description": "Validation Error"
+                    },
+                    "404": {
+                        "description": "Role not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Role"
+                ],
+                "summary": "Delete role",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "b328d69d7f4b2c3c66fbaf7797ac0898",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Role ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role deleted successfully"
+                    },
+                    "404": {
+                        "description": "Role not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/save-job-opening": {
+            "get": {
+                "tags": [
+                    "Save Job Opening"
+                ],
+                "summary": "Get saved job openings",
+                "description": "Display a listing of the resource.",
+                "operationId": "a6322314c93fdde8c1711c6292d35c6e",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Pagination limit",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Saved job openings retrieved successfully"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Save Job Opening"
+                ],
+                "summary": "Save or unsave job opening",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "935ac32b3f7e3c5c406caac5ee8932d7",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "job_opening_id"
+                                ],
+                                "properties": {
+                                    "job_opening_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Job opening saved successfully"
+                    },
+                    "200": {
+                        "description": "Saved job opening removed successfully"
+                    },
+                    "400": {
+                        "description": "Validation Error"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/school": {
+            "get": {
+                "tags": [
+                    "School"
+                ],
+                "summary": "Get school list",
+                "description": "Display a listing of the resource.",
+                "operationId": "a797b139084f697bd0ff6e06407c9857",
+                "responses": {
+                    "200": {
+                        "description": "School list retrieved successfully"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "School"
+                ],
+                "summary": "Create school",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "38dc7d795b63ce7751a0e25701905827",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "phone_number",
+                                    "address"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "SMK Negeri 1 Jakarta"
+                                    },
+                                    "phone_number": {
+                                        "type": "string",
+                                        "example": "02112345678"
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "example": "Jl. Sudirman No.1"
+                                    },
+                                    "is_verified": {
+                                        "type": "boolean",
+                                        "nullable": true
+                                    },
+                                    "logo": {
+                                        "type": "string",
+                                        "format": "binary",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "School created successfully"
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/school/name": {
+            "get": {
+                "tags": [
+                    "School"
+                ],
+                "summary": "Get school names",
+                "description": "Display a listing of the resource.",
+                "operationId": "0ca9c30905084b50748b93163a4cd907",
+                "responses": {
+                    "200": {
+                        "description": "School names retrieved successfully"
+                    }
+                }
+            }
+        },
+        "/school/{id}": {
+            "get": {
+                "tags": [
+                    "School"
+                ],
+                "summary": "Get school detail",
+                "description": "Display the specified resource.",
+                "operationId": "57b0e5960851cb1483a8e4cfbbecdaa8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "School retrieved successfully"
+                    },
+                    "404": {
+                        "description": "School not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "School"
+                ],
+                "summary": "Update school",
+                "description": "Update the specified resource in storage.",
+                "operationId": "4c5044fc02583f859c77bc752a373de9",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "phone_number",
+                                    "address"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "phone_number": {
+                                        "type": "string"
+                                    },
+                                    "address": {
+                                        "type": "string"
+                                    },
+                                    "is_verified": {
+                                        "type": "boolean",
+                                        "nullable": true
+                                    },
+                                    "logo": {
+                                        "type": "string",
+                                        "format": "binary",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "School updated successfully"
+                    },
+                    "404": {
+                        "description": "School not found"
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "School"
+                ],
+                "summary": "Delete school",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "51cc4ecdaca2e43862fb6aeead1516f7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "School deleted successfully"
+                    },
+                    "404": {
+                        "description": "School not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/school/count": {
+            "get": {
+                "tags": [
+                    "School"
+                ],
+                "summary": "Get total school count",
+                "description": "Display the specified resource.",
+                "operationId": "b7276927c0a8fda9b59705fc1feea56b",
+                "responses": {
+                    "200": {
+                        "description": "School count retrieved successfully"
+                    }
+                }
+            }
+        },
+        "/sector": {
+            "get": {
+                "tags": [
+                    "Sector"
+                ],
+                "summary": "Get sector list",
+                "description": "Display a listing of the resource.",
+                "operationId": "4f97e848b1096e9fecf73289fd49c8f2",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search sector name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "is_accepted",
+                        "in": "query",
+                        "description": "Filter accepted sector",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Pagination limit",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sector list retrieved successfully"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Sector"
+                ],
+                "summary": "Create sector",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "8d29041f4675cc8ebeaa1c5e9d57d272",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Teknologi Informasi"
+                                    },
+                                    "is_accepted": {
+                                        "type": "boolean",
+                                        "example": true,
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Sector created successfully"
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/sector/{id}": {
+            "put": {
+                "tags": [
+                    "Sector"
+                ],
+                "summary": "Update sector",
+                "description": "Update the specified resource in storage.",
+                "operationId": "04468e9a1c742b71cebdda2420a2a13d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Sector ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Teknik Mesin",
+                                        "nullable": true
+                                    },
+                                    "is_accepted": {
+                                        "type": "boolean",
+                                        "example": true,
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sector updated successfully"
+                    },
+                    "404": {
+                        "description": "Sector not found"
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Sector"
+                ],
+                "summary": "Delete sector",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "f32dc4ee91cdc6274fc634ad82d884fb",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Sector ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sector deleted successfully"
+                    },
+                    "404": {
+                        "description": "Sector not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/student": {
+            "get": {
+                "tags": [
+                    "Student"
+                ],
+                "summary": "Get student list",
+                "description": "Display a listing of the resource.",
+                "operationId": "357d3df631e214720da621eeb3d3b133",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search student name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Pagination limit",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "is_verified",
+                        "in": "query",
+                        "description": "Filter verified students",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Student list retrieved successfully"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Student"
+                ],
+                "summary": "Create student",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "775e1c372285c13890ed269b82426de2",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "username",
+                                    "email",
+                                    "password",
+                                    "name"
+                                ],
+                                "properties": {
+                                    "username": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "school_id": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "image": {
+                                        "type": "string",
+                                        "format": "binary",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Student created successfully"
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/student/{id}": {
+            "get": {
+                "tags": [
+                    "Student"
+                ],
+                "summary": "Get student detail",
+                "description": "Display the specified resource.",
+                "operationId": "119cfa39c9174aaa442d7d078e9ec2ef",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Student retrieved successfully"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Student not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Student"
+                ],
+                "summary": "Update student",
+                "description": "Update the specified resource in storage.",
+                "operationId": "fb102928f9079639b0145363bd42fb6d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "username": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    },
+                                    "school_id": {
+                                        "type": "integer"
+                                    },
+                                    "image": {
+                                        "type": "string",
+                                        "format": "binary",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Student updated successfully"
+                    },
+                    "404": {
+                        "description": "Student not found"
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Student"
+                ],
+                "summary": "Delete student",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "b0b0714e7be3f781513bab679728beb3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Student deleted successfully"
+                    },
+                    "404": {
+                        "description": "Student not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/student/count": {
+            "get": {
+                "tags": [
+                    "Student"
+                ],
+                "summary": "Get student count by internship status",
+                "description": "Get student count by status for the authenticated user's school.",
+                "operationId": "63f710d489eeb4acb57c9d2ff952855d",
+                "responses": {
+                    "200": {
+                        "description": "Student count retrieved successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/task": {
+            "get": {
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Get task list",
+                "description": "Display a listing of the resource.",
+                "operationId": "3d779bb835f34010b23b5119879478ee",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "pending, in_progress, completed, cancelled",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "user_student_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "is_deadline",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Task list retrieved successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Create task",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "f6735fbc0239120de73bb690114a978d",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "internship_id",
+                                    "title",
+                                    "description",
+                                    "due_date"
+                                ],
+                                "properties": {
+                                    "internship_id": {
+                                        "type": "integer"
+                                    },
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "due_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "link": {
+                                        "type": "string",
+                                        "format": "uri",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Task created successfully"
+                    },
+                    "400": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/task/{id}": {
+            "get": {
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Get task detail",
+                "description": "Display the specified resource.",
+                "operationId": "f508183171c7f339bb3fca605ba67dae",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Task retrieved successfully"
+                    },
+                    "404": {
+                        "description": "Task not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Update task status",
+                "description": "Update the specified resource in storage.",
+                "operationId": "07eef79c2158907631aa5cd42efab6a1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "status"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "pending",
+                                            "in_progress",
+                                            "completed",
+                                            "cancelled"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Task updated successfully"
+                    },
+                    "400": {
+                        "description": "Validation Error"
+                    },
+                    "404": {
+                        "description": "Task not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Delete task",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "a608c8c4bb19ff9ce17b8f634ba713be",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Task deleted successfully"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Task not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/task/count": {
+            "get": {
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Get task statistics",
+                "operationId": "9109c854f79eb5daab65abce665763bf",
+                "responses": {
+                    "200": {
+                        "description": "Task statistics retrieved successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/test": {
+            "get": {
+                "tags": [
+                    "Test"
+                ],
+                "summary": "Get test list",
+                "description": "Display a listing of the resource.",
+                "operationId": "2cf1648f26e6c36635ef5a3b5321fcff",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by test title",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "description": "Filter by test type",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "theory",
+                                "practice",
+                                "other"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Pagination limit",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Test list retrieved successfully"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Test"
+                ],
+                "summary": "Create new test",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "6d9f0e251089054e7e7dd1c8c74baedf",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "title",
+                                    "link",
+                                    "description",
+                                    "type"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "link": {
+                                        "type": "string",
+                                        "format": "uri"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "theory",
+                                            "practice",
+                                            "other"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Test created successfully"
+                    },
+                    "400": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/test/{id}": {
+            "put": {
+                "tags": [
+                    "Test"
+                ],
+                "summary": "Update test",
+                "description": "Update the specified resource in storage.",
+                "operationId": "18dcaaedd9757e6befd177320c4f512e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "link": {
+                                        "type": "string",
+                                        "format": "uri"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "theory",
+                                            "practice",
+                                            "other"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Test updated successfully"
+                    },
+                    "400": {
+                        "description": "Validation Error"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Test not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Test"
+                ],
+                "summary": "Delete test",
+                "description": "Remove the specified resource from storage.",
+                "operationId": "3100a2e79904c08171be37e378f1c1b8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Test deleted successfully"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Test not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Job Opening",
+            "description": "Job Opening API"
+        },
+        {
+            "name": "Major",
+            "description": "Major API"
+        },
+        {
+            "name": "Admin Dashboard",
+            "description": "Admin Dashboard"
+        },
+        {
+            "name": "Application",
+            "description": "Application"
+        },
+        {
+            "name": "Certificate",
+            "description": "Certificate"
+        },
+        {
+            "name": "City Regency",
+            "description": "City Regency"
+        },
+        {
+            "name": "Comment Prakerin",
+            "description": "Comment Prakerin"
+        },
+        {
+            "name": "Company",
+            "description": "Company"
+        },
+        {
+            "name": "Contact Us",
+            "description": "Contact Us"
+        },
+        {
+            "name": "Curriculum Vitae",
+            "description": "Curriculum Vitae"
+        },
+        {
+            "name": "CV Generator",
+            "description": "CV Generator"
+        },
+        {
+            "name": "Developer",
+            "description": "Developer"
+        },
+        {
+            "name": "Duration",
+            "description": "Duration"
+        },
+        {
+            "name": "Feedback",
+            "description": "Feedback"
+        },
+        {
+            "name": "Field",
+            "description": "Field"
+        },
+        {
+            "name": "Homepage",
+            "description": "Homepage"
+        },
+        {
+            "name": "Internship Application",
+            "description": "Internship Application"
+        },
+        {
+            "name": "Internship",
+            "description": "Internship"
+        },
+        {
+            "name": "MoU",
+            "description": "MoU"
+        },
+        {
+            "name": "Partner",
+            "description": "Partner"
+        },
+        {
+            "name": "PDF",
+            "description": "PDF"
+        },
+        {
+            "name": "Province",
+            "description": "Province"
+        },
+        {
+            "name": "Report Task",
+            "description": "Report Task"
+        },
+        {
+            "name": "Role",
+            "description": "Role"
+        },
+        {
+            "name": "Save Job Opening",
+            "description": "Save Job Opening"
+        },
+        {
+            "name": "School",
+            "description": "School"
+        },
+        {
+            "name": "Sector",
+            "description": "Sector"
+        },
+        {
+            "name": "Student",
+            "description": "Student"
+        },
+        {
+            "name": "Task",
+            "description": "Task"
+        },
+        {
+            "name": "Test",
+            "description": "Test"
+        }
+    ]
+}

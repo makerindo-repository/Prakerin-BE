@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Models\Partner;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
@@ -16,7 +17,36 @@ class PartnerController extends Controller
     /**
      * Display a listing of the resource.
      */
-
+    #[OA\Get(
+    path: '/partner',
+    summary: 'Get partner list',
+    tags: ['Partner'],
+    parameters: [
+        new OA\Parameter(
+            name: 'search',
+            in: 'query',
+            required: false,
+            description: 'Search partner by name',
+            schema: new OA\Schema(type: 'string')
+        ),
+        new OA\Parameter(
+            name: 'type',
+            in: 'query',
+            required: false,
+            description: 'Filter partner type',
+            schema: new OA\Schema(
+                type: 'string',
+                enum: ['school', 'company', 'university']
+            )
+        )
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Partner list retrieved successfully'
+        )
+    ]
+)]
     public function index(Request $request)
     {
         $search = $request->query('search', '');
@@ -37,6 +67,53 @@ class PartnerController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    #[OA\Post(
+    path: '/partner',
+    summary: 'Create new partner',
+    tags: ['Partner'],
+    security: [['bearerAuth' => []]],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(
+                required: ['name', 'logo', 'address', 'type'],
+                properties: [
+                    new OA\Property(
+                        property: 'name',
+                        type: 'string',
+                        example: 'SMK Negeri 1 Jakarta'
+                    ),
+                    new OA\Property(
+                        property: 'logo',
+                        type: 'string',
+                        format: 'binary'
+                    ),
+                    new OA\Property(
+                        property: 'address',
+                        type: 'string',
+                        example: 'Jl. Sudirman No. 1 Jakarta'
+                    ),
+                    new OA\Property(
+                        property: 'type',
+                        type: 'string',
+                        enum: ['school', 'company', 'university']
+                    )
+                ]
+            )
+        )
+    ),
+    responses: [
+        new OA\Response(
+            response: 201,
+            description: 'Partner created successfully'
+        ),
+        new OA\Response(
+            response: 400,
+            description: 'Validation Error'
+        )
+    ]
+)]
     public function store(Request $request)
     {
 
@@ -79,6 +156,64 @@ class PartnerController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    #[OA\Post(
+    path: '/partner/{id}',
+    summary: 'Update partner',
+    tags: ['Partner'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'string')
+        )
+    ],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(
+                required: ['name', 'address', 'type'],
+                properties: [
+                    new OA\Property(
+                        property: 'name',
+                        type: 'string'
+                    ),
+                    new OA\Property(
+                        property: 'logo',
+                        type: 'string',
+                        format: 'binary',
+                        nullable: true
+                    ),
+                    new OA\Property(
+                        property: 'address',
+                        type: 'string'
+                    ),
+                    new OA\Property(
+                        property: 'type',
+                        type: 'string',
+                        enum: ['school', 'company', 'university']
+                    )
+                ]
+            )
+        )
+    ),
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Partner updated successfully'
+        ),
+        new OA\Response(
+            response: 400,
+            description: 'Validation Error'
+        ),
+        new OA\Response(
+            response: 404,
+            description: 'Partner not found'
+        )
+    ]
+)]
     public function update(Request $request, string $id)
     {
         $partner = Partner::find($id);
@@ -138,6 +273,30 @@ class PartnerController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    #[OA\Delete(
+    path: '/partner/{id}',
+    summary: 'Delete partner',
+    tags: ['Partner'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'string')
+        )
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Partner deleted successfully'
+        ),
+        new OA\Response(
+            response: 404,
+            description: 'Partner not found'
+        )
+    ]
+)]
     public function destroy(string $id)
     {
         $partner = Partner::find($id);

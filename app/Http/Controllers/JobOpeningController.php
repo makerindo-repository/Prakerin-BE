@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Models\JobOpening;
 use App\Models\Duration;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -10,11 +11,34 @@ use Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
+#[OA\Tag(
+    name: "Job Opening",
+    description: "Job Opening API"
+)]
+
 class JobOpeningController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+    #[OA\Get(
+    path: "/api/job-openings",
+    summary: "List Job Opening",
+    tags: ["Job Opening"],
+    parameters: [
+        new OA\QueryParameter(name: "search", required: false, schema: new OA\Schema(type: "string")),
+        new OA\QueryParameter(name: "limit", required: false, schema: new OA\Schema(type: "integer")),
+        new OA\QueryParameter(name: "province_id", required: false, schema: new OA\Schema(type: "array", items: new OA\Items(type: "integer"))),
+        new OA\QueryParameter(name: "city_regency_id", required: false, schema: new OA\Schema(type: "array", items: new OA\Items(type: "integer"))),
+        new OA\QueryParameter(name: "grade", required: false, schema: new OA\Schema(type: "array", items: new OA\Items(type: "string"))),
+        new OA\QueryParameter(name: "field_id", required: false, schema: new OA\Schema(type: "array", items: new OA\Items(type: "integer"))),
+        new OA\QueryParameter(name: "duration_id", required: false, schema: new OA\Schema(type: "array", items: new OA\Items(type: "integer"))),
+        new OA\QueryParameter(name: "is_saved", required: false, schema: new OA\Schema(type: "boolean")),
+    ],
+    responses: [
+        new OA\Response(response: 200, description: "Success")
+    ]
+)]
     public function index(Request $request) //This function is 80% overhauled as the previous one cannot load any job openings
     {
         $limit = $request->query('limit', 10);
@@ -157,6 +181,54 @@ class JobOpeningController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    #[OA\Post(
+    path: "/api/job-openings",
+    summary: "Create Job Opening",
+    tags: ["Job Opening"],
+    security: [["bearerAuth" => []]],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: [
+                "field_id",
+                "duration_id",
+                "title",
+                "description",
+                "is_paid",
+                "grade",
+                "type",
+                "location",
+                "qouta",
+                "is_available",
+                "start_date",
+                "closing_date"
+            ],
+            properties: [
+                new OA\Property(property: "field_id", type: "integer"),
+                new OA\Property(property: "duration_id", type: "integer"),
+                new OA\Property(property: "title", type: "string"),
+                new OA\Property(property: "description", type: "string"),
+                new OA\Property(property: "is_paid", type: "boolean"),
+                new OA\Property(property: "grade", type: "string", enum: ["smk","mahasiswa","all"]),
+                new OA\Property(property: "type", type: "string", enum: ["part_time","full_time"]),
+                new OA\Property(property: "location", type: "string", enum: ["onsite","remote","hybrid"]),
+                new OA\Property(property: "qouta", type: "integer"),
+                new OA\Property(property: "is_available", type: "boolean"),
+                new OA\Property(
+                    property: "tests",
+                    type: "array",
+                    items: new OA\Items(type: "integer")
+                ),
+                new OA\Property(property: "start_date", type: "string", format: "date"),
+                new OA\Property(property: "closing_date", type: "string", format: "date"),
+            ]
+        )
+    ),
+    responses: [
+        new OA\Response(response: 201, description: "Created"),
+        new OA\Response(response: 400, description: "Validation Error")
+    ]
+)]
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -218,6 +290,22 @@ class JobOpeningController extends Controller
     /**
      * Display the specified resource.
      */
+    #[OA\Get(
+    path: "/api/job-openings/{id}",
+    summary: "Detail Job Opening",
+    tags: ["Job Opening"],
+    parameters: [
+        new OA\PathParameter(
+            name: "id",
+            required: true,
+            schema: new OA\Schema(type: "integer")
+        )
+    ],
+    responses: [
+        new OA\Response(response: 200, description: "Success"),
+        new OA\Response(response: 404, description: "Job Opening not found")
+    ]
+)]
     public function show(string $id)
     {
         $jobOpening = JobOpening::with(
@@ -260,6 +348,39 @@ class JobOpeningController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    #[OA\Put(
+    path: "/api/job-openings/{id}",
+    summary: "Update Job Opening",
+    tags: ["Job Opening"],
+    security: [["bearerAuth" => []]],
+    parameters: [
+        new OA\PathParameter(
+            name: "id",
+            required: true,
+            schema: new OA\Schema(type: "integer")
+        )
+    ],
+    requestBody: new OA\RequestBody(
+        required: false,
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "field_id", type: "integer"),
+                new OA\Property(property: "duration_id", type: "integer"),
+                new OA\Property(property: "title", type: "string"),
+                new OA\Property(property: "description", type: "string"),
+                new OA\Property(property: "is_paid", type: "boolean"),
+                new OA\Property(property: "grade", type: "string"),
+                new OA\Property(property: "type", type: "string"),
+                new OA\Property(property: "qouta", type: "integer"),
+                new OA\Property(property: "is_available", type: "boolean"),
+            ]
+        )
+    ),
+    responses: [
+        new OA\Response(response: 200, description: "Updated"),
+        new OA\Response(response: 404, description: "Not Found")
+    ]
+)]  
     public function update(Request $request, string $id)
     {
         $jobOpening = JobOpening::find($id);
@@ -300,6 +421,23 @@ class JobOpeningController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    #[OA\Delete(
+    path: "/api/job-openings/{id}",
+    summary: "Delete Job Opening",
+    tags: ["Job Opening"],
+    security: [["bearerAuth" => []]],
+    parameters: [
+        new OA\PathParameter(
+            name: "id",
+            required: true,
+            schema: new OA\Schema(type: "integer")
+        )
+    ],
+    responses: [
+        new OA\Response(response: 200, description: "Deleted"),
+        new OA\Response(response: 404, description: "Not Found")
+    ]
+)]
     public function destroy(string $id)
     {
         $jobOpening = JobOpening::find($id);
@@ -318,10 +456,18 @@ class JobOpeningController extends Controller
         ], 200);
     }
 
+    
+    #[OA\Get(
+    path: "/api/job-openings/count",
+    summary: "Count Job Opening",
+    tags: ["Job Opening"],
+    security: [["bearerAuth" => []]],
+    responses: [
+        new OA\Response(response: 200, description: "Success")
+    ]
+)]
     public function count(Request $request)
     {
-
-
         $counts = JobOpening::when($request->user()->tokenCan("company-access"), function ($query) use ($request) {
             $query->where("company_id", $request->user()->company->id);
         })

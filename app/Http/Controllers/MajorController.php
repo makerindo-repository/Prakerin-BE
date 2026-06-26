@@ -2,17 +2,49 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Models\Major;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
+#[OA\Tag(
+    name: "Major",
+    description: "Major API"
+)]
+
 class MajorController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+    #[OA\Get(
+    path: "/api/majors",
+    summary: "List Major",
+    tags: ["Major"],
+    parameters: [
+        new OA\QueryParameter(
+            name: "is_accepted",
+            schema: new OA\Schema(type: "boolean")
+        ),
+        new OA\QueryParameter(
+            name: "search",
+            schema: new OA\Schema(type: "string")
+        ),
+        new OA\QueryParameter(
+            name: "limit",
+            schema: new OA\Schema(type: "integer")
+        ),
+        new OA\QueryParameter(
+            name: "level",
+            schema: new OA\Schema(type: "string", enum: ["smk", "college"])
+        ),
+    ],
+    responses: [
+        new OA\Response(response: 200, description: "Success")
+    ]
+)]
     public function index(Request $request)
     {
         $is_accepted = filter_var($request->query('is_accepted', true), FILTER_VALIDATE_BOOLEAN);
@@ -50,6 +82,30 @@ class MajorController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    #[OA\Post(
+    path: "/api/majors",
+    summary: "Create Major",
+    tags: ["Major"],
+    security: [["bearerAuth" => []]],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ["name", "level"],
+            properties: [
+                new OA\Property(property: "name", type: "string"),
+                new OA\Property(
+                    property: "level",
+                    type: "string",
+                    enum: ["smk", "college"]
+                ),
+            ]
+        )
+    ),
+    responses: [
+        new OA\Response(response: 201, description: "Created"),
+        new OA\Response(response: 400, description: "Validation Error")
+    ]
+)]
     public function store(Request $request)
     {
         $validated = Validator::make($request->all(), [
@@ -80,6 +136,36 @@ class MajorController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    #[OA\Put(
+    path: "/api/majors/{id}",
+    summary: "Update Major",
+    tags: ["Major"],
+    security: [["bearerAuth" => []]],
+    parameters: [
+        new OA\PathParameter(
+            name: "id",
+            required: true,
+            schema: new OA\Schema(type: "integer")
+        ),
+    ],
+    requestBody: new OA\RequestBody(
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: "name", type: "string"),
+                new OA\Property(
+                    property: "level",
+                    type: "string",
+                    enum: ["smk", "college"]
+                ),
+                new OA\Property(property: "is_accepted", type: "boolean"),
+            ]
+        )
+    ),
+    responses: [
+        new OA\Response(response: 200, description: "Updated"),
+        new OA\Response(response: 404, description: "Major not found")
+    ]
+)]
     public function update(Request $request, string $id)
     {
         $major = Major::find($id);
@@ -119,6 +205,23 @@ class MajorController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    #[OA\Delete(
+    path: "/api/majors/{id}",
+    summary: "Delete Major",
+    tags: ["Major"],
+    security: [["bearerAuth" => []]],
+    parameters: [
+        new OA\PathParameter(
+            name: "id",
+            required: true,
+            schema: new OA\Schema(type: "integer")
+        ),
+    ],
+    responses: [
+        new OA\Response(response: 200, description: "Deleted"),
+        new OA\Response(response: 404, description: "Major not found")
+    ]
+)]
     public function destroy(string $id)
     {
         $major = Major::find($id);

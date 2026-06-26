@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Http\Requests\CityRegency\CityRegencyCreateRequest;
 use App\Http\Requests\CityRegency\CityRegencyUpdateRequest;
 use App\Models\CityRegency;
@@ -16,6 +17,47 @@ class CityRegencyController extends Controller
     /**
      * Display a listing of the resource.
      */
+    #[OA\Get(
+        path: '/city-regencies',
+        summary: 'Menampilkan daftar city regency',
+        tags: ['City Regency']
+    )]
+    #[OA\Parameter(
+        name: 'is_accepted',
+        in: 'query',
+        required: false,
+        description: 'Filter status accepted',
+        schema: new OA\Schema(type: 'boolean', default: true)
+    )]
+    #[OA\Parameter(
+        name: 'search',
+        in: 'query',
+        required: false,
+        description: 'Pencarian berdasarkan nama',
+        schema: new OA\Schema(type: 'string')
+    )]
+    #[OA\Parameter(
+        name: 'province_id',
+        in: 'query',
+        required: false,
+        description: 'Filter berdasarkan Province ID',
+        schema: new OA\Schema(type: 'array', items: new OA\Items(type: 'integer'))
+    )]
+    #[OA\Parameter(
+        name: 'limit',
+        in: 'query',
+        required: false,
+        description: 'Jumlah data per halaman',
+        schema: new OA\Schema(type: 'integer', default: 10)
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Berhasil mengambil data'
+    )]
+    #[OA\Response(
+        response: 403,
+        description: 'Forbidden'
+    )]
     public function index(Request $request)
     {
 
@@ -68,6 +110,30 @@ class CityRegencyController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    #[OA\Post(
+        path: '/city-regencies',
+        summary: 'Menambahkan city regency',
+        tags: ['City Regency']
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['name', 'province_id'],
+            properties: [
+                new OA\Property(property: 'name', type: 'string'),
+                new OA\Property(property: 'province_id', type: 'integer'),
+                new OA\Property(property: 'is_accepted', type: 'boolean')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 201,
+        description: 'City Regency berhasil dibuat'
+    )]
+    #[OA\Response(
+        response: 422,
+        description: 'Validation Error'
+    )]
     public function store(CityRegencyCreateRequest $request)
     {
         $data = $request->validated();
@@ -89,6 +155,35 @@ class CityRegencyController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    #[OA\Put(
+        path: '/city-regencies/{id}',
+        summary: 'Update city regency',
+        tags: ['City Regency']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'name', type: 'string'),
+                new OA\Property(property: 'province_id', type: 'integer'),
+                new OA\Property(property: 'is_accepted', type: 'boolean')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'City Regency berhasil diupdate'
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'City Regency tidak ditemukan'
+    )]
     public function update(CityRegencyUpdateRequest $request, string $id)
     {
         $cityRegency = CityRegency::find($id);
@@ -115,6 +210,25 @@ class CityRegencyController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    #[OA\Delete(
+        path: '/city-regencies/{id}',
+        summary: 'Hapus city regency',
+        tags: ['City Regency']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'City Regency berhasil dihapus'
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'City Regency tidak ditemukan'
+    )]
     public function destroy(string $id)
     {
         $cityRegency = CityRegency::find($id);

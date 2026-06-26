@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Models\Certificate;
 use App\Models\Internship;
 use App\Models\User;
@@ -15,6 +16,26 @@ class InternshipController extends Controller
     /**
      * Display a listing of the resource.
      */
+    #[OA\Get(
+    path: '/internships',
+    summary: 'Get internship list',
+    tags: ['Internship'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'limit',
+            in: 'query',
+            required: false,
+            schema: new OA\Schema(type: 'integer')
+        )
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Success'
+        )
+    ]
+)]
     public function index(Request $request)
     {
         $limit = $request->query('limit', 10);
@@ -35,6 +56,24 @@ class InternshipController extends Controller
     /**
      * Display the specified resource.
      */
+    #[OA\Get(
+    path: '/internships/{id}',
+    summary: 'Get internship by user id',
+    tags: ['Internship'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'string')
+        )
+    ],
+    responses: [
+        new OA\Response(response: 200, description: 'Success'),
+        new OA\Response(response: 404, description: 'Student or Internship not found')
+    ]
+)]
     public function show(string $id)
     {
 
@@ -70,6 +109,51 @@ class InternshipController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    #[OA\Put(
+    path: '/internships/{id}',
+    summary: 'Update internship',
+    tags: ['Internship'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'integer')
+        )
+    ],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(
+                    property: 'start_date',
+                    type: 'string',
+                    format: 'date'
+                ),
+                new OA\Property(
+                    property: 'end_date',
+                    type: 'string',
+                    format: 'date'
+                ),
+                new OA\Property(
+                    property: 'is_completed',
+                    type: 'boolean'
+                ),
+                new OA\Property(
+                    property: 'role_id',
+                    type: 'integer'
+                )
+            ]
+        )
+    ),
+    responses: [
+        new OA\Response(response: 200, description: 'Updated successfully'),
+        new OA\Response(response: 400, description: 'Validation Error'),
+        new OA\Response(response: 403, description: 'Forbidden'),
+        new OA\Response(response: 404, description: 'Internship not found')
+    ]
+)]
     public function update(Request $request, string $id)
     {
         $internship = Internship::find($id);
@@ -126,6 +210,25 @@ class InternshipController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    #[OA\Delete(
+    path: '/internships/{id}',
+    summary: 'Delete internship',
+    tags: ['Internship'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'integer')
+        )
+    ],
+    responses: [
+        new OA\Response(response: 200, description: 'Deleted successfully'),
+        new OA\Response(response: 403, description: 'Forbidden'),
+        new OA\Response(response: 404, description: 'Internship not found')
+    ]
+)]
     public function destroy(string $id)
     {
         $internship = Internship::find($id);
@@ -151,6 +254,19 @@ class InternshipController extends Controller
         ], 200);
     }
 
+
+    #[OA\Get(
+    path: '/internships/count',
+    summary: 'Count active internships',
+    tags: ['Internship'],
+    security: [['bearerAuth' => []]],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Count retrieved successfully'
+        )
+    ]
+)]
     public function count(Request $request)
     {
         $count = Internship::where('is_completed', false)

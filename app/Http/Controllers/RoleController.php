@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Models\Role;
 use Auth;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -13,6 +14,45 @@ class RoleController extends Controller
     /**
      * Display a listing of the resource.
      */
+    #[OA\Get(
+    path: '/role',
+    summary: 'Get role list',
+    tags: ['Role'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'search',
+            in: 'query',
+            required: false,
+            description: 'Search role name',
+            schema: new OA\Schema(type: 'string')
+        ),
+        new OA\Parameter(
+            name: 'is_accepted',
+            in: 'query',
+            required: false,
+            description: 'Filter accepted role',
+            schema: new OA\Schema(type: 'boolean', default: true)
+        ),
+        new OA\Parameter(
+            name: 'limit',
+            in: 'query',
+            required: false,
+            description: 'Pagination limit',
+            schema: new OA\Schema(type: 'integer', default: 10)
+        )
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Role list retrieved successfully'
+        ),
+        new OA\Response(
+            response: 403,
+            description: 'Forbidden'
+        )
+    ]
+)]
     public function index(Request $request)
     {
         $isAccepted = filter_var($request->query('is_accepted', true), FILTER_VALIDATE_BOOLEAN);
@@ -52,6 +92,41 @@ class RoleController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    #[OA\Post(
+    path: '/role',
+    summary: 'Create role',
+    tags: ['Role'],
+    security: [['bearerAuth' => []]],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['name'],
+            properties: [
+                new OA\Property(
+                    property: 'name',
+                    type: 'string',
+                    example: 'Software Engineer'
+                ),
+                new OA\Property(
+                    property: 'is_accepted',
+                    type: 'boolean',
+                    nullable: true,
+                    example: true
+                )
+            ]
+        )
+    ),
+    responses: [
+        new OA\Response(
+            response: 201,
+            description: 'Role created successfully'
+        ),
+        new OA\Response(
+            response: 400,
+            description: 'Validation Error'
+        )
+    ]
+)]
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -82,6 +157,54 @@ class RoleController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    #[OA\Put(
+    path: '/role/{id}',
+    summary: 'Update role',
+    tags: ['Role'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            description: 'Role ID',
+            schema: new OA\Schema(type: 'string')
+        )
+    ],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(
+                    property: 'name',
+                    type: 'string',
+                    nullable: true,
+                    example: 'Backend Developer'
+                ),
+                new OA\Property(
+                    property: 'is_accepted',
+                    type: 'boolean',
+                    nullable: true,
+                    example: true
+                )
+            ]
+        )
+    ),
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Role updated successfully'
+        ),
+        new OA\Response(
+            response: 400,
+            description: 'Validation Error'
+        ),
+        new OA\Response(
+            response: 404,
+            description: 'Role not found'
+        )
+    ]
+)]
     public function update(Request $request, string $id)
     {
         $role = Role::find($id);
@@ -116,6 +239,31 @@ class RoleController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    #[OA\Delete(
+    path: '/role/{id}',
+    summary: 'Delete role',
+    tags: ['Role'],
+    security: [['bearerAuth' => []]],
+    parameters: [
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            description: 'Role ID',
+            schema: new OA\Schema(type: 'string')
+        )
+    ],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Role deleted successfully'
+        ),
+        new OA\Response(
+            response: 404,
+            description: 'Role not found'
+        )
+    ]
+)]
     public function destroy(string $id)
     {
         $role = Role::find($id);

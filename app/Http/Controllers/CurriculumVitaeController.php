@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Http\Requests\CurriculumVitae\CurriculumVitaeCreateRequest;
 use App\Models\CurriculumVitae;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -14,6 +15,27 @@ class CurriculumVitaeController extends Controller
     /**
      * Display a listing of the resource.
      */
+    #[OA\Get(
+        path: '/curriculum-vitaes',
+        summary: 'Menampilkan daftar Curriculum Vitae',
+        tags: ['Curriculum Vitae']
+    )]
+    #[OA\Parameter(
+        name: 'limit',
+        in: 'query',
+        required: false,
+        schema: new OA\Schema(type: 'integer', default: 10)
+    )]
+    #[OA\Parameter(
+        name: 'search',
+        in: 'query',
+        required: false,
+        schema: new OA\Schema(type: 'string')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Berhasil mengambil daftar Curriculum Vitae'
+    )]
     public function index(Request $request)
     {
         $limit = $request->query('limit', 10);
@@ -28,6 +50,39 @@ class CurriculumVitaeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    #[OA\Post(
+        path: '/curriculum-vitaes',
+        summary: 'Menambahkan Curriculum Vitae',
+        tags: ['Curriculum Vitae']
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(
+                required: ['name', 'file'],
+                properties: [
+                    new OA\Property(
+                        property: 'name',
+                        type: 'string'
+                    ),
+                    new OA\Property(
+                        property: 'file',
+                        type: 'string',
+                        format: 'binary'
+                    )
+                ]
+            )
+        )
+    )]
+    #[OA\Response(
+        response: 201,
+        description: 'Curriculum Vitae berhasil dibuat'
+    )]
+    #[OA\Response(
+        response: 422,
+        description: 'Validation Error'
+    )]
     public function store(CurriculumVitaeCreateRequest $request)
     {
         $data = $request->validated();
@@ -50,6 +105,29 @@ class CurriculumVitaeController extends Controller
     /**
      * Display the specified resource.
      */
+    #[OA\Get(
+        path: '/curriculum-vitaes/{id}',
+        summary: 'Menampilkan detail Curriculum Vitae',
+        tags: ['Curriculum Vitae']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Berhasil mengambil detail Curriculum Vitae'
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Forbidden'
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'Curriculum Vitae tidak ditemukan'
+    )]
     public function show(string $id)
     {
         $curriculumVitae = CurriculumVitae::find($id);
@@ -76,6 +154,48 @@ class CurriculumVitaeController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    #[OA\Put(
+        path: '/curriculum-vitaes/{id}',
+        summary: 'Mengubah Curriculum Vitae',
+        tags: ['Curriculum Vitae']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(
+                properties: [
+                    new OA\Property(
+                        property: 'name',
+                        type: 'string'
+                    ),
+                    new OA\Property(
+                        property: 'file',
+                        type: 'string',
+                        format: 'binary'
+                    )
+                ]
+            )
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Curriculum Vitae berhasil diubah'
+    )]
+    #[OA\Response(
+        response: 403,
+        description: 'Forbidden'
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'Curriculum Vitae tidak ditemukan'
+    )]
     public function update(Request $request, string $id)
     {
         $curriculumVitae = CurriculumVitae::find($id);
@@ -131,6 +251,29 @@ class CurriculumVitaeController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    #[OA\Delete(
+        path: '/curriculum-vitaes/{id}',
+        summary: 'Menghapus Curriculum Vitae',
+        tags: ['Curriculum Vitae']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Curriculum Vitae berhasil dihapus'
+    )]
+    #[OA\Response(
+        response: 403,
+        description: 'Forbidden'
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'Curriculum Vitae tidak ditemukan'
+    )]
     public function destroy(string $id)
     {
         $curriculumVitae = CurriculumVitae::find($id);
@@ -161,6 +304,26 @@ class CurriculumVitaeController extends Controller
 
     }
 
+
+    #[OA\Get(
+        path: '/curriculum-vitaes/{id}/preview',
+        summary: 'Preview file Curriculum Vitae',
+        tags: ['Curriculum Vitae']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Preview PDF berhasil'
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'File atau Curriculum Vitae tidak ditemukan'
+    )]
     public function preview(Request $request, string $id)
     {
         $cv = CurriculumVitae::find($id);
@@ -189,6 +352,26 @@ class CurriculumVitaeController extends Controller
         ]);
     }
 
+
+    #[OA\Get(
+        path: '/curriculum-vitaes/{id}/download',
+        summary: 'Download file Curriculum Vitae',
+        tags: ['Curriculum Vitae']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'File berhasil didownload'
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'File atau Curriculum Vitae tidak ditemukan'
+    )]
     public function download(Request $request, string $id)
     {
         $cv = CurriculumVitae::find($id);

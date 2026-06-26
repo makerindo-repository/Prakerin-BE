@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Http\Requests\HomePage\HomePageRequest;
 use App\Models\CommentPrakerin;
 use App\Models\Partner;
@@ -12,6 +13,17 @@ use Illuminate\Support\Facades\Auth;
 use Log;
 class HomepageController extends Controller
 {
+    #[OA\Get(
+    path: '/homepage',
+    summary: 'Get homepage data',
+    tags: ['Homepage'],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Homepage data retrieved successfully'
+        )
+    ]
+)]
     public function index()
     {
         $data = Hompage::where('name', 'LIKE', '%landing%')
@@ -72,6 +84,18 @@ class HomepageController extends Controller
         ], 200);
     }
 
+
+    #[OA\Get(
+    path: '/homepage/about',
+    summary: 'Get about page data',
+    tags: ['Homepage'],
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'About page retrieved successfully'
+        )
+    ]
+)]
     public function about()
     {
         $data = Hompage::where('name', 'LIKE', '%about%')->get();
@@ -81,6 +105,42 @@ class HomepageController extends Controller
     ], 200);
     }
 
+
+    #[OA\Put(
+    path: '/homepage',
+    summary: 'Update homepage content',
+    tags: ['Homepage'],
+    security: [['bearerAuth' => []]],
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['data'],
+            properties: [
+                new OA\Property(
+                    property: 'data',
+                    type: 'array',
+                    items: new OA\Items(
+                        properties: [
+                            new OA\Property(property: 'id', type: 'string'),
+                            new OA\Property(property: 'name', type: 'string'),
+                            new OA\Property(property: 'value', type: 'string')
+                        ]
+                    )
+                )
+            ]
+        )
+    ),
+    responses: [
+        new OA\Response(
+            response: 200,
+            description: 'Homepage updated successfully'
+        ),
+        new OA\Response(
+            response: 422,
+            description: 'Validation Error'
+        )
+    ]
+)]
     public function update(HomePageRequest $request)
     {
         $validated = $request->validated();

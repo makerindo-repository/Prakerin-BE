@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Models\GeneratedCv;
 use Gemini\Data\GenerationConfig;
 use Gemini\Data\Schema;
@@ -13,6 +14,44 @@ use Illuminate\Support\Facades\Log;
 
 class CvGeneratorController extends Controller
 {
+
+    #[OA\Post(
+        path: '/cv-generator',
+        summary: 'Generate Curriculum Vitae menggunakan AI Gemini',
+        description: 'Menghasilkan ringkasan CV profesional berdasarkan data profil pengguna menggunakan Google Gemini AI.',
+        tags: ['CV Generator']
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['profile_user'],
+            properties: [
+                new OA\Property(
+                    property: 'profile_user',
+                    type: 'object',
+                    description: 'Data profil pengguna'
+                ),
+                new OA\Property(
+                    property: 'prompt_user',
+                    type: 'string',
+                    nullable: true,
+                    description: 'Instruksi tambahan untuk AI'
+                )
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'CV berhasil dibuat oleh AI'
+    )]
+    #[OA\Response(
+        response: 422,
+        description: 'Validation Error'
+    )]
+    #[OA\Response(
+        response: 502,
+        description: 'Terjadi kesalahan saat menghubungi layanan Gemini AI'
+    )]
     public function generate(Request $request)
     {
         $validated = $request->validate([

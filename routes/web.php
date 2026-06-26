@@ -2,7 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
+Route::redirect('/', '/api/documentation');
+
+Route::get('/cv', function () {
     $data['data'] = json_decode(`{
     "summary": "Pengembang Frontend Senior dengan pengalaman luas dalam membangun dan memelihara aplikasi web yang scalable dan berkinerja tinggi. Berpengalaman dalam memimpin tim, berkolaborasi dengan berbagai departemen, dan memberikan solusi inovatif untuk meningkatkan pengalaman pengguna. Ahli dalam JavaScript, React.js, dan Next.js, serta memiliki pemahaman mendalam tentang praktik terbaik pengembangan web.",
     "work_experience": [

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use OpenApi\Attributes as OA;
 use App\Models\CommentPrakerin;
-use App\Models\CommnetPrakerin;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -15,6 +15,47 @@ class CommentPrakerinController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    #[OA\Post(
+        path: '/comment-prakerin',
+        summary: 'Menambahkan komentar prakerin',
+        tags: ['Comment Prakerin']
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(
+                required: ['photo_profile', 'name', 'position', 'comment'],
+                properties: [
+                    new OA\Property(
+                        property: 'photo_profile',
+                        type: 'string',
+                        format: 'binary'
+                    ),
+                    new OA\Property(
+                        property: 'name',
+                        type: 'string'
+                    ),
+                    new OA\Property(
+                        property: 'position',
+                        type: 'string'
+                    ),
+                    new OA\Property(
+                        property: 'comment',
+                        type: 'string'
+                    )
+                ]
+            )
+        )
+    )]
+    #[OA\Response(
+        response: 201,
+        description: 'Komentar berhasil ditambahkan'
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Validation Error'
+    )]
     public function store(Request $request)
     {
 
@@ -57,6 +98,53 @@ class CommentPrakerinController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    #[OA\Put(
+        path: '/comment-prakerin/{id}',
+        summary: 'Mengubah komentar prakerin',
+        tags: ['Comment Prakerin']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(
+                required: ['name', 'position', 'comment'],
+                properties: [
+                    new OA\Property(
+                        property: 'photo_profile',
+                        type: 'string',
+                        format: 'binary'
+                    ),
+                    new OA\Property(
+                        property: 'name',
+                        type: 'string'
+                    ),
+                    new OA\Property(
+                        property: 'position',
+                        type: 'string'
+                    ),
+                    new OA\Property(
+                        property: 'comment',
+                        type: 'string'
+                    )
+                ]
+            )
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Komentar berhasil diubah'
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Komentar tidak ditemukan atau validasi gagal'
+    )]
     public function update(Request $request, string $id)
     {
         $commentPrakerin = CommentPrakerin::find($id);
@@ -115,6 +203,25 @@ class CommentPrakerinController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    #[OA\Delete(
+        path: '/comment-prakerin/{id}',
+        summary: 'Menghapus komentar prakerin',
+        tags: ['Comment Prakerin']
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Komentar berhasil dihapus'
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Komentar tidak ditemukan'
+    )]
     public function destroy(string $id)
     {
         $commentPrakerin = CommentPrakerin::find($id);
