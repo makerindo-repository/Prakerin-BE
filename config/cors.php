@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['https://prakein.id','http://192.168.1.44:3000' , 'http://localhost:3000', env('APP_URL', 'http://localhost')],
+    'allowed_origins' => ['https://prakerin.id', 'http://192.168.1.44:3000', 'http://localhost:3000', env('APP_URL', 'http://localhost')],
 
     'allowed_origins_patterns' => [],
 
