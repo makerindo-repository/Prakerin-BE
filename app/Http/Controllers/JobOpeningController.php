@@ -396,10 +396,11 @@ class JobOpeningController extends Controller
             'field_id' => 'sometimes|required|exists:fields,id',
             'duration_id' => 'sometimes|required|exists:durations,id',
             'title' => 'sometimes|required|string|max:255',
-            'description' => 'sometimes|required|string',
+            'description' => 'sometimes|required',
             'is_paid' => 'sometimes|required|boolean',
             'grade' => 'sometimes|required|in:smk,mahasiswa,all',
-            'type' => 'sometimes|required|in:wfh,fulltime,hybrid',
+            'type' => 'sometimes|required|in:part_time,full_time',
+            'location'    => 'sometimes|required|in:onsite,remote,hybrid',
             'qouta' => 'sometimes|required|integer|min:1',
             'is_available' => 'sometimes|required|boolean'
         ]);
@@ -413,8 +414,12 @@ class JobOpeningController extends Controller
         $jobOpening->update($data);
         $jobOpening->save();
 
+        if ($request->has('tests')) {
+            $jobOpening->test()->sync($request->input('tests', []));
+        }
+
         return response()->json([
-            'data' => $jobOpening
+            'data' => $jobOpening->load('tests') 
         ]);
     }
 
@@ -456,7 +461,7 @@ class JobOpeningController extends Controller
         ], 200);
     }
 
-    
+
     #[OA\Get(
     path: "/api/job-openings/count",
     summary: "Count Job Opening",
