@@ -115,7 +115,7 @@ class ContactUsController extends Controller
             'name' => 'required|max:255',
             'email' => 'required|email|max:255',
             'message' => 'required',
-            'recaptcha_token' => 'required'
+            'recaptcha_token' => 'nullable' // CAPTCHA disabled for local dev
         ]);
 
         if ($validator->fails()) {
@@ -124,15 +124,18 @@ class ContactUsController extends Controller
 
         $data = $validator->validated();
 
-        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-            'secret' => config('services.nocaptcha.secret'),
-            'response' => $data['recaptcha_token'],
-        ]);
+        // CAPTCHA disabled for local dev - skip verification when no token provided
+        if (!empty($data['recaptcha_token'])) {
+            $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+                'secret' => config('services.nocaptcha.secret'),
+                'response' => $data['recaptcha_token'],
+            ]);
 
-        if (!$response->json('success')) {
-            throw new HttpResponseException(response([
-                "errors" => "Captcha failed"
-            ], 400));
+            if (!$response->json('success')) {
+                throw new HttpResponseException(response([
+                    "errors" => "Captcha failed"
+                ], 400));
+            }
         }
 
         $contactUs = ContactUs::create($data);

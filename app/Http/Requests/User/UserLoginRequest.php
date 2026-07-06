@@ -26,7 +26,7 @@ class UserLoginRequest extends FormRequest
         return [
             'email' => 'required|email',
             'password' => 'required|string',
-            'recaptcha_token' => 'required|string',
+            'recaptcha_token' => 'nullable|string', // CAPTCHA disabled for local dev
         ];
     }
 

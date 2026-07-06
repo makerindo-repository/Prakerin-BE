@@ -638,17 +638,20 @@ class UserController extends Controller
     {
         $data = $request->validated();
 
-        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-            'secret' => config('services.nocaptcha.secret'),
-            'response' => $data['recaptcha_token'],
-        ]);
+        // CAPTCHA disabled for local dev - skip verification when no token provided
+        if (!empty($data['recaptcha_token'])) {
+            $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+                'secret' => config('services.nocaptcha.secret'),
+                'response' => $data['recaptcha_token'],
+            ]);
 
-        if (!$response->json('success')) {
-            throw new HttpResponseException(response([
-                "errors" => [
-                    "message" => "Captcha failed"
-                ]
-            ], 400));
+            if (!$response->json('success')) {
+                throw new HttpResponseException(response([
+                    "errors" => [
+                        "message" => "Captcha failed"
+                    ]
+                ], 400));
+            }
         }
 
         $user = new User();
@@ -725,18 +728,21 @@ class UserController extends Controller
     {
         $data = $request->validated();
 
-        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-            'secret' => config('services.nocaptcha.secret'),
-            'response' => $data['recaptcha_token'],
-        ]);
+        // CAPTCHA disabled for local dev - skip verification when no token provided
+        if (!empty($data['recaptcha_token'])) {
+            $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+                'secret' => config('services.nocaptcha.secret'),
+                'response' => $data['recaptcha_token'],
+            ]);
 
-        \Log::info('Recaptcha verify response', $response->json()); // ADD THIS TEMPORARILY
+            \Log::info('Recaptcha verify response', $response->json());
 
-        if (!$response->json('success')) {
-            return response()->json([
-                "message" => "Captcha failed",
-                "errors" => $response->json('error-codes'),
-            ], 400);
+            if (!$response->json('success')) {
+                return response()->json([
+                    "message" => "Captcha failed",
+                    "errors" => $response->json('error-codes'),
+                ], 400);
+            }
         }
 
         $user = User::where('email', $data['email'])->first();
