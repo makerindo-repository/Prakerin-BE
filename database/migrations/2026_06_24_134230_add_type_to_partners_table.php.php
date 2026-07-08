@@ -13,7 +13,7 @@ return new class extends Migration {
         Schema::table('partners', function (Blueprint $table) {
             $table->enum('type', ['university', 'school', 'company'])
                   ->nullable()
-                  ->change();
+                  ->after('address');
         });
     }
 

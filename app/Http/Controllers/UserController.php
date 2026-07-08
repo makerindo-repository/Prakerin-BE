@@ -638,7 +638,7 @@ class UserController extends Controller
     {
         $data = $request->validated();
 
-        // CAPTCHA disabled for local dev - skip verification when no token provided
+        /* CAPTCHA disabled for local dev - skip verification when no token provided
         if (!empty($data['recaptcha_token'])) {
             $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
                 'secret' => config('services.nocaptcha.secret'),
@@ -653,6 +653,7 @@ class UserController extends Controller
                 ], 400));
             }
         }
+        */
 
         $user = new User();
         $user->username = $data['username'];
@@ -728,7 +729,7 @@ class UserController extends Controller
     {
         $data = $request->validated();
 
-        // CAPTCHA disabled for local dev - skip verification when no token provided
+        /* CAPTCHA disabled for local dev - skip verification when no token provided
         if (!empty($data['recaptcha_token'])) {
             $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
                 'secret' => config('services.nocaptcha.secret'),
@@ -744,6 +745,7 @@ class UserController extends Controller
                 ], 400);
             }
         }
+        */
 
         $user = User::where('email', $data['email'])->first();
 
@@ -851,6 +853,25 @@ class UserController extends Controller
 
         return response()->json([
             'data' => $user,
+        ], 200);
+    }
+
+    /**
+     * Get current authenticated user's roles and permissions.
+     * Used by the frontend to build the permission context after login.
+     *
+     * GET /api/v1/users/me/permissions
+     */
+    public function myPermissions(Request $request)
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'data' => [
+                'role'        => $user->role,
+                'roles'       => $user->getRoleNames(),
+                'permissions' => $user->getAllPermissions()->pluck('name'),
+            ],
         ], 200);
     }
 

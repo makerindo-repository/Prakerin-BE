@@ -124,7 +124,7 @@ class ContactUsController extends Controller
 
         $data = $validator->validated();
 
-        // CAPTCHA disabled for local dev - skip verification when no token provided
+        /* CAPTCHA disabled for local dev - skip verification when no token provided
         if (!empty($data['recaptcha_token'])) {
             $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
                 'secret' => config('services.nocaptcha.secret'),
@@ -137,6 +137,7 @@ class ContactUsController extends Controller
                 ], 400));
             }
         }
+        */
 
         $contactUs = ContactUs::create($data);
 

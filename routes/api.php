@@ -16,12 +16,13 @@ use App\Http\Controllers\FieldController;
 use App\Http\Controllers\InternshipApplicationController;
 use App\Http\Controllers\InternshipController;
 use App\Http\Controllers\JobOpeningController;
+use App\Http\Controllers\JobPositionController;
 use App\Http\Controllers\MajorController;
 use App\Http\Controllers\MouController;
 use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\ProvinceController;
 use App\Http\Controllers\ReportTaskController;
-use App\Http\Controllers\RoleController;
+use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\SaveJobOpeningController;
 use App\Http\Controllers\SectorController;
 use App\Http\Controllers\StudentController;
@@ -161,6 +162,7 @@ Route::prefix('v1')->group(function () {
             Route::middleware('auth:sanctum')->group(function () {
                 Route::post('/logout', 'logout');
                 Route::get('/profile', 'profile');
+                Route::get('/me/permissions', 'myPermissions'); // GET current user's roles & permissions
                 Route::patch('/profile', 'updateProfile');
                 Route::delete('/profile', 'deleteProfile');
                 Route::get('/count', 'count');
@@ -357,9 +359,9 @@ Route::prefix('v1')->group(function () {
         });
 
 
-    // Role
-    Route::prefix('roles')
-        ->controller(RoleController::class)
+    // Job Positions (job position catalog data for charts — formerly /roles)
+    Route::prefix('job-positions')
+        ->controller(JobPositionController::class)
         ->middleware('auth:sanctum')
         ->group(function () {
 
@@ -372,6 +374,16 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}', 'update');
                 Route::delete('/{id}', 'destroy');
             });
+        });
+
+    // System: RBAC Role & Permission Management (super_admin only)
+    Route::prefix('system')
+        ->controller(RolePermissionController::class)
+        ->middleware(['auth:sanctum', 'abilities:admin-access'])
+        ->group(function () {
+            Route::get('/roles', 'index');                                      // GET  all roles + their permissions
+            Route::get('/permissions', 'getAllPermissions');                    // GET  all available permissions
+            Route::put('/roles/{roleName}/permissions', 'updateRolePermissions'); // PUT  sync permissions to role
         });
 
     // Internship

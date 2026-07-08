@@ -37,6 +37,9 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
 
+        // Seed roles and permissions FIRST (so we can assign them to users below)
+        $this->call(RolePermissionSeeder::class);
+
         Province::factory(5)->create();
         CityRegency::factory(5)->create();
         Sector::factory(5)->create();
@@ -154,24 +157,30 @@ class DatabaseSeeder extends Seeder
         }
 
 
-        User::factory()->create([
-            'email' => 'superadmin@makerindo.id',
+        $superAdmin = User::factory()->create([
+            'email'    => 'superadmin@makerindo.id',
             'password' => Hash::make('rahasia123'),
-            'role' => 'super_admin',
+            'role'     => 'super_admin',
         ]);
+        $superAdmin->assignRole('super_admin');
 
         $school = User::factory()->create([
             'email' => 'superschool@makerindo.id',
-            'role' => 'school',
+            'role'  => 'school',
         ]);
+        $school->assignRole('school_admin');
+
         $student = User::factory()->create([
             'email' => 'superstudent@makerindo.id',
-            'role' => 'student',
+            'role'  => 'student',
         ]);
+        $student->assignRole('siswa');
+
         $company = User::factory()->create([
             'email' => 'supercompany@makerindo.id',
-            'role' => 'company',
+            'role'  => 'company',
         ]);
+        $company->assignRole('company_owner');
 
 
         $schoolId = School::factory()->create([
