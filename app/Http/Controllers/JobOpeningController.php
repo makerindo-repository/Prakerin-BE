@@ -127,6 +127,7 @@ class JobOpeningController extends Controller
                 })
                 ->where('title', 'like', "%{$search}%")
                 ->where('is_available', true)
+                ->where('closing_date', '>=', now()->toDateString())
                 ->when($grade, function ($query) use ($grade) {
                     $gradeArray = Arr::wrap($grade);
                     return $query->whereIn('grade', $gradeArray);

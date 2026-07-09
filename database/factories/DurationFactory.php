@@ -19,7 +19,7 @@ class DurationFactory extends Factory
         return [
             'duration_value' => $this->faker->numberBetween(1, 12),
             'duration_unit' => $this->faker->randomElement(['day', 'month', 'year']),
-            'is_accepted' => $this->faker->boolean(),
+            'is_accepted' => true,
         ];
     }
 }
