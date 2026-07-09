@@ -13,7 +13,7 @@ return new class extends Migration {
         Schema::create('internships', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('internship_application_id');
-            $table->uuid('role_id')->nullable();
+            $table->uuid('job_position_id')->nullable();
             $table->foreignUuid('student_id')->references('id')->on('students')->onDelete('cascade');
             $table->foreignUuid('company_id')->references('id')->on('companies')->onDelete('cascade');
 
@@ -22,7 +22,7 @@ return new class extends Migration {
             $table->boolean('is_completed')->default(false);
 
             $table->foreign('internship_application_id')->references('id')->on('internship_applications')->onDelete('cascade');
-            $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
+            $table->foreign('job_position_id')->references('id')->on('job_positions')->onDelete('set null');
 
             $table->timestamps();
         });

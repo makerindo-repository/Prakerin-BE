@@ -21,7 +21,7 @@ class Internship extends Model
         'start_date',
         'end_date',
         'is_completed',
-        'role',
+        'job_position_id',
         'student_id',
         'company_id',
     ];
@@ -61,9 +61,9 @@ class Internship extends Model
         ->withTimestamps();
 }
 
-    public function role()
+    public function jobPosition()
     {
-        return $this->belongsTo(Role::class);
+        return $this->belongsTo(JobPosition::class, 'job_position_id');
     }
 
 

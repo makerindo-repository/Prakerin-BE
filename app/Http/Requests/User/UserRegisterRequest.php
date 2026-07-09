@@ -29,7 +29,7 @@ class UserRegisterRequest extends FormRequest
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6|confirmed',
             'role' => 'required|in:student,school,company',
-            'recaptcha_token' => 'required',
+            'recaptcha_token' => 'nullable', // CAPTCHA disabled for local dev
             'name' => 'required|string|max:255',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'type' => 'required_if:role,school|in:university,school' //from required to required_if (student and company has no type)
