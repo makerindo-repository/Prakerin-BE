@@ -38,6 +38,7 @@ class HomepageController extends Controller
     'duration',
 ])
     ->where('is_available', true)
+    ->where('closing_date', '>=', now()->toDateString())
     ->orderBy('created_at', 'DESC')
     ->limit(6)
     ->get()
