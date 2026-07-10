@@ -163,8 +163,9 @@ class UserController extends Controller
                     $q->where('name', 'like', "%$search%");
                 });
             })
-            ->when($user?->tokenCan('admin-access'), function ($query) use ($role, $request, $isSchool) {
+            ->when($user?->tokenCan('admin-access'), function ($query) use ($role, $request) {
                 $schoolId = $request->query('school_id');
+                $schoolType = $request->query('school_type'); // 'school' or 'university'
                 $isVerified = $request->has('is_verified')
                     ? filter_var($request->query('is_verified'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
                     : null;
@@ -175,7 +176,7 @@ class UserController extends Controller
                         ->when($role === 'school', fn($q) => $q->whereHas('school'))
                         ->when($role === 'company', fn($q) => $q->whereHas('company'))
                         ->when($role === 'student', fn($q) => $q->whereHas('student'));
-            });
+                });
 
                 $query->when(
                     $role === 'student' && $schoolId,
@@ -183,6 +184,16 @@ class UserController extends Controller
                         $query->where('role', 'student');
                         $query->whereHas('student', function ($q) use ($schoolId) {
                             $q->where('school_id', $schoolId);
+                        });
+                    }
+                );
+
+                // Filter students by school type (school = SMK/Siswa, university = Mahasiswa)
+                $query->when(
+                    $role === 'student' && $schoolType,
+                    function ($query) use ($schoolType) {
+                        $query->whereHas('student.school', function ($q) use ($schoolType) {
+                            $q->where('type', $schoolType);
                         });
                     }
                 );
