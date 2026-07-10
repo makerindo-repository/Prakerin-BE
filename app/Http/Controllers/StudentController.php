@@ -6,6 +6,7 @@ use OpenApi\Attributes as OA;
 use App\Http\Requests\Student\StudentCreateRequest;
 use App\Http\Requests\Student\StudentUpdateRequest;
 use App\Models\ProfileImage;
+use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -165,6 +166,9 @@ class StudentController extends Controller
         $student->phone_number = $data['phone_number'] ?? null;
         $student->date_of_birth = $data['date_of_birth'] ?? null;
         $student->save();
+
+        $schoolType = School::find($student->school_id)?->type;
+        $user->syncSpatieRole($schoolType);
 
         return response()->json([
             'data' => $student->load(['user']),

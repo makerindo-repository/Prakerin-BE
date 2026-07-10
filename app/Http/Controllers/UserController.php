@@ -360,6 +360,8 @@ class UserController extends Controller
             $student->phone_number = $data['phone_number'] ?? null;
             $student->date_of_birth = $data['date_of_birth'] ?? null;
             $student->save();
+            $schoolType = School::find($student->school_id)?->type;
+            $user->syncSpatieRole($schoolType);
         } else if ($user->role === "school") {
             $school = new School();
             $school->name = $data['name'];
@@ -367,12 +369,14 @@ class UserController extends Controller
             $school->user_id = $user->id;
             $school->type = $data['type'];
             $school->save();
+            $user->syncSpatieRole($school->type);
         } else if ($user->role === "company") {
             $company = new Company();
             $company->name = $data['name'];
             $company->address = $data['address'];
             $company->user_id = $user->id;
             $company->save();
+            $user->syncSpatieRole();
         }
 
 
@@ -685,6 +689,8 @@ class UserController extends Controller
             $student->school_id = $data['school_id'];
             $student->user_id = $user->id;
             $student->save();
+            $schoolType = School::find($data['school_id'])?->type;
+            $user->syncSpatieRole($schoolType);
             $token = $user->createToken('Auth Token', ['student-access'])->plainTextToken;
         } else if ($user->role === "school") {
             $school = new School();
@@ -693,6 +699,7 @@ class UserController extends Controller
             $school->user_id = $user->id;
             $school->type = $data['type'];
             $school->save();
+            $user->syncSpatieRole($school->type);
             $token = $user->createToken('Auth Token', ['school-access'])->plainTextToken;
         } else if ($user->role === "company") {
             $company = new Company();
@@ -700,6 +707,7 @@ class UserController extends Controller
             $company->address = $data['address'];
             $company->user_id = $user->id;
             $company->save();
+            $user->syncSpatieRole();
             $token = $user->createToken('Auth Token', ['company-access'])->plainTextToken;
         }
 

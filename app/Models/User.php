@@ -19,6 +19,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public $incrementing = false;
     protected $keyType = 'string';
+    protected $guard_name = 'sanctum';
 
     protected $fillable = [
         'id',
@@ -49,6 +50,40 @@ class User extends Authenticatable implements MustVerifyEmail
     public function company()
     {
         return $this->hasOne(Company::class);
+    }
+
+    /**
+     * Map the legacy `role` column (+ school type where relevant) to the
+     * corresponding Spatie role name (guard 'sanctum').
+     *
+     * Mirrors the mapping used by database/seeders/RolePermissionSeeder.php,
+     * so any place that creates a User must call this + assignRole() to make
+     * sure the user actually receives whatever permissions super_admin has
+     * configured for that role.
+     */
+    public static function resolveSpatieRoleName(string $legacyRole, ?string $schoolType = null): ?string
+    {
+        return match ($legacyRole) {
+            'super_admin' => 'super_admin',
+            'company'     => 'company_owner',
+            'school'      => $schoolType === 'school' ? 'school_admin' : 'university_admin',
+            'student'     => $schoolType === 'school' ? 'siswa' : 'mahasiswa',
+            default       => null,
+        };
+    }
+
+    /**
+     * Assign the correct Spatie role to this user based on their legacy
+     * `role` column (+ school type where relevant). Safe to call multiple
+     * times (syncRoles replaces any previous role of this guard).
+     */
+    public function syncSpatieRole(?string $schoolType = null): void
+    {
+        $roleName = static::resolveSpatieRoleName($this->role, $schoolType);
+
+        if ($roleName) {
+            $this->syncRoles([$roleName]);
+        }
     }
 
     public function feedbacksGiven()
