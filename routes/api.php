@@ -323,7 +323,7 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{idInternshipApplication}/{idTest}', 'updateTestPassed');
                 Route::get('/{id}', 'show');
                 Route::patch('/{id}', 'update');
-                Route::delete('/{id}', 'delete');
+                Route::delete('/{id}', 'destroy');
             });
 
             Route::middleware('ability:student-access,company-access')->group(function () {

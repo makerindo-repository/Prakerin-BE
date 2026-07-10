@@ -166,31 +166,12 @@ class HomepageController extends Controller
 
         $data = $validated['data'];
 
-        // foreach ($data as $item) {
-        //     // Update berdasarkan id
-        //     Hompage::where('id', $item['id'])->update([
-        //         'name' => $item['name'],
-        //         'value' => $item['value'],
-        //     ]);
-        // }
-
-        $ids = array_column($data, 'id');
-
-        $valueCases = [];
         foreach ($data as $item) {
-            $valueCases[] = "WHEN '{$item['id']}' THEN '{$item['value']}'";
+            Hompage::where('id', $item['id'])->update([
+                'name' => $item['name'],
+                'value' => $item['value'],
+            ]);
         }
-
-        $valueCasesSql = implode(' ', $valueCases);
-        $idsSql = "'" . implode("','", $ids) . "'";
-
-        DB::statement("
-            UPDATE hompages
-            SET value = CASE id
-                $valueCasesSql
-            END
-            WHERE id IN ($idsSql)
-        ");
 
         return response()->json(['data' => true], 200);
     }
