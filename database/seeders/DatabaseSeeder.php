@@ -157,6 +157,7 @@ class DatabaseSeeder extends Seeder
         $durationsData = [
             ['duration_value' => 3, 'duration_unit' => 'month', 'is_accepted' => true],
             ['duration_value' => 6, 'duration_unit' => 'month', 'is_accepted' => true],
+            ['duration_value' => 9, 'duration_unit' => 'month', 'is_accepted' => true],
             ['duration_value' => 12, 'duration_unit' => 'month', 'is_accepted' => true],
         ];
         $durations = [];

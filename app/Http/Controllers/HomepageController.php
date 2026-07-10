@@ -7,6 +7,7 @@ use App\Http\Requests\HomePage\HomePageRequest;
 use App\Models\CommentPrakerin;
 use App\Models\Partner;
 use App\Models\JobOpening;
+use App\Models\Feedback;
 use DB;
 use App\Models\Hompage;
 use Illuminate\Support\Facades\Auth;
@@ -30,7 +31,23 @@ class HomepageController extends Controller
             ->orderBy('created_at', 'ASC')
             ->get();
         $partner = Partner::orderBy('created_at', 'ASC')->get();
-        $commentPrakerin = CommentPrakerin::orderBy('created_at', 'ASC')->get();
+                $commentPrakerin = CommentPrakerin::orderBy('created_at', 'ASC')->get();
+        $comments = Feedback::with(['fromUser.student', 'toUser.company'])
+            ->where('to_type', 'company')
+            ->orderBy('created_at', 'DESC')
+            ->limit(6)
+            ->get()
+            ->map(function ($feedback) {
+                return [
+                    'id' => $feedback->id,
+                    'student_name' => $feedback->fromUser?->student?->name ?? 'Student',
+                    'company_name' => $feedback->toUser?->company?->name ?? 'Company',
+                    'rating' => $feedback->rating,
+                    'text' => $feedback->text,
+                    'photo_profile' => $feedback->fromUser?->photo_profile,
+                    'created_at' => $feedback->created_at,
+                ];
+            });
         $jobOpenings = JobOpening::with([
     'company.user',
     'company.cityRegency.province',
@@ -80,6 +97,7 @@ class HomepageController extends Controller
                 'homepages' => $formatted,
                 'partners' => $partner,
                 'comment_prakerins' => $commentPrakerin,
+                'comments' => $comments,
                 'job_openings' => $jobOpenings
             ]
         ], 200);
