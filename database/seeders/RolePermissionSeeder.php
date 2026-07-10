@@ -72,9 +72,9 @@ class RolePermissionSeeder extends Seeder
             'view_data_industri', 'create_data_industri', 'edit_data_industri', 'delete_data_industri',
         ];
 
-        // Create all permissions
+        // Create all permissions — guard 'sanctum', karena semua route API pakai auth:sanctum
         foreach ($permissions as $permissionName) {
-            Permission::findOrCreate($permissionName, 'web');
+            Permission::findOrCreate($permissionName, 'sanctum');
         }
 
         // 2. Define roles and their default permission mappings
@@ -119,27 +119,35 @@ class RolePermissionSeeder extends Seeder
             'super_admin' => $permissions,
         ];
 
-        // Create roles and sync their permissions
+        // Create roles and sync their permissions — guard 'sanctum'
         foreach ($rolePermissions as $roleName => $perms) {
-            $role = Role::findOrCreate($roleName, 'web');
+            $role = Role::findOrCreate($roleName, 'sanctum');
             $role->syncPermissions($perms);
         }
 
         // 3. Map legacy string roles to Spatie roles and assign to existing users
-        $legacyRoleMap = [
-            'super_admin' => 'super_admin',
-            'school'      => 'school_admin',
-            'student'     => 'siswa',
-            'company'     => 'company_owner',
-        ];
+        // (guard 'sanctum' di-pass eksplisit karena dari CLI/seeder tidak ada
+        // request HTTP yang men-switch default guard lewat middleware auth:sanctum)
+        $users = User::with(['school', 'student.school'])->get();
 
-        $users = User::all();
         foreach ($users as $user) {
-            if ($user->role && isset($legacyRoleMap[$user->role])) {
-                $spatieRole = $legacyRoleMap[$user->role];
-                if (!$user->hasRole($spatieRole)) {
-                    $user->assignRole($spatieRole);
-                }
+            if (!$user->role) continue;
+
+            $spatieRoleName = match ($user->role) {
+                'super_admin' => 'super_admin',
+                'company'     => 'company_owner',
+                'school'      => $user->school?->type === 'school' ? 'school_admin' : 'university_admin',
+                'student'     => $user->student?->school?->type === 'school' ? 'siswa' : 'mahasiswa',
+                default       => null,
+            };
+
+            if (!$spatieRoleName) {
+                continue;
+            }
+
+            if (!$user->hasRole($spatieRoleName, 'sanctum')) {
+                $role = Role::findByName($spatieRoleName, 'sanctum');
+                $user->assignRole($role);
             }
         }
     }
