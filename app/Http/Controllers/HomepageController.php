@@ -8,9 +8,13 @@ use App\Models\CommentPrakerin;
 use App\Models\Partner;
 use App\Models\JobOpening;
 use App\Models\Feedback;
+use App\Models\Student;
+use App\Models\School;
+use App\Models\Company;
 use DB;
 use App\Models\Hompage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Log;
 class HomepageController extends Controller
 {
@@ -92,13 +96,51 @@ class HomepageController extends Controller
         }
 
 
+        // Real traction stats for the landing page (cached 10 minutes).
+        $stats = Cache::remember('landing_stats', now()->addMinutes(10), function () {
+            $today = now()->toDateString();
+
+            return [
+                'schools'      => (int) School::where('type', 'school')->count(),
+                'universities' => (int) School::where('type', 'university')->count(),
+                'students'     => (int) Student::join('schools', 'students.school_id', '=', 'schools.id')
+                    ->where('schools.type', 'school')->count(),
+                'university_students' => (int) Student::join('schools', 'students.school_id', '=', 'schools.id')
+                    ->where('schools.type', 'university')->count(),
+                'companies'    => (int) Company::count(),
+                'partners'     => (int) Partner::count(),
+                'active_jobs'  => (int) JobOpening::where('is_available', true)
+                    ->whereDate('closing_date', '>=', $today)->count(),
+            ];
+        });
+
+        // Most-demanded internship categories (top fields by active openings).
+        $popularCategories = Cache::remember('landing_categories', now()->addMinutes(10), function () {
+            return JobOpening::select('field_id', DB::raw('COUNT(*) as total'))
+                ->where('is_available', true)
+                ->whereNotNull('field_id')
+                ->groupBy('field_id')
+                ->orderByDesc('total')
+                ->with('field:id,name')
+                ->limit(6)
+                ->get()
+                ->map(fn ($row) => [
+                    'id'    => $row->field_id,
+                    'name'  => $row->field?->name ?? 'Lainnya',
+                    'total' => (int) $row->total,
+                ])
+                ->values();
+        });
+
         return response()->json([
             'data' => [
                 'homepages' => $formatted,
                 'partners' => $partner,
                 'comment_prakerins' => $commentPrakerin,
                 'comments' => $comments,
-                'job_openings' => $jobOpenings
+                'job_openings' => $jobOpenings,
+                'stats' => $stats,
+                'popular_categories' => $popularCategories,
             ]
         ], 200);
     }
