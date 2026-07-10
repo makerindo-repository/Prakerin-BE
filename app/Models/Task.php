@@ -35,10 +35,6 @@ class Task extends Model
         return $this->belongsTo(Internship::class);
     }
 
-    public function reports()
-    {
-        return $this->hasMany(Report::class);
-    }
 
     public function reportTasks()
     {

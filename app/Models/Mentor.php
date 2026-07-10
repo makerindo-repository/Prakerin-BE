@@ -2,28 +2,21 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class Report extends Model
+class Mentor extends Model
 {
-    use HasFactory;
-
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
         'id',
-        'type',
-        'data',
-        'generated_at',
-        'generated_by_id',
-    ];
-
-    protected $casts = [
-        'data' => 'array',
-        'generated_at' => 'datetime',
+        'user_id',
+        'expertise',
+        'bio',
+        'phone',
+        'availability',
     ];
 
     protected static function booted()
@@ -35,8 +28,13 @@ class Report extends Model
         });
     }
 
-    public function generatedBy()
+    public function user()
     {
-        return $this->belongsTo(User::class, 'generated_by_id');
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function assignments()
+    {
+        return $this->hasMany(MentorAssignment::class, 'mentor_id');
     }
 }

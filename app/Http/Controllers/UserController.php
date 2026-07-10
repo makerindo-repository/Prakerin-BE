@@ -12,6 +12,7 @@ use App\Models\Mou;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
+use App\Models\ActivityLog;
 use Auth;
 use DB;
 use Http;
@@ -352,6 +353,12 @@ class UserController extends Controller
                 $student->school_id = $data['school_id'];
             }
             $student->user_id = $user->id;
+            $student->class = $data['class'] ?? null;
+            $student->major_id = $data['major_id'] ?? null;
+            $student->gender = $data['gender'] ?? null;
+            $student->address = $data['address'] ?? null;
+            $student->phone_number = $data['phone_number'] ?? null;
+            $student->date_of_birth = $data['date_of_birth'] ?? null;
             $student->save();
         } else if ($user->role === "school") {
             $school = new School();
@@ -778,9 +785,18 @@ class UserController extends Controller
             ], 500));
         }
 
-        // Update last login timestamp ADD: removed due to causing error, there is no last_login_at column at any tables?
-       // $user->last_login_at = now();
         $user->save();
+
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'login',
+            'resource_type' => 'User',
+            'resource_id' => $user->id,
+            'resource_name' => $user->username,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'description' => "User logged in: " . $user->username,
+        ]);
 
         return response()->json(['token' => $token, 'role' => $user->role, 'is_verified' => $isVerified], 200);
     }
@@ -797,7 +813,20 @@ class UserController extends Controller
  */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        if ($user) {
+            ActivityLog::create([
+                'user_id' => $user->id,
+                'action' => 'logout',
+                'resource_type' => 'User',
+                'resource_id' => $user->id,
+                'resource_name' => $user->username,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'description' => "User logged out: " . $user->username,
+            ]);
+            $user->currentAccessToken()->delete();
+        }
         return response()->json(['message' => 'Logout success'], 200);
     }
 

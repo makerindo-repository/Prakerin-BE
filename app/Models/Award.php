@@ -5,25 +5,29 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use App\Traits\LogsActivity;
 
-class Report extends Model
+class Award extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
         'id',
-        'type',
-        'data',
-        'generated_at',
-        'generated_by_id',
+        'name',
+        'description',
+        'icon',
+        'category',
+        'point_value',
+        'is_active',
+        'created_by_id',
     ];
 
     protected $casts = [
-        'data' => 'array',
-        'generated_at' => 'datetime',
+        'is_active' => 'boolean',
+        'point_value' => 'integer',
     ];
 
     protected static function booted()
@@ -35,8 +39,13 @@ class Report extends Model
         });
     }
 
-    public function generatedBy()
+    public function createdBy()
     {
-        return $this->belongsTo(User::class, 'generated_by_id');
+        return $this->belongsTo(User::class, 'created_by_id');
+    }
+
+    public function studentAwards()
+    {
+        return $this->hasMany(StudentAward::class, 'award_id');
     }
 }

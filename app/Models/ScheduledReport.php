@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class Report extends Model
+class ScheduledReport extends Model
 {
     use HasFactory;
 
@@ -15,15 +15,18 @@ class Report extends Model
 
     protected $fillable = [
         'id',
+        'created_by_id',
         'type',
-        'data',
-        'generated_at',
-        'generated_by_id',
+        'frequency',
+        'email_recipients',
+        'last_sent_at',
+        'is_active',
     ];
 
     protected $casts = [
-        'data' => 'array',
-        'generated_at' => 'datetime',
+        'email_recipients' => 'array',
+        'last_sent_at' => 'datetime',
+        'is_active' => 'boolean',
     ];
 
     protected static function booted()
@@ -35,8 +38,8 @@ class Report extends Model
         });
     }
 
-    public function generatedBy()
+    public function createdBy()
     {
-        return $this->belongsTo(User::class, 'generated_by_id');
+        return $this->belongsTo(User::class, 'created_by_id');
     }
 }

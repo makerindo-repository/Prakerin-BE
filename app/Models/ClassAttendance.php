@@ -2,28 +2,26 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class Report extends Model
+class ClassAttendance extends Model
 {
-    use HasFactory;
-
     public $incrementing = false;
     protected $keyType = 'string';
+    protected $table = 'class_attendance';
 
     protected $fillable = [
         'id',
-        'type',
-        'data',
-        'generated_at',
-        'generated_by_id',
+        'enrollment_id',
+        'session_date',
+        'present',
+        'notes',
     ];
 
     protected $casts = [
-        'data' => 'array',
-        'generated_at' => 'datetime',
+        'session_date' => 'datetime',
+        'present' => 'boolean',
     ];
 
     protected static function booted()
@@ -35,8 +33,8 @@ class Report extends Model
         });
     }
 
-    public function generatedBy()
+    public function enrollment()
     {
-        return $this->belongsTo(User::class, 'generated_by_id');
+        return $this->belongsTo(PreInternshipEnrollment::class, 'enrollment_id');
     }
 }

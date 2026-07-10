@@ -25,9 +25,12 @@ class StudentUpdateRequest extends FormRequest
     {
         $rules = [
             'name' => 'string|max:255|nullable',
-            'date_of_birth' => 'date|nullable',
+            'date_of_birth' => 'date_format:Y-m-d|nullable',
             'gender' => 'in:male,female|nullable',
             'address' => 'string|nullable',
+            'phone_number' => 'string|max:20|nullable',
+            'class' => 'in:10,11,12,collage|nullable',
+            'major_id' => 'max:36|exists:majors,id|nullable',
             'image' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048|nullable',
         ];
 

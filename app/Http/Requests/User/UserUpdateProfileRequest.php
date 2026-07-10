@@ -64,7 +64,9 @@ class UserUpdateProfileRequest extends FormRequest
 
     private function addConditionalRule(&$rules)
     {
-        $role = $this->user()->role;
+        $userId = $this->route('id') ?? $this->user()->id;
+        $targetUser = \App\Models\User::find($userId);
+        $role = $targetUser ? $targetUser->role : $this->user()->role;
 
         $rules['name'] = 'nullable|string|max:255';
         $rules['address'] = 'nullable|string';

@@ -2,28 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class Report extends Model
+class ContactReply extends Model
 {
-    use HasFactory;
-
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
         'id',
-        'type',
-        'data',
-        'generated_at',
-        'generated_by_id',
-    ];
-
-    protected $casts = [
-        'data' => 'array',
-        'generated_at' => 'datetime',
+        'contact_message_id',
+        'replied_by_id',
+        'reply_message',
     ];
 
     protected static function booted()
@@ -35,8 +26,13 @@ class Report extends Model
         });
     }
 
-    public function generatedBy()
+    public function contactMessage()
     {
-        return $this->belongsTo(User::class, 'generated_by_id');
+        return $this->belongsTo(ContactMessage::class);
+    }
+
+    public function repliedBy()
+    {
+        return $this->belongsTo(User::class, 'replied_by_id');
     }
 }

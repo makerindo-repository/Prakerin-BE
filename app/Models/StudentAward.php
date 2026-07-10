@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class Report extends Model
+class StudentAward extends Model
 {
     use HasFactory;
 
@@ -15,15 +15,17 @@ class Report extends Model
 
     protected $fillable = [
         'id',
-        'type',
-        'data',
-        'generated_at',
-        'generated_by_id',
+        'student_id',
+        'award_id',
+        'reason',
+        'awarded_at',
+        'awarded_by_id',
+        'is_public',
     ];
 
     protected $casts = [
-        'data' => 'array',
-        'generated_at' => 'datetime',
+        'awarded_at' => 'datetime',
+        'is_public' => 'boolean',
     ];
 
     protected static function booted()
@@ -35,8 +37,18 @@ class Report extends Model
         });
     }
 
-    public function generatedBy()
+    public function student()
     {
-        return $this->belongsTo(User::class, 'generated_by_id');
+        return $this->belongsTo(User::class, 'student_id');
+    }
+
+    public function award()
+    {
+        return $this->belongsTo(Award::class, 'award_id');
+    }
+
+    public function awardedBy()
+    {
+        return $this->belongsTo(User::class, 'awarded_by_id');
     }
 }

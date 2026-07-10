@@ -16,27 +16,49 @@ return new class extends Migration {
 
         Schema::disableForeignKeyConstraints();
 
-        DB::statement('
-    CREATE TABLE mous_new (
-        id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL PRIMARY KEY,
-        company_id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-        school_id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-        message TEXT NOT NULL,
-        reason TEXT NULL,
-        file VARCHAR(255) NOT NULL,
-        start_date DATE NOT NULL,
-        end_date DATE NOT NULL,
-       	status ENUM("pending", "accepted", "rejected") NOT NULL DEFAULT "pending",
-        is_company_accepted BOOLEAN NULL,
-        is_school_accepted BOOLEAN NULL,
-        created_at DATETIME NULL,
-        updated_at DATETIME NULL,
-        FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
-        FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB
-    DEFAULT CHARSET=utf8mb4
-    COLLATE=utf8mb4_unicode_ci
-');
+        if (DB::getDriverName() === 'sqlite') {
+            DB::statement('
+                CREATE TABLE mous_new (
+                    id CHAR(36) NOT NULL PRIMARY KEY,
+                    company_id CHAR(36) NOT NULL,
+                    school_id CHAR(36) NOT NULL,
+                    message TEXT NOT NULL,
+                    reason TEXT NULL,
+                    file VARCHAR(255) NOT NULL,
+                    start_date DATE NOT NULL,
+                    end_date DATE NOT NULL,
+                    status VARCHAR(255) NOT NULL DEFAULT "pending",
+                    is_company_accepted BOOLEAN NULL,
+                    is_school_accepted BOOLEAN NULL,
+                    created_at DATETIME NULL,
+                    updated_at DATETIME NULL,
+                    FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+                    FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
+                )
+            ');
+        } else {
+            DB::statement('
+                CREATE TABLE mous_new (
+                    id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL PRIMARY KEY,
+                    company_id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+                    school_id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+                    message TEXT NOT NULL,
+                    reason TEXT NULL,
+                    file VARCHAR(255) NOT NULL,
+                    start_date DATE NOT NULL,
+                    end_date DATE NOT NULL,
+                    status ENUM("pending", "accepted", "rejected") NOT NULL DEFAULT "pending",
+                    is_company_accepted BOOLEAN NULL,
+                    is_school_accepted BOOLEAN NULL,
+                    created_at DATETIME NULL,
+                    updated_at DATETIME NULL,
+                    FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+                    FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB
+                DEFAULT CHARSET=utf8mb4
+                COLLATE=utf8mb4_unicode_ci
+            ');
+        }
 
         // Copy data lama ke tabel baru.
         // TRIM() untuk bersihkan spasi nyasar dari data yang mungkin sudah keburu

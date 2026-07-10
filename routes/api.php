@@ -31,6 +31,13 @@ use App\Http\Controllers\TestController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\HomepageController;
 use App\Http\Controllers\PdfController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\AwardController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\GuideController;
+use App\Http\Controllers\PreInternshipClassController;
+use App\Http\Controllers\MentorController;
 use Illuminate\Support\Facades\Route;
 
 // Route::get('/docs', function () {
@@ -147,6 +154,97 @@ Route::prefix('v1')->group(function () {
                 });
             });
         });
+
+    // Contacts (Hubungi Kami)
+    Route::prefix('/contacts')
+        ->controller(ContactController::class)
+        ->group(function () {
+            Route::post('/', 'store');
+            Route::get('/user/{email}', 'checkReplies');
+            
+            Route::middleware('auth:sanctum')->group(function () {
+                Route::middleware('abilities:admin-access')->group(function () {
+                    Route::get('/', 'index');
+                    Route::get('/{id}', 'show');
+                    Route::post('/{id}/reply', 'reply');
+                });
+            });
+        });
+
+    // Guides (Panduan)
+    Route::prefix('/guides')
+        ->controller(GuideController::class)
+        ->group(function () {
+            Route::get('/', 'index');
+            Route::get('/{id}', 'show');
+            
+            Route::middleware('auth:sanctum')->group(function () {
+                Route::middleware('abilities:admin-access')->group(function () {
+                    Route::post('/', 'store');
+                    Route::get('/admin/all', 'adminAll');
+                    Route::patch('/{id}', 'update');
+                    Route::delete('/{id}', 'destroy');
+                });
+            });
+        });
+
+    // Pre-Internship Classes (Kelas Pra Magang)
+    Route::prefix('/pre-internship-classes')
+        ->controller(PreInternshipClassController::class)
+        ->group(function () {
+            Route::get('/', 'index');
+            
+            Route::middleware('auth:sanctum')->group(function () {
+                Route::post('/', 'store');
+                Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+                Route::post('/{id}/enroll', 'enroll');
+                Route::get('/{id}/enrollments', 'classEnrollments');
+            });
+        });
+
+    Route::prefix('/pre-internship-enrollments')
+        ->controller(PreInternshipClassController::class)
+        ->group(function () {
+            Route::middleware('auth:sanctum')->group(function () {
+                Route::delete('/{id}', 'drop');
+                Route::get('/{id}/attendance', 'attendanceRecord');
+            });
+        });
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/my-pre-internship-classes', [PreInternshipClassController::class, 'myClasses']);
+        Route::post('/class-attendance', [PreInternshipClassController::class, 'markAttendance']);
+    });
+
+    // Mentors (Guru Pembimbing)
+    Route::prefix('/mentors')
+        ->controller(MentorController::class)
+        ->group(function () {
+            Route::get('/', 'index');
+            Route::get('/candidates', 'candidates');
+            Route::get('/{id}', 'show');
+            
+            Route::middleware('auth:sanctum')->group(function () {
+                Route::post('/', 'store');
+                Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+            });
+        });
+
+    Route::prefix('/mentor-assignments')
+        ->controller(MentorController::class)
+        ->group(function () {
+            Route::middleware('auth:sanctum')->group(function () {
+                Route::post('/', 'assign');
+                Route::get('/', 'assignments');
+                Route::patch('/{id}/end', 'endAssignment');
+            });
+        });
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/my-mentor', [MentorController::class, 'myMentor']);
+    });
 
 
 
@@ -470,5 +568,58 @@ Route::prefix('v1')->group(function () {
 
         Route::apiResource('students', StudentController::class);
         Route::apiResource('companies', CompanyController::class)->except(['store', 'update', 'destroy']);
+
+        // P2 Reports
+        Route::prefix('reports')->controller(ReportController::class)->group(function () {
+            Route::middleware('abilities:admin-access')->group(function () {
+                Route::get('/internship-stats', 'internshipStats');
+                Route::get('/student-progress', 'studentProgress');
+                Route::get('/company-performance', 'companyPerformance');
+                Route::post('/export', 'export');
+            });
+        });
+
+        // P2 Scheduled Reports
+        Route::prefix('scheduled-reports')->controller(ReportController::class)->group(function () {
+            Route::middleware('abilities:admin-access')->group(function () {
+                Route::get('/', 'listScheduledReports');
+                Route::post('/', 'storeScheduledReport');
+                Route::patch('/{id}', 'updateScheduledReport');
+                Route::delete('/{id}', 'deleteScheduledReport');
+                Route::post('/{id}/run-now', 'runScheduledReport');
+            });
+        });
+
+        // P2 Activity Logs
+        Route::prefix('activity-logs')->controller(ActivityLogController::class)->group(function () {
+            Route::middleware('abilities:admin-access')->group(function () {
+                Route::get('/', 'index');
+                Route::get('/stats', 'stats');
+            });
+        });
+
+        // P2 Awards & Student Awards
+        Route::prefix('awards')->controller(AwardController::class)->group(function () {
+            Route::middleware('abilities:admin-access')->group(function () {
+                Route::post('/', 'store');
+                Route::get('/', 'index');
+                Route::patch('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+            });
+        });
+
+        Route::prefix('student-awards')->controller(AwardController::class)->group(function () {
+            Route::middleware('abilities:admin-access')->group(function () {
+                Route::post('/', 'assign');
+                Route::delete('/{id}', 'removeAssignment');
+            });
+        });
     });
+
+    // Public P2 routes (outside auth:sanctum)
+    Route::get('/awards/leaderboard', [AwardController::class, 'leaderboard']);
+    Route::get('/awards/{id}', [AwardController::class, 'show']);
+    Route::get('/students/{studentId}/awards', [AwardController::class, 'studentAwards']);
+    Route::get('/student-awards/{id}/certificate', [AwardController::class, 'printCertificate']);
 });
+

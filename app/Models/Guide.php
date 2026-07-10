@@ -2,28 +2,26 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class Report extends Model
+class Guide extends Model
 {
-    use HasFactory;
-
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
         'id',
         'type',
-        'data',
-        'generated_at',
-        'generated_by_id',
+        'title',
+        'description',
+        'file_path',
+        'is_published',
+        'uploaded_by',
     ];
 
     protected $casts = [
-        'data' => 'array',
-        'generated_at' => 'datetime',
+        'is_published' => 'boolean',
     ];
 
     protected static function booted()
@@ -35,8 +33,8 @@ class Report extends Model
         });
     }
 
-    public function generatedBy()
+    public function uploadedBy()
     {
-        return $this->belongsTo(User::class, 'generated_by_id');
+        return $this->belongsTo(User::class, 'uploaded_by');
     }
 }

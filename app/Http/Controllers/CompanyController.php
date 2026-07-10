@@ -40,7 +40,7 @@ class CompanyController extends Controller
     {
         $limit = request()->query('limit', 10);
         $search = request()->query('search', '');
-        $companies = Company::where('name', 'like', "%$search%")->with(['user.profileImage'])->paginate($limit);
+        $companies = Company::where('name', 'like', "%$search%")->with(['user'])->paginate($limit);
 
         return response()->json(
             $companies,
@@ -92,7 +92,7 @@ class CompanyController extends Controller
 
         // return response()->json(['data' => $company->user->load('company.internships')], 200);
 
-        $company = Company::with(['user.profileImage', 'internships'])->find($id);
+        $company = Company::with(['user', 'internships'])->find($id);
         return response()->json(['data' => $company], 200);
     }
 

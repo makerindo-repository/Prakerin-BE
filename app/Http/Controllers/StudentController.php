@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class StudentController extends Controller
 {
@@ -137,12 +138,12 @@ class StudentController extends Controller
         $user->username = $data['username'];
         $user->email = $data['email'];
         $user->role = 'student';
-        $user->password = Hash::make($data['password']);
+        $user->password = $data['password'];
 
         if ($request->file('image')) {
             $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
             $user->photo_profile = $filename;
-            $request->file('image')->storeAs('profile', $filename);
+            $request->file('image')->storeAs('photo-profile', $filename, 'public');
         }
         $user->save();
 
@@ -157,10 +158,16 @@ class StudentController extends Controller
             $student->school_id = $data['school_id'];
         }
         $student->user_id = $user->id;
+        $student->class = $data['class'] ?? null;
+        $student->major_id = $data['major_id'] ?? null;
+        $student->gender = $data['gender'] ?? null;
+        $student->address = $data['address'] ?? null;
+        $student->phone_number = $data['phone_number'] ?? null;
+        $student->date_of_birth = $data['date_of_birth'] ?? null;
         $student->save();
 
         return response()->json([
-            'data' => $student->load(['user.profileImage']),
+            'data' => $student->load(['user']),
         ], 201);
 
     }
@@ -198,7 +205,7 @@ class StudentController extends Controller
 )]
     public function show(string $id, Request $request)
     {
-        $student = Student::with(['user.profileImage'])->find($id);
+        $student = Student::with(['user'])->find($id);
 
         if (!$student) {
             throw new HttpResponseException(response([
@@ -206,7 +213,7 @@ class StudentController extends Controller
             ], 404));
         }
 
-        if ($request->user()->tokenCan('school:access') && $student->school_id !== $request->user()->school->id) {
+        if ($request->user()->tokenCan('school-access') && $student->school_id !== $request->user()->school->id) {
             throw new HttpResponseException(response([
                 "errors" => "Forbidden."
             ], 403));
@@ -269,7 +276,7 @@ class StudentController extends Controller
         )
     ]
 )]
-    public function update(int $id, StudentUpdateRequest $request, )
+    public function update(string $id, StudentUpdateRequest $request)
     {
         $student = Student::find($id);
 
@@ -279,18 +286,39 @@ class StudentController extends Controller
             ], 404));
         }
 
-
         $data = $request->validated();
 
+        $student->name = $data['name'] ?? $student->name;
+        $student->date_of_birth = $data['date_of_birth'] ?? $student->date_of_birth;
+        $student->gender = $data['gender'] ?? $student->gender;
+        $student->address = $data['address'] ?? $student->address;
+        $student->phone_number = $data['phone_number'] ?? $student->phone_number;
+        $student->class = $data['class'] ?? $student->class;
+        $student->major_id = $data['major_id'] ?? $student->major_id;
+
+        if ($request->user()->role === 'super_admin' && isset($data['school_id'])) {
+            $student->school_id = $data['school_id'];
+        }
+
+        $student->save();
+
+        if ($request->file('image')) {
+            $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
+            $user = $student->user;
+            
+            if ($user->photo_profile && Storage::disk('public')->exists("photo-profile/{$user->photo_profile}")) {
+                Storage::disk('public')->delete("photo-profile/{$user->photo_profile}");
+            }
+            
+            $user->photo_profile = $filename;
+            $request->file('image')->storeAs('photo-profile', $filename, 'public');
+            $user->save();
+        }
 
         return response()->json([
             'message' => 'Student updated successfully',
-            'a' => $request,
-            'data' => $data,
-            'w' => $student
+            'data' => $student->load(['user']),
         ], 200);
-
-
     }
 
     /**
@@ -320,7 +348,7 @@ class StudentController extends Controller
         )
     ]
 )]
-    public function destroy(int $id)
+    public function destroy(string $id)
     {
         $student = Student::find($id);
 
@@ -330,7 +358,11 @@ class StudentController extends Controller
             ], 404));
         }
 
+        $user = $student->user;
         $student->delete();
+        if ($user) {
+            $user->delete();
+        }
 
         return response()->json([
             'message' => 'OK',
