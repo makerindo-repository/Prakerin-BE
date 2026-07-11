@@ -96,21 +96,31 @@ class HomepageController extends Controller
         }
 
 
-        // Real traction stats for the landing page (cached 10 minutes).
-        $stats = Cache::remember('landing_stats', now()->addMinutes(10), function () {
+        // Real, near-real-time traction stats for the landing page (cached 60s).
+        $stats = Cache::remember('landing_stats', now()->addSeconds(60), function () {
             $today = now()->toDateString();
 
+            $siswa = (int) Student::join('schools', 'students.school_id', '=', 'schools.id')
+                ->where('schools.type', 'school')->count();
+            $mahasiswa = (int) Student::join('schools', 'students.school_id', '=', 'schools.id')
+                ->where('schools.type', 'university')->count();
+
+            $totalStudents = (int) Student::count();
+            $placed = (int) Student::whereIn('status', ['ongoing', 'completed'])->count();
+            $placementRate = $totalStudents > 0 ? round($placed / $totalStudents * 100, 1) : 0;
+
             return [
-                'schools'      => (int) School::where('type', 'school')->count(),
-                'universities' => (int) School::where('type', 'university')->count(),
-                'students'     => (int) Student::join('schools', 'students.school_id', '=', 'schools.id')
-                    ->where('schools.type', 'school')->count(),
-                'university_students' => (int) Student::join('schools', 'students.school_id', '=', 'schools.id')
-                    ->where('schools.type', 'university')->count(),
-                'companies'    => (int) Company::count(),
-                'partners'     => (int) Partner::count(),
-                'active_jobs'  => (int) JobOpening::where('is_available', true)
+                'schools'             => (int) School::where('type', 'school')->count(),
+                'universities'        => (int) School::where('type', 'university')->count(),
+                'students'            => $siswa,
+                'university_students' => $mahasiswa,
+                'total_students'      => $totalStudents,
+                'companies'           => (int) Company::count(),
+                'partners'            => (int) Partner::count(),
+                'active_jobs'         => (int) JobOpening::where('is_available', true)
                     ->whereDate('closing_date', '>=', $today)->count(),
+                'new_jobs_month'      => (int) JobOpening::where('created_at', '>=', now()->subDays(30))->count(),
+                'placement_rate'      => $placementRate,
             ];
         });
 
