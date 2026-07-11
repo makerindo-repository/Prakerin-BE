@@ -52,7 +52,16 @@ class AiAnalyticsController extends Controller
                             $descriptionText .= ($block['data']['text'] ?? '') . "\n";
                         } elseif ($block['type'] === 'list') {
                             foreach ($block['data']['items'] ?? [] as $item) {
-                                $itemText = is_array($item) ? ($item['content'] ?? json_encode($item)) : (string)$item;
+                                $itemText = "";
+                                if (is_array($item)) {
+                                    if (isset($item['content'])) {
+                                        $itemText = is_array($item['content']) ? json_encode($item['content']) : (string)$item['content'];
+                                    } else {
+                                        $itemText = json_encode($item);
+                                    }
+                                } else {
+                                    $itemText = (string)$item;
+                                }
                                 $descriptionText .= "- " . $itemText . "\n";
                             }
                         }
@@ -131,9 +140,9 @@ Skema JSON yang harus Anda hasilkan wajib memiliki properti berikut:
             required: ['profile_summary', 'recommendations', 'improvement_suggestions']
         );
 
-        // 6. Call Gemini (with automatic fallback to gemini-1.5-flash on quota/limit errors)
+        // 6. Call Gemini (with automatic fallback to gemini-3.1-flash-lite on quota/limit errors)
         try {
-            $result = Gemini::generativeModel("gemini-2.0-flash")->withGenerationConfig(
+            $result = Gemini::generativeModel("gemini-3.5-flash")->withGenerationConfig(
                 generationConfig: new GenerationConfig(
                     responseMimeType: ResponseMimeType::APPLICATION_JSON,
                     responseSchema: $schema
@@ -150,9 +159,9 @@ Skema JSON yang harus Anda hasilkan wajib memiliki properti berikut:
         } catch (\Throwable $e) {
             $errMessage = $e->getMessage();
             if (str_contains(strtolower($errMessage), 'quota') || str_contains(strtolower($errMessage), 'limit')) {
-                Log::info('Gemini 2.0 Flash limit exceeded or restricted. Falling back to Gemini 1.5 Flash.');
+                Log::info('Gemini 3.5 Flash limit exceeded or restricted. Falling back to Gemini 3.1 Flash Lite.');
                 try {
-                    $result = Gemini::generativeModel("gemini-1.5-flash")->withGenerationConfig(
+                    $result = Gemini::generativeModel("gemini-3.1-flash-lite")->withGenerationConfig(
                         generationConfig: new GenerationConfig(
                             responseMimeType: ResponseMimeType::APPLICATION_JSON,
                             responseSchema: $schema
@@ -167,16 +176,16 @@ Skema JSON yang harus Anda hasilkan wajib memiliki properti berikut:
 
                     $jsonResponse = $result->json();
                 } catch (\Throwable $fallbackException) {
-                    Log::error('Gemini 1.5 Flash Fallback Error: ' . $fallbackException->getMessage());
+                    Log::error('Gemini 3.1 Flash Lite Fallback Error: ' . $fallbackException->getMessage());
                     return response()->json([
                         'message' => 'Gagal memproses resume menggunakan AI Gemini (Limit Kuota Terlampaui): ' . $fallbackException->getMessage()
-                    ], 502);
+                    ], 500);
                 }
             } else {
                 Log::error('Gemini AI Analytics Error: ' . $errMessage, ['trace' => $e->getTraceAsString()]);
                 return response()->json([
                     'message' => 'Gagal memproses resume menggunakan AI Gemini: ' . $errMessage
-                ], 502);
+                ], 500);
             }
         }
 
