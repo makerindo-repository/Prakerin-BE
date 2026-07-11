@@ -31,6 +31,17 @@ use App\Http\Controllers\TestController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\HomepageController;
 use App\Http\Controllers\PdfController;
+<<<<<<< Updated upstream
+=======
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\AiAnalyticsController;
+use App\Http\Controllers\AwardController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\GuideController;
+use App\Http\Controllers\PreInternshipClassController;
+use App\Http\Controllers\MentorController;
+>>>>>>> Stashed changes
 use Illuminate\Support\Facades\Route;
 
 // Route::get('/docs', function () {
@@ -208,6 +219,20 @@ Route::prefix('v1')->group(function () {
             Route::get('/{id}/download', 'download');
 
             Route::get('/{id}/preview', 'preview');
+        });
+
+    // AI Analytics
+    Route::prefix('/ai-analytics')
+        ->controller(AiAnalyticsController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
+            Route::middleware('ability:student-access,admin-access')->group(function () {
+                Route::post('/', 'analyze');
+                Route::get('/latest', 'latest');
+                Route::get('/', 'index');
+                Route::delete('/{id}', 'destroy');
+                Route::get('/{id}/pdf', 'downloadPdf');
+            });
         });
 
     // Internship Application
