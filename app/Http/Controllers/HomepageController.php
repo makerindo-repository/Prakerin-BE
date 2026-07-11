@@ -7,9 +7,14 @@ use App\Http\Requests\HomePage\HomePageRequest;
 use App\Models\CommentPrakerin;
 use App\Models\Partner;
 use App\Models\JobOpening;
+use App\Models\Feedback;
+use App\Models\Student;
+use App\Models\School;
+use App\Models\Company;
 use DB;
 use App\Models\Hompage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Log;
 class HomepageController extends Controller
 {
@@ -30,7 +35,23 @@ class HomepageController extends Controller
             ->orderBy('created_at', 'ASC')
             ->get();
         $partner = Partner::orderBy('created_at', 'ASC')->get();
-        $commentPrakerin = CommentPrakerin::orderBy('created_at', 'ASC')->get();
+                $commentPrakerin = CommentPrakerin::orderBy('created_at', 'ASC')->get();
+        $comments = Feedback::with(['fromUser.student', 'toUser.company'])
+            ->where('to_type', 'company')
+            ->orderBy('created_at', 'DESC')
+            ->limit(6)
+            ->get()
+            ->map(function ($feedback) {
+                return [
+                    'id' => $feedback->id,
+                    'student_name' => $feedback->fromUser?->student?->name ?? 'Student',
+                    'company_name' => $feedback->toUser?->company?->name ?? 'Company',
+                    'rating' => $feedback->rating,
+                    'text' => $feedback->text,
+                    'photo_profile' => $feedback->fromUser?->photo_profile,
+                    'created_at' => $feedback->created_at,
+                ];
+            });
         $jobOpenings = JobOpening::with([
     'company.user',
     'company.cityRegency.province',
@@ -75,12 +96,51 @@ class HomepageController extends Controller
         }
 
 
+        // Real traction stats for the landing page (cached 10 minutes).
+        $stats = Cache::remember('landing_stats', now()->addMinutes(10), function () {
+            $today = now()->toDateString();
+
+            return [
+                'schools'      => (int) School::where('type', 'school')->count(),
+                'universities' => (int) School::where('type', 'university')->count(),
+                'students'     => (int) Student::join('schools', 'students.school_id', '=', 'schools.id')
+                    ->where('schools.type', 'school')->count(),
+                'university_students' => (int) Student::join('schools', 'students.school_id', '=', 'schools.id')
+                    ->where('schools.type', 'university')->count(),
+                'companies'    => (int) Company::count(),
+                'partners'     => (int) Partner::count(),
+                'active_jobs'  => (int) JobOpening::where('is_available', true)
+                    ->whereDate('closing_date', '>=', $today)->count(),
+            ];
+        });
+
+        // Most-demanded internship categories (top fields by active openings).
+        $popularCategories = Cache::remember('landing_categories', now()->addMinutes(10), function () {
+            return JobOpening::select('field_id', DB::raw('COUNT(*) as total'))
+                ->where('is_available', true)
+                ->whereNotNull('field_id')
+                ->groupBy('field_id')
+                ->orderByDesc('total')
+                ->with('field:id,name')
+                ->limit(6)
+                ->get()
+                ->map(fn ($row) => [
+                    'id'    => $row->field_id,
+                    'name'  => $row->field?->name ?? 'Lainnya',
+                    'total' => (int) $row->total,
+                ])
+                ->values();
+        });
+
         return response()->json([
             'data' => [
                 'homepages' => $formatted,
                 'partners' => $partner,
                 'comment_prakerins' => $commentPrakerin,
-                'job_openings' => $jobOpenings
+                'comments' => $comments,
+                'job_openings' => $jobOpenings,
+                'stats' => $stats,
+                'popular_categories' => $popularCategories,
             ]
         ], 200);
     }
@@ -148,31 +208,12 @@ class HomepageController extends Controller
 
         $data = $validated['data'];
 
-        // foreach ($data as $item) {
-        //     // Update berdasarkan id
-        //     Hompage::where('id', $item['id'])->update([
-        //         'name' => $item['name'],
-        //         'value' => $item['value'],
-        //     ]);
-        // }
-
-        $ids = array_column($data, 'id');
-
-        $valueCases = [];
         foreach ($data as $item) {
-            $valueCases[] = "WHEN '{$item['id']}' THEN '{$item['value']}'";
+            Hompage::where('id', $item['id'])->update([
+                'name' => $item['name'],
+                'value' => $item['value'],
+            ]);
         }
-
-        $valueCasesSql = implode(' ', $valueCases);
-        $idsSql = "'" . implode("','", $ids) . "'";
-
-        DB::statement("
-            UPDATE hompages
-            SET value = CASE id
-                $valueCasesSql
-            END
-            WHERE id IN ($idsSql)
-        ");
 
         return response()->json(['data' => true], 200);
     }

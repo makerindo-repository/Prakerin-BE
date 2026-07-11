@@ -355,7 +355,6 @@ class InternshipApplicationController extends Controller
     public function update(Request $request, string $id)
     {
         $internshipApplication = InternshipApplication::find($id);
-        $jobOpeing = $internshipApplication->jobOpening;
 
         if (!$internshipApplication) {
             throw new HttpResponseException(response()->json(
@@ -363,6 +362,8 @@ class InternshipApplicationController extends Controller
                 404
             ));
         }
+
+        $jobOpening = $internshipApplication->jobOpening;
 
         if ($internshipApplication->jobOpening->company_id !== auth()->user()->company->id) {
             throw new HttpResponseException(response()->json(
@@ -390,8 +391,8 @@ class InternshipApplicationController extends Controller
 
             $internship->internship_application_id = $internshipApplication->id;
 
-            $internship->start_date = $jobOpeing->start_date;
-            $internship->end_date = $jobOpeing->end_date;
+            $internship->start_date = $jobOpening->start_date;
+            $internship->end_date = $jobOpening->end_date;
             $internship->student_id = $internshipApplication->curriculumVitae->student_id;
             $internship->company_id = $request->user()->company->id;
 

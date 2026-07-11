@@ -29,6 +29,12 @@ class StudentCreateRequest extends FormRequest
             'password' => 'required|string|confirmed',
             'name' => 'required|string|max:255',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'class' => 'nullable|in:10,11,12,collage',
+            'major_id' => 'nullable|max:36|exists:majors,id',
+            'gender' => 'nullable|in:male,female',
+            'address' => 'nullable|string',
+            'phone_number' => 'nullable|string|max:20',
+            'date_of_birth' => 'nullable|date_format:Y-m-d',
         ];
 
         if ($this->user()->tokenCan("admin-access")) {

@@ -15,23 +15,28 @@ class Report extends Model
 
     protected $fillable = [
         'id',
-        'task_id',
-        'company_id',
-        'student_id',
-        'report',
+        'type',
+        'data',
+        'generated_at',
+        'generated_by_id',
+    ];
+
+    protected $casts = [
+        'data' => 'array',
+        'generated_at' => 'datetime',
     ];
 
     protected static function booted()
     {
-        static::creating(function ($sector) {
-            if (!$sector->id) {
-                $sector->id = (string) Str::uuid();
+        static::creating(function ($model) {
+            if (!$model->id) {
+                $model->id = (string) Str::uuid();
             }
         });
     }
 
-    public function task()
+    public function generatedBy()
     {
-        return $this->belongsTo(Task::class);
+        return $this->belongsTo(User::class, 'generated_by_id');
     }
 }

@@ -1,0 +1,80 @@
+name: Deploy Backend (Laravel) to VPS
+
+# Builds and releases the Laravel API on the VPS over SSH.
+# Everything — composer install, migrations, cache warming — runs on the
+# server. Nothing is built or run on a local/developer machine.
+
+on:
+  push:
+    branches: [backend]
+  workflow_dispatch:
+
+# Never let two backend deploys run at the same time.
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  DEPLOY_PATH: /var/www/Prakerin-BE
+  DEPLOY_BRANCH: backend
+
+jobs:
+  deploy:
+    name: Build & release on VPS
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT || '22' }}
+          command_timeout: 30m
+          script_stop: true
+          script: |
+            set -e
+            # Always lift maintenance mode on exit (incl. timeout/interrupt signals).
+            trap 'php artisan up >/dev/null 2>&1 || true' EXIT INT TERM
+
+            echo "==> Releasing Prakerin-BE -> ${{ env.DEPLOY_PATH }} (origin/${{ env.DEPLOY_BRANCH }})"
+            cd "${{ env.DEPLOY_PATH }}"
+
+            echo "==> [1/6] Sync code"
+            git fetch --all --prune
+            git reset --hard "origin/${{ env.DEPLOY_BRANCH }}"
+
+            echo "==> [2/6] Install PHP dependencies (production)"
+            export COMPOSER_MEMORY_LIMIT=-1
+            composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
+
+            echo "==> [3/6] Maintenance mode ON"
+            php artisan down --retry=15 || true
+
+            echo "==> [4/6] Database migrations"
+            php artisan migrate --force --no-interaction
+
+            echo "==> [5/6] Rebuild framework caches"
+            php artisan optimize:clear
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            php artisan event:cache || true
+            php artisan storage:link || true
+
+            echo "==> [6/6] Restart workers/broadcasting, lift maintenance mode"
+            php artisan queue:restart || true
+            # Reverb websocket server, only if it is managed by pm2 on the VPS.
+            command -v pm2 >/dev/null 2>&1 && pm2 reload reverb --update-env >/dev/null 2>&1 || true
+            php artisan up
+
+            echo "==> Health check (Laravel /up)"
+            curl -fsS --max-time 10 http://127.0.0.1/up >/dev/null \
+              && echo "Health OK" \
+              || echo "WARN: /up not reachable on 127.0.0.1 — verify nginx/php-fpm."
+
+            echo "==> Backend deploy complete."

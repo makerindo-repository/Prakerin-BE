@@ -12,6 +12,7 @@ use App\Models\Mou;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
+use App\Models\ActivityLog;
 use Auth;
 use DB;
 use Http;
@@ -162,8 +163,9 @@ class UserController extends Controller
                     $q->where('name', 'like', "%$search%");
                 });
             })
-            ->when($user?->tokenCan('admin-access'), function ($query) use ($role, $request, $isSchool) {
+            ->when($user?->tokenCan('admin-access'), function ($query) use ($role, $request) {
                 $schoolId = $request->query('school_id');
+                $schoolType = $request->query('school_type'); // 'school' or 'university'
                 $isVerified = $request->has('is_verified')
                     ? filter_var($request->query('is_verified'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
                     : null;
@@ -174,7 +176,7 @@ class UserController extends Controller
                         ->when($role === 'school', fn($q) => $q->whereHas('school'))
                         ->when($role === 'company', fn($q) => $q->whereHas('company'))
                         ->when($role === 'student', fn($q) => $q->whereHas('student'));
-            });
+                });
 
                 $query->when(
                     $role === 'student' && $schoolId,
@@ -182,6 +184,16 @@ class UserController extends Controller
                         $query->where('role', 'student');
                         $query->whereHas('student', function ($q) use ($schoolId) {
                             $q->where('school_id', $schoolId);
+                        });
+                    }
+                );
+
+                // Filter students by school type (school = SMK/Siswa, university = Mahasiswa)
+                $query->when(
+                    $role === 'student' && $schoolType,
+                    function ($query) use ($schoolType) {
+                        $query->whereHas('student.school', function ($q) use ($schoolType) {
+                            $q->where('type', $schoolType);
                         });
                     }
                 );
@@ -352,7 +364,15 @@ class UserController extends Controller
                 $student->school_id = $data['school_id'];
             }
             $student->user_id = $user->id;
+            $student->class = $data['class'] ?? null;
+            $student->major_id = $data['major_id'] ?? null;
+            $student->gender = $data['gender'] ?? null;
+            $student->address = $data['address'] ?? null;
+            $student->phone_number = $data['phone_number'] ?? null;
+            $student->date_of_birth = $data['date_of_birth'] ?? null;
             $student->save();
+            $schoolType = School::find($student->school_id)?->type;
+            $user->syncSpatieRole($schoolType);
         } else if ($user->role === "school") {
             $school = new School();
             $school->name = $data['name'];
@@ -360,12 +380,14 @@ class UserController extends Controller
             $school->user_id = $user->id;
             $school->type = $data['type'];
             $school->save();
+            $user->syncSpatieRole($school->type);
         } else if ($user->role === "company") {
             $company = new Company();
             $company->name = $data['name'];
             $company->address = $data['address'];
             $company->user_id = $user->id;
             $company->save();
+            $user->syncSpatieRole();
         }
 
 
@@ -678,6 +700,8 @@ class UserController extends Controller
             $student->school_id = $data['school_id'];
             $student->user_id = $user->id;
             $student->save();
+            $schoolType = School::find($data['school_id'])?->type;
+            $user->syncSpatieRole($schoolType);
             $token = $user->createToken('Auth Token', ['student-access'])->plainTextToken;
         } else if ($user->role === "school") {
             $school = new School();
@@ -686,6 +710,7 @@ class UserController extends Controller
             $school->user_id = $user->id;
             $school->type = $data['type'];
             $school->save();
+            $user->syncSpatieRole($school->type);
             $token = $user->createToken('Auth Token', ['school-access'])->plainTextToken;
         } else if ($user->role === "company") {
             $company = new Company();
@@ -693,6 +718,7 @@ class UserController extends Controller
             $company->address = $data['address'];
             $company->user_id = $user->id;
             $company->save();
+            $user->syncSpatieRole();
             $token = $user->createToken('Auth Token', ['company-access'])->plainTextToken;
         }
 
@@ -778,9 +804,18 @@ class UserController extends Controller
             ], 500));
         }
 
-        // Update last login timestamp ADD: removed due to causing error, there is no last_login_at column at any tables?
-       // $user->last_login_at = now();
         $user->save();
+
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'login',
+            'resource_type' => 'User',
+            'resource_id' => $user->id,
+            'resource_name' => $user->username,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'description' => "User logged in: " . $user->username,
+        ]);
 
         return response()->json(['token' => $token, 'role' => $user->role, 'is_verified' => $isVerified], 200);
     }
@@ -797,7 +832,20 @@ class UserController extends Controller
  */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        if ($user) {
+            ActivityLog::create([
+                'user_id' => $user->id,
+                'action' => 'logout',
+                'resource_type' => 'User',
+                'resource_id' => $user->id,
+                'resource_name' => $user->username,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'description' => "User logged out: " . $user->username,
+            ]);
+            $user->currentAccessToken()->delete();
+        }
         return response()->json(['message' => 'Logout success'], 200);
     }
 

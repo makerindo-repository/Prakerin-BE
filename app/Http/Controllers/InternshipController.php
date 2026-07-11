@@ -100,7 +100,8 @@ class InternshipController extends Controller
             'data' => [
                 'id' => $internship->id,
                 'start_date' => $internship->start_date,
-                'end_date' => $internship->end_date
+                'end_date' => $internship->end_date,
+                'is_completed' => $internship->is_completed
             ]
         ]);
 
@@ -190,10 +191,14 @@ class InternshipController extends Controller
 
 
         if (isset($data['is_completed']) && $data['is_completed'] === true) {
-            $certificate = new Certificate();
-            $certificate->internship_id = $internship->id;
-            $certificate->save();
-            auth()->user->rated()->attach($internship->students->user->id);
+            if (!$internship->is_completed) {
+                $certificate = new Certificate();
+                $certificate->internship_id = $internship->id;
+                $certificate->save();
+                if ($internship->student && $internship->student->user) {
+                    auth()->user()->rated()->syncWithoutDetaching([$internship->student->user->id]);
+                }
+            }
         }
 
 

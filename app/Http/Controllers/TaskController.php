@@ -63,67 +63,69 @@ class TaskController extends Controller
     ]
 )]
     public function index(Request $request)
-    {
-        $limit = request()->query('limit', 10);
-        $search = request()->query('search', '');
-        $status = request()->query('status', '');
-        $userStudentId = $request->query("user_student_id", null);
-        $isDeadline = filter_var($request->query('is_deadline', false), FILTER_VALIDATE_BOOLEAN);
+{
+    $limit = request()->query('limit', 10);
+    $search = request()->query('search', '');
+    $status = request()->query('status', '');
+    $userStudentId = $request->query('user_student_id', null);
+    $isDeadline = filter_var($request->query('is_deadline', false), FILTER_VALIDATE_BOOLEAN);
 
+    $user = $request->user();
 
-        $user = $request->user();
+    $tasks = Task::query();
 
-        $studentId = Student::where('user_id', $userStudentId)->first();
+    if (!is_null($user->student)) {
+        // Student cuma boleh lihat task miliknya sendiri
+        $tasks->whereHas('internship', function ($query) use ($user) {
+            $query->where('student_id', $user->student->id);
+        });
+    } elseif (!is_null($user->company)) {
+        // Company cuma boleh lihat task dari internship miliknya
+        $tasks->whereHas('internship', function ($query) use ($user) {
+            $query->where('company_id', $user->company->id);
+        });
 
-        $tasks = Task::
-            when(isset($user->student), function ($query) use ($user) {
-                $query->whereHas('internship', function ($query) use ($user) {
-                    $query->where('student_id', $user->student->id);
+        // Filter tambahan by student tertentu (opsional, khusus company)
+        if (!is_null($userStudentId)) {
+            $student = Student::where('user_id', $userStudentId)->first();
+
+            if ($student) {
+                $tasks->whereHas('internship', function ($query) use ($student) {
+                    $query->where('student_id', $student->id);
                 });
-            })
-            ->when(isset($user->company), function ($query) use ($user, $studentId) {
-                $query->whereHas('internship', function ($query) use ($user, $studentId) {
-                    $query->where('company_id', $user->company->id);
-                    $query->when(isset($studentId), function ($query) use ($studentId) {
-                        $query->where('student_id', $studentId);
-                    });
-                });
-            })
-            ->when($isDeadline, function ($query) {
-                $query->with('internship.student:name');
-                $query->whereDate('due_date', '<=', now());
-                $query->whereNot('status', 'completed');
-            })
-            ->with([
-                'internship' => function ($q) {
-                    $q->select('id', 'student_id') // cuma ambil minimal
-                        ->with(['student:id,name']);
-                }
-            ])
-
-            ->where('title', 'like', "%$search%")
-            ->when($status === 'pending' || $status === 'in_progress' || $status === 'completed' || $status === 'cancelled', function ($query) use ($status) {
-                $query->where('status', $status);
-            })
-            ->selectRaw("
-                id,
-                title,
-                internship_id,
-                status,
-                due_date,
-                created_at,
-                CASE 
-                    WHEN status = 'completed' THEN updated_at 
-                    ELSE NULL 
-                END as updated_at
-            ")
-            ->orderBy('updated_at', 'desc')
-            ->paginate($limit);
-
-
-
-        return response()->json($tasks);
+            } else {
+                $tasks->whereRaw('1 = 0'); // student tidak ditemukan -> kosong
+            }
+        }
+    } else {
+        // Role tidak dikenali -> FAIL SAFE, jangan tampilkan apa pun
+        $tasks->whereRaw('1 = 0');
     }
+
+    $tasks->when($isDeadline, function ($query) {
+            $query->with('internship.student:id,name');
+            $query->whereDate('due_date', '<=', now());
+            $query->whereNot('status', 'completed');
+        })
+        ->with([
+            'internship' => function ($q) {
+                $q->select('id', 'student_id')->with(['student:id,name']);
+            }
+        ])
+        ->where('title', 'like', '%' . $search . '%')
+        ->when(in_array($status, ['pending', 'in_progress', 'completed', 'cancelled']), function ($query) use ($status) {
+            $query->where('status', $status);
+        });
+
+    $tasks = $tasks->selectRaw("
+            id, title, internship_id, status, due_date, created_at,
+            CASE WHEN status = 'completed' THEN updated_at ELSE NULL END as updated_at
+        ")
+        ->orderBy('updated_at', 'desc')
+        ->paginate($limit);
+
+    return response()->json($tasks);
+}
 
     /**
      * Store a newly created resource in storage.
@@ -187,7 +189,23 @@ class TaskController extends Controller
             ], 400));
         }
 
-        Task::create($validator->validated());
+        $data = $validator->validated();
+        $user = $request->user();
+
+        // Pastikan internship_id yang dikirim benar-benar milik company yang login
+        if (!is_null($user->company)) {
+            $ownsInternship = Internship::where('id', $data['internship_id'])
+                ->where('company_id', $user->company->id)
+                ->exists();
+
+            if (!$ownsInternship) {
+                throw new HttpResponseException(response()->json([
+                    'errors' => 'Internship tidak ditemukan atau bukan milik company Anda.'
+                ], 403));
+            }
+        }
+
+        Task::create($data);
 
         return response()->json(['data' => true], 201);
     }

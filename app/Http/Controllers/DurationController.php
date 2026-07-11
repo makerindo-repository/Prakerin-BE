@@ -80,6 +80,7 @@ class DurationController extends Controller
                     $query->where('duration_unit', $unit);
                 })
                 ->orderBy('duration_unit', 'asc')
+                ->orderBy('duration_value', 'asc')
                 ->get();
             return response()->json(['data' => $durations], 200);
         }
