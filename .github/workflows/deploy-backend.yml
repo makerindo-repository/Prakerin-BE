@@ -57,6 +57,8 @@ jobs:
 
             echo "==> [4/6] Database migrations"
             php artisan migrate --force --no-interaction
+            echo "==> [4b/6] Seed required data"
+            php artisan db:seed --class=NamaSeederBaru --force
 
             echo "==> [5/6] Rebuild framework caches"
             php artisan optimize:clear
