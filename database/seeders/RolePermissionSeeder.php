@@ -82,10 +82,12 @@ class RolePermissionSeeder extends Seeder
             'siswa' => [
                 'view_dashboard', 'view_kelas', 'view_pembimbing',
                 'view_panduan', 'view_feedback', 'view_profil', 'edit_profil',
+                'view_ai_analytics',
             ],
             'mahasiswa' => [
                 'view_dashboard', 'view_kelas', 'view_pembimbing',
                 'view_panduan', 'view_feedback', 'view_profil', 'edit_profil',
+                'view_ai_analytics',
             ],
             'company_owner' => [
                 'view_dashboard', 'view_kelas', 'view_pembimbing',

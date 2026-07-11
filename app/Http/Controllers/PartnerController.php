@@ -59,6 +59,42 @@ class PartnerController extends Controller
             ->orderBy('created_at', 'ASC')
             ->get();
 
+        foreach ($partners as $partner) {
+            $openings_count = 0;
+            $students_count = 0;
+            $rating = 0.0;
+
+            if ($partner->type === 'company') {
+                $company = \App\Models\Company::where('name', 'like', "%{$partner->name}%")
+                    ->orWhere(function($query) use ($partner) {
+                        $cleanName = preg_replace('/^(PT\.\s+|CV\.\s+)/i', '', $partner->name);
+                        $query->where('name', 'like', "%{$cleanName}%");
+                    })
+                    ->first();
+                if ($company) {
+                    $openings_count = \App\Models\JobOpening::where('company_id', $company->id)->where('is_available', true)->count();
+                    $ratingVal = \App\Models\Feedback::where('to_user_id', $company->user_id)->where('to_type', 'company')->avg('rating');
+                    $rating = $ratingVal ? round($ratingVal, 1) : 0.0;
+                }
+            } else {
+                $school = \App\Models\School::where('name', 'like', "%{$partner->name}%")
+                    ->orWhere(function($query) use ($partner) {
+                        $cleanName = preg_replace('/^(SMK\s+|SMA\s+|SMKS\s+)/i', '', $partner->name);
+                        $query->where('name', 'like', "%{$cleanName}%");
+                    })
+                    ->first();
+                if ($school) {
+                    $students_count = \App\Models\Student::where('school_id', $school->id)->count();
+                    $ratingVal = \App\Models\Feedback::where('to_user_id', $school->user_id)->where('to_type', 'school')->avg('rating');
+                    $rating = $ratingVal ? round($ratingVal, 1) : 0.0;
+                }
+            }
+
+            $partner->openings_count = $openings_count;
+            $partner->students_count = $students_count;
+            $partner->rating = $rating;
+        }
+
         return response()->json([
             'data' => $partners,
         ], 200);
