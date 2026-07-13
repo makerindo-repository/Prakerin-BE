@@ -82,7 +82,7 @@ class UserController extends Controller
                 $q->where('type', $isSchool ? 'school' : 'university');
             });
         })
-            ->when($user?->tokenCan('school-access') && ($role === 'student'), function ($query,) use ($search, $isVerified, $user, $status) {
+            ->when($user?->tokenCan('school-access') && ($role === 'student'), function ($query,) use ($search, $isVerified, $user, $status, $request) {
                 $query->with(
                     'student.major',
                     'student.curriculumVitae.internshipApplications.jobOpening.company.user',
@@ -101,6 +101,17 @@ class UserController extends Controller
                     $query->whereHas('student', function ($q) use ($status) {
                         $q->where('status', $status);
                     });
+                });
+                // Guard: halaman "Data Siswa" (school_type=school) / "Data Mahasiswa"
+                // (school_type=university) cuma boleh nampilin data kalau institusi
+                // login ini benar-benar sesuai tipe itu. Ini murni pengaman UI (salah
+                // buka page); institusi tetap hanya bisa lihat siswanya sendiri
+                // (sudah dibatasi school_id di atas).
+                $schoolType = $request->query('school_type');
+                $query->when($schoolType, function ($query) use ($schoolType, $user) {
+                    if ($user->school->type !== $schoolType) {
+                        $query->whereRaw('1 = 0');
+                    }
                 });
             })
             ->when(($user?->tokenCan('school-access') || $user?->tokenCan('student-access')) && ($role === 'company'), function ($query) use ($search, $isMou, $user) {
