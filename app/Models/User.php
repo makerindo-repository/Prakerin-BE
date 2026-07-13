@@ -96,6 +96,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Feedback::class, 'to_user_id');
     }
 
+    public function mentorAssignments()
+    {
+        return $this->hasMany(MentorAssignment::class, 'student_id');
+    }
+
 
     protected static function booted()
     {

@@ -31,7 +31,7 @@
          $this->assertTrue(Role::where('name', 'siswa')->exists());
          $this->assertTrue(Permission::where('name', 'view_kelas')->exists());
  
-         $siswaRole = Role::findByName('siswa');
+         $siswaRole = Role::findByName('siswa', 'sanctum');
          $this->assertTrue($siswaRole->hasPermissionTo('view_kelas'));
          $this->assertFalse($siswaRole->hasPermissionTo('manage_roles'));
      }
@@ -144,7 +144,7 @@
          Sanctum::actingAs($user, ['admin-access']);
  
          // Check original permissions for school_admin
-         $schoolAdmin = Role::findByName('school_admin', 'web');
+         $schoolAdmin = Role::findByName('school_admin', 'sanctum');
          $this->assertFalse($schoolAdmin->hasPermissionTo('manage_roles'));
  
          $response = $this->putJson('/api/v1/system/roles/school_admin/permissions', [
@@ -154,7 +154,7 @@
          $response->assertStatus(200);
          
          // Reload role
-         $schoolAdmin = Role::findByName('school_admin', 'web');
+         $schoolAdmin = Role::findByName('school_admin', 'sanctum');
          $this->assertTrue($schoolAdmin->hasPermissionTo('manage_roles'));
          $this->assertTrue($schoolAdmin->hasPermissionTo('view_kelas'));
          $this->assertFalse($schoolAdmin->hasPermissionTo('view_laporan')); // was removed in sync

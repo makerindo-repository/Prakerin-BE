@@ -33,7 +33,7 @@ class ContactController extends Controller
 
         // Send email to admin
         try {
-            $adminEmail = config('mail.from.address') ?: 'admin@prakerin.id';
+            $adminEmail = config('mail.from.address') ?: 'makerindo@company.com';
             Mail::to($adminEmail)->send(new ContactFormSubmitted($contactMessage));
         } catch (\Exception $e) {
             Log::error('Failed to send contact notification email to admin: ' . $e->getMessage());

@@ -14,7 +14,7 @@ class RolePermissionController extends Controller
      */
     public function index()
     {
-        $roles = Role::with('permissions')->get()->map(function ($role) {
+        $roles = Role::where('guard_name', 'sanctum')->with('permissions')->get()->map(function ($role) {
             return [
                 'id' => $role->id,
                 'name' => $role->name,
@@ -32,7 +32,7 @@ class RolePermissionController extends Controller
      */
     public function getAllPermissions()
     {
-        $permissions = Permission::all()->pluck('name');
+        $permissions = Permission::where('guard_name', 'sanctum')->pluck('name');
 
         return response()->json([
             'data' => $permissions,
@@ -49,7 +49,7 @@ class RolePermissionController extends Controller
             'permissions.*' => 'string|exists:auth_permissions,name',
         ]);
 
-        $role = Role::where('name', $roleName)->first();
+        $role = Role::where('name', $roleName)->where('guard_name', 'sanctum')->first();
 
         if (!$role) {
             return response()->json([
