@@ -94,7 +94,13 @@ class UserController extends Controller
                     $q->where('name', 'like', "%$search%");
                     $q->where('school_id', $user->school->id);
                     if ($user->school->type === 'school') {
-                        $q->whereIn('class', ['11', '12']);
+                        if ($isVerified) {
+                            $q->where(function ($subQuery) {
+                                $subQuery->whereIn('class', ['11', '12'])
+                                    ->orWhereNull('class')
+                                    ->orWhere('class', '');
+                            });
+                        }
                     }
                 });
                 $query->when(in_array($status, ['ongoing', 'completed', 'not_started']), function ($query) use ($status) {
@@ -206,13 +212,19 @@ class UserController extends Controller
                 // Filter students by school type (school = SMK/Siswa, university = Mahasiswa)
                 $query->when(
                     $role === 'student' && $schoolType,
-                    function ($query) use ($schoolType) {
+                    function ($query) use ($schoolType, $isVerified) {
                         $query->whereHas('student.school', function ($q) use ($schoolType) {
                             $q->where('type', $schoolType);
                         });
                         if ($schoolType === 'school') {
-                            $query->whereHas('student', function ($q) {
-                                $q->whereIn('class', ['11', '12']);
+                            $query->whereHas('student', function ($q) use ($isVerified) {
+                                if ($isVerified !== false) {
+                                    $q->where(function ($subQuery) {
+                                        $subQuery->whereIn('class', ['11', '12'])
+                                            ->orWhereNull('class')
+                                            ->orWhere('class', '');
+                                    });
+                                }
                             });
                         }
                     }
