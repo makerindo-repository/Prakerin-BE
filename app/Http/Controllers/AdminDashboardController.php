@@ -6,6 +6,7 @@ use OpenApi\Attributes as OA;
 use App\Models\User;
 use App\Models\School;
 use App\Models\Company;
+use App\Models\Major;
 use App\Models\Student;
 use App\Models\JobOpening;
 use App\Models\Achievement;
@@ -103,10 +104,9 @@ class AdminDashboardController extends Controller
         $totalClasses   = PreInternshipClass::count();
         $ongoingClasses = PreInternshipClass::where('status', 'ongoing')->count();
         $lowProgressClasses = PreInternshipClass::where('status', 'ongoing')
-            ->withCount(['enrollments as low_attendance_count' => function ($q) {
+            ->whereHas('enrollments', function ($q) {
                 $q->whereRaw('attendance_count < total_sessions * 0.5 AND total_sessions > 0');
-            }])
-            ->having('low_attendance_count', '>', 0)
+            })
             ->count();
         $preInternshipSummary = [
             'total'        => $totalClasses,
@@ -225,6 +225,92 @@ class AdminDashboardController extends Controller
                 'time_ago'      => $log->created_at->diffForHumans(),
             ]);
 
+        // ── AI Matching Score (dynamic) ──────────────────────────────────
+        $activeJobOpenings = JobOpening::where('is_available', true)->with('field')->get();
+        $totalActiveJobs = $activeJobOpenings->count();
+
+        // Mapping major names to suitable field names
+        $majorFieldMapping = [
+            'Rekayasa Perangkat Lunak' => ['Web Development', 'Mobile App Development', 'UI/UX Design'],
+            'Teknik Komputer dan Jaringan' => ['Network & Security'],
+            'Multimedia' => ['UI/UX Design', 'Digital Marketing'],
+            'Teknik Informatika' => ['Web Development', 'Mobile App Development', 'Data Analysis'],
+            'Sistem Informasi' => ['Data Analysis', 'Web Development'],
+            'Desain Komunikasi Visual' => ['UI/UX Design', 'Digital Marketing'],
+        ];
+
+        // Retrieve all majors that are accepted
+        $allMajors = Major::where('is_accepted', true)->withCount('students')->get();
+
+        $matchingScores = [
+            'smk' => [],
+            'mahasiswa' => [],
+        ];
+
+        // Color and icon mappings for frontend UI
+        $uiProps = [
+            'Rekayasa Perangkat Lunak' => ['icon' => 'Code2', 'color' => 'green', 'label' => 'RPL'],
+            'Teknik Komputer dan Jaringan' => ['icon' => 'Network', 'color' => 'purple', 'label' => 'TKJ'],
+            'Multimedia' => ['icon' => 'ImageIcon', 'color' => 'orange', 'label' => 'Multimedia'],
+            'Teknik Informatika' => ['icon' => 'Cpu', 'color' => 'blue', 'label' => 'Informatika'],
+            'Sistem Informasi' => ['icon' => 'LineChart', 'color' => 'green', 'label' => 'Sistem Informasi'],
+            'Desain Komunikasi Visual' => ['icon' => 'Zap', 'color' => 'orange', 'label' => 'DKV'],
+        ];
+
+        foreach ($allMajors as $major) {
+            $suitableFields = $majorFieldMapping[$major->name] ?? [];
+            
+            // Calculate demand: active jobs in suitable fields
+            $demandJobsCount = $activeJobOpenings->filter(function ($job) use ($suitableFields) {
+                return in_array($job->field?->name, $suitableFields);
+            })->count();
+
+            $demandRate = $totalActiveJobs > 0 ? ($demandJobsCount / $totalActiveJobs) * 100 : 50;
+
+            // Calculate student placement success rate for this major
+            $totalStudents = $major->students_count;
+            $placedStudents = Student::where('major_id', $major->id)
+                ->whereIn('status', ['ongoing', 'completed'])
+                ->count();
+            
+            $placementRate = $totalStudents > 0 ? ($placedStudents / $totalStudents) * 100 : 0;
+
+            // Compute matching score: 70% based on demand rate, 30% based on placement success rate
+            $scoreValue = round(($demandRate * 0.7) + ($placementRate * 0.3));
+
+            // Smooth the value to keep it realistic (between 50% and 98%)
+            $scoreValue = max(50, min(98, $scoreValue));
+
+            // Default fallback mappings if major name isn't explicitly mapped
+            $props = $uiProps[$major->name] ?? [
+                'icon' => 'Monitor',
+                'color' => 'blue',
+                'label' => $major->name
+            ];
+
+            $item = [
+                'label' => $props['label'],
+                'full_name' => $major->name,
+                'value' => (int)$scoreValue,
+                'color' => $props['color'],
+                'icon' => $props['icon'],
+            ];
+
+            if ($major->level === 'smk') {
+                $matchingScores['smk'][] = $item;
+            } else {
+                $matchingScores['mahasiswa'][] = $item;
+            }
+        }
+
+        // Sort both arrays by value descending
+        usort($matchingScores['smk'], function ($a, $b) {
+            return $b['value'] <=> $a['value'];
+        });
+        usort($matchingScores['mahasiswa'], function ($a, $b) {
+            return $b['value'] <=> $a['value'];
+        });
+
         return response()->json([
             'summary'                => $summary,
             'system_metrics'         => $systemMetrics,
@@ -234,6 +320,7 @@ class AdminDashboardController extends Controller
             'recommendations'        => $recommendations,
             'recent_activities'      => $recentActivities,
             'pre_internship_summary' => $preInternshipSummary,
+            'matching_scores'        => $matchingScores,
         ]);
     }
 
