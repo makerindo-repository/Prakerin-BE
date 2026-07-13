@@ -84,6 +84,7 @@ class UserController extends Controller
         })
             ->when($user?->tokenCan('school-access') && ($role === 'student'), function ($query,) use ($search, $isVerified, $user, $status) {
                 $query->with(
+                    'student.major',
                     'student.curriculumVitae.internshipApplications.jobOpening.company.user',
                     'student.curriculumVitae.internshipApplications.jobOpening.company.cityRegency.province'
                 );
@@ -92,6 +93,9 @@ class UserController extends Controller
                     $q->where('is_verified', $isVerified);
                     $q->where('name', 'like', "%$search%");
                     $q->where('school_id', $user->school->id);
+                    if ($user->school->type === 'school') {
+                        $q->whereIn('class', ['11', '12']);
+                    }
                 });
                 $query->when(in_array($status, ['ongoing', 'completed', 'not_started']), function ($query) use ($status) {
                     $query->whereHas('student', function ($q) use ($status) {
@@ -170,7 +174,7 @@ class UserController extends Controller
                     ? filter_var($request->query('is_verified'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
                     : null;
 
-                $query->with(['student', 'school', 'company']);
+                $query->with(['student.major', 'school', 'company']);
                 $query->when($role, function ($query, $role) {
                     return $query->where('role', $role)
                         ->when($role === 'school', fn($q) => $q->whereHas('school'))
@@ -195,6 +199,11 @@ class UserController extends Controller
                         $query->whereHas('student.school', function ($q) use ($schoolType) {
                             $q->where('type', $schoolType);
                         });
+                        if ($schoolType === 'school') {
+                            $query->whereHas('student', function ($q) {
+                                $q->whereIn('class', ['11', '12']);
+                            });
+                        }
                     }
                 );
 
@@ -218,7 +227,7 @@ class UserController extends Controller
                         'id' => $item->school?->id,
                         'name' => $item->school?->name,
                     ];
-                } else if (($user?->tokenCan('school-access') && ($role === 'student'))) {
+                } else if (($user?->tokenCan('school-access') || $user?->tokenCan('admin-access')) && ($role === 'student')) {
 
                     return [
                         'id' => $item->id,

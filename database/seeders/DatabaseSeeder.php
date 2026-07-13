@@ -369,12 +369,12 @@ class DatabaseSeeder extends Seeder
             ['username' => 'dodi.hidayat', 'email' => 'dodi@student.com', 'name' => 'Dodi Hidayat', 'school' => 'school1', 'major' => 'Rekayasa Perangkat Lunak', 'class' => '11', 'gender' => 'male', 'photo_profile' => 'pfpupload/usrpfp6.jpeg'],
             
             // 6 University students
-            ['username' => 'eka.wijaya', 'email' => 'eka@student.com', 'name' => 'Eka Wijaya', 'school' => 'school2', 'major' => 'Teknik Informatika', 'class' => 'collage', 'gender' => 'male', 'photo_profile' => 'pfpupload/usrpfp4.jpeg'],
-            ['username' => 'fitri.astuti', 'email' => 'fitri@student.com', 'name' => 'Fitri Astuti', 'school' => 'school2', 'major' => 'Sistem Informasi', 'class' => 'collage', 'gender' => 'female', 'photo_profile' => 'pfpupload/usrpfp5.jpeg'],
-            ['username' => 'guntur.pratama', 'email' => 'guntur@student.com', 'name' => 'Guntur Pratama', 'school' => 'school2', 'major' => 'Desain Komunikasi Visual', 'class' => 'collage', 'gender' => 'male', 'photo_profile' => 'pfpupload/usrpfp6.jpeg'],
-            ['username' => 'harta.wiguna', 'email' => 'harta@student.com', 'name' => 'Harta Wiguna', 'school' => 'school2', 'major' => 'Teknik Informatika', 'class' => 'collage', 'gender' => 'male', 'photo_profile' => 'pfpupload/usrpfp1.jpeg'],
-            ['username' => 'indah.permata', 'email' => 'indah@student.com', 'name' => 'Indah Permata', 'school' => 'school2', 'major' => 'Sistem Informasi', 'class' => 'collage', 'gender' => 'female', 'photo_profile' => 'pfpupload/usrpfp2.jpeg'],
-            ['username' => 'tomi.saputra', 'email' => 'tomi@student.com', 'name' => 'Tomi Saputra', 'school' => 'school2', 'major' => 'Teknik Informatika', 'class' => 'collage', 'gender' => 'male', 'photo_profile' => 'pfpupload/usrpfp3.jpeg'],
+            ['username' => 'eka.wijaya', 'email' => 'eka@student.com', 'name' => 'Eka Wijaya', 'school' => 'school2', 'major' => 'Teknik Informatika', 'class' => '5', 'gender' => 'male', 'photo_profile' => 'pfpupload/usrpfp4.jpeg'],
+            ['username' => 'fitri.astuti', 'email' => 'fitri@student.com', 'name' => 'Fitri Astuti', 'school' => 'school2', 'major' => 'Sistem Informasi', 'class' => '6', 'gender' => 'female', 'photo_profile' => 'pfpupload/usrpfp5.jpeg'],
+            ['username' => 'guntur.pratama', 'email' => 'guntur@student.com', 'name' => 'Guntur Pratama', 'school' => 'school2', 'major' => 'Desain Komunikasi Visual', 'class' => '7', 'gender' => 'male', 'photo_profile' => 'pfpupload/usrpfp6.jpeg'],
+            ['username' => 'harta.wiguna', 'email' => 'harta@student.com', 'name' => 'Harta Wiguna', 'school' => 'school2', 'major' => 'Teknik Informatika', 'class' => '8', 'gender' => 'male', 'photo_profile' => 'pfpupload/usrpfp1.jpeg'],
+            ['username' => 'indah.permata', 'email' => 'indah@student.com', 'name' => 'Indah Permata', 'school' => 'school2', 'major' => 'Sistem Informasi', 'class' => '5', 'gender' => 'female', 'photo_profile' => 'pfpupload/usrpfp2.jpeg'],
+            ['username' => 'tomi.saputra', 'email' => 'tomi@student.com', 'name' => 'Tomi Saputra', 'school' => 'school2', 'major' => 'Teknik Informatika', 'class' => '6', 'gender' => 'male', 'photo_profile' => 'pfpupload/usrpfp3.jpeg'],
         ];
 
         $students = [];
@@ -388,7 +388,8 @@ class DatabaseSeeder extends Seeder
                 'photo_profile' => $sData['photo_profile'],
             ]);
 
-            $spatieRole = $sData['class'] === 'collage' ? 'mahasiswa' : 'siswa';
+            $isUniversity = ($sData['school'] === 'school2');
+            $spatieRole = $isUniversity ? 'mahasiswa' : 'siswa';
             $user->assignRole($spatieRole);
 
             $schoolId = $sData['school'] === 'school1' ? $school1->id : $school2->id;
@@ -399,7 +400,7 @@ class DatabaseSeeder extends Seeder
                 'major_id' => $majors[$sData['major']]->id,
                 'name' => $sData['name'],
                 'status' => 'not_started',
-                'date_of_birth' => Carbon::now()->subYears($sData['class'] === 'collage' ? 21 : 17)->toDateString(),
+                'date_of_birth' => Carbon::now()->subYears($isUniversity ? 21 : 17)->toDateString(),
                 'gender' => $sData['gender'],
                 'phone_number' => '+6285' . rand(11111111, 99999999),
                 'address' => 'Jl. Raya Pendidikan No. ' . rand(1, 100) . ', ' . ($sData['school'] === 'school1' ? 'Bandung' : 'Depok'),

@@ -45,7 +45,7 @@ class UserCreateRequest extends FormRequest
                 if (auth()->user()->tokenCant('school-access')) {
                     $rules['school_id'] = 'required|max:36|exists:schools,id';
                 }
-                $rules['class'] = 'nullable|in:10,11,12,collage';
+                $rules['class'] = 'nullable|in:1,2,3,4,5,6,7,8,9,10,11,12,13,14';
                 $rules['major_id'] = 'nullable|max:36|exists:majors,id';
                 $rules['gender'] = 'nullable|in:male,female';
                 $rules['address'] = 'nullable|string';

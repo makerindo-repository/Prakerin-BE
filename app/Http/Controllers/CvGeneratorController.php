@@ -54,6 +54,9 @@ class CvGeneratorController extends Controller
     )]
     public function generate(Request $request)
     {
+        // Increase maximum execution time for AI processing
+        @set_time_limit(120);
+
         $validated = $request->validate([
             'profile_user' => 'required|array',
             'prompt_user' => 'nullable|string'

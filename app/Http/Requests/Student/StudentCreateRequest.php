@@ -29,7 +29,7 @@ class StudentCreateRequest extends FormRequest
             'password' => 'required|string|confirmed',
             'name' => 'required|string|max:255',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'class' => 'nullable|in:10,11,12,collage',
+            'class' => 'nullable|in:1,2,3,4,5,6,7,8,9,10,11,12,13,14',
             'major_id' => 'nullable|max:36|exists:majors,id',
             'gender' => 'nullable|in:male,female',
             'address' => 'nullable|string',

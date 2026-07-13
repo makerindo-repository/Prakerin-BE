@@ -22,6 +22,9 @@ class AiAnalyticsController extends Controller
      */
     public function analyze(Request $request)
     {
+        // Increase maximum execution time for AI processing
+        @set_time_limit(120);
+
         // 1. Validate the file
         $request->validate([
             'uploaded_file' => 'required|file|mimes:pdf|max:10240', // Max 10MB PDF
