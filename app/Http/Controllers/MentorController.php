@@ -14,14 +14,19 @@ use Carbon\Carbon;
 class MentorController extends Controller
 {
     /**
-     * List all mentors (Public).
+     * List all mentors (Public). Bisa difilter berdasarkan role user
+     * pemilik profil mentor-nya (school = guru pembimbing, company =
+     * pembimbing perusahaan). Tanpa filter = semua (dipakai dashboard admin).
      */
     public function index(Request $request)
     {
+        $role = $request->query('role'); // 'school' | 'company' | null
+
         $mentors = Mentor::with('user')
             ->withCount(['assignments as active_assignments_count' => function ($q) {
                 $q->whereNull('ended_at');
             }])
+            ->when($role, fn ($q) => $q->whereHas('user', fn ($q2) => $q2->where('role', $role)))
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -31,13 +36,19 @@ class MentorController extends Controller
     }
 
     /**
-     * Get candidates for mentor profile (Users who are not students and don't have mentor profile yet).
+     * Get candidates for mentor profile (Users who are not students and
+     * don't have mentor profile yet). Bisa difilter role juga, biar
+     * "Tambah Pembimbing" di halaman Guru Pembimbing cuma nawarin akun
+     * sekolah, dan di halaman Pembimbing Perusahaan cuma nawarin akun
+     * perusahaan.
      */
-    public function candidates()
+    public function candidates(Request $request)
     {
+        $role = $request->query('role'); // 'school' | 'company' | null
         $existingUserIds = Mentor::pluck('user_id')->toArray();
 
         $candidates = User::where('role', '!=', 'student')
+            ->when($role, fn ($q) => $q->where('role', $role))
             ->whereNotIn('id', $existingUserIds)
             ->orderBy('username', 'asc')
             ->get();
@@ -201,13 +212,18 @@ class MentorController extends Controller
     }
 
     /**
-     * List all assignments (Admin only).
+     * List all assignments (Admin only). Bisa difilter berdasarkan role
+     * user pemilik mentor-nya (school/company), dipakai halaman Guru
+     * Pembimbing & Pembimbing Perusahaan supaya cuma lihat penugasan yang
+     * relevan buat mereka.
      */
     public function assignments(Request $request)
     {
         $status = $request->query('status'); // active / ended
+        $mentorRole = $request->query('mentor_role'); // 'school' | 'company' | null
 
         $query = MentorAssignment::with(['student', 'mentor.user', 'assignedBy'])
+            ->when($mentorRole, fn ($q) => $q->whereHas('mentor.user', fn ($q2) => $q2->where('role', $mentorRole)))
             ->orderBy('assigned_at', 'desc');
 
         if ($status === 'active') {
