@@ -614,8 +614,12 @@ Route::prefix('v1')->group(function () {
         });
 
         // P2 Awards & Student Awards
+        // Halaman "Penghargaan" dipakai bareng oleh company & school (bukan cuma
+        // admin), jadi listing katalog award boleh dibaca oleh ketiganya. Buat
+        // lencana baru & assign/cabut dari siswa tetap boleh dilakukan company
+        // maupun school (mereka yang paling tahu performa siswa/mitra magangnya).
         Route::prefix('awards')->controller(AwardController::class)->group(function () {
-            Route::middleware('abilities:admin-access')->group(function () {
+            Route::middleware('ability:admin-access,company-access,school-access')->group(function () {
                 Route::post('/', 'store');
                 Route::get('/', 'index');
                 Route::patch('/{id}', 'update');
@@ -624,7 +628,7 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::prefix('student-awards')->controller(AwardController::class)->group(function () {
-            Route::middleware('abilities:admin-access')->group(function () {
+            Route::middleware('ability:admin-access,company-access,school-access')->group(function () {
                 Route::post('/', 'assign');
                 Route::delete('/{id}', 'removeAssignment');
             });
@@ -637,4 +641,3 @@ Route::prefix('v1')->group(function () {
     Route::get('/students/{studentId}/awards', [AwardController::class, 'studentAwards']);
     Route::get('/student-awards/{id}/certificate', [AwardController::class, 'printCertificate']);
 });
-
