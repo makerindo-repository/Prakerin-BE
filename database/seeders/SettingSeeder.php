@@ -1,0 +1,155 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Setting;
+use Illuminate\Database\Seeder;
+
+class SettingSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $settings = [
+            // General Settings
+            [
+                'key' => 'platform_name',
+                'value' => 'Prakerin Management Portal',
+                'type' => 'string',
+            ],
+            [
+                'key' => 'support_email',
+                'value' => 'support@prakerin.com',
+                'type' => 'string',
+            ],
+            [
+                'key' => 'support_phone',
+                'value' => '+62 812-3456-7890',
+                'type' => 'string',
+            ],
+            [
+                'key' => 'support_address',
+                'value' => 'Bandung, West Java, Indonesia',
+                'type' => 'string',
+            ],
+
+            // Internship Policies
+            [
+                'key' => 'max_concurrent_applications',
+                'value' => '3',
+                'type' => 'number',
+            ],
+            [
+                'key' => 'auto_approve_schools',
+                'value' => 'false',
+                'type' => 'boolean',
+            ],
+            [
+                'key' => 'auto_approve_companies',
+                'value' => 'false',
+                'type' => 'boolean',
+            ],
+            [
+                'key' => 'auto_approve_students',
+                'value' => 'false',
+                'type' => 'boolean',
+            ],
+            [
+                'key' => 'mou_number_prefix',
+                'value' => 'MOU/{YEAR}/{MONTH}/{ID}',
+                'type' => 'string',
+            ],
+            [
+                'key' => 'cert_number_prefix',
+                'value' => 'CERT/{YEAR}/{ID}',
+                'type' => 'string',
+            ],
+            [
+                'key' => 'min_internship_duration',
+                'value' => '1',
+                'type' => 'number',
+            ],
+            [
+                'key' => 'max_internship_duration',
+                'value' => '52',
+                'type' => 'number',
+            ],
+
+            // Integrations
+            [
+                'key' => 'ai_provider',
+                'value' => 'gemini',
+                'type' => 'string',
+            ],
+            [
+                'key' => 'ai_api_key',
+                'value' => '',
+                'type' => 'string',
+            ],
+            [
+                'key' => 'recaptcha_enabled',
+                'value' => 'false',
+                'type' => 'boolean',
+            ],
+            [
+                'key' => 'recaptcha_site_key',
+                'value' => '',
+                'type' => 'string',
+            ],
+            [
+                'key' => 'recaptcha_secret_key',
+                'value' => '',
+                'type' => 'string',
+            ],
+
+            // SMTP Settings
+            [
+                'key' => 'smtp_host',
+                'value' => 'smtp.mailtrap.io',
+                'type' => 'string',
+            ],
+            [
+                'key' => 'smtp_port',
+                'value' => '2525',
+                'type' => 'number',
+            ],
+            [
+                'key' => 'smtp_username',
+                'value' => '',
+                'type' => 'string',
+            ],
+            [
+                'key' => 'smtp_password',
+                'value' => '',
+                'type' => 'string',
+            ],
+            [
+                'key' => 'smtp_encryption',
+                'value' => 'tls',
+                'type' => 'string',
+            ],
+            [
+                'key' => 'smtp_from_email',
+                'value' => 'noreply@prakerin.com',
+                'type' => 'string',
+            ],
+            [
+                'key' => 'smtp_from_name',
+                'value' => 'Prakerin Support',
+                'type' => 'string',
+            ],
+        ];
+
+        foreach ($settings as $setting) {
+            Setting::updateOrCreate(
+                ['key' => $setting['key']],
+                [
+                    'value' => $setting['value'],
+                    'type' => $setting['type'],
+                ]
+            );
+        }
+    }
+}

@@ -46,6 +46,7 @@ class DatabaseSeeder extends Seeder
         // 1. Disable foreign key constraints and clean all tables
         Schema::disableForeignKeyConstraints();
         
+        DB::table('settings')->truncate();
         DB::table('comment_prakerins')->truncate();
         DB::table('partners')->truncate();
         DB::table('generated_cvs')->truncate();
@@ -83,6 +84,7 @@ class DatabaseSeeder extends Seeder
 
         // 2. Call Spatie Roles and Permissions Seeder
         $this->call(RolePermissionSeeder::class);
+        $this->call(SettingSeeder::class);
 
         // 3. Seed Geolocation (Provinces and City Regencies)
         $provincesData = [

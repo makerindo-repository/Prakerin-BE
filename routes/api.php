@@ -39,6 +39,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\GuideController;
 use App\Http\Controllers\PreInternshipClassController;
 use App\Http\Controllers\MentorController;
+use App\Http\Controllers\SettingController;
 use Illuminate\Support\Facades\Route;
 
 // Route::get('/docs', function () {
@@ -610,6 +611,16 @@ Route::prefix('v1')->group(function () {
             Route::middleware('abilities:admin-access')->group(function () {
                 Route::get('/', 'index');
                 Route::get('/stats', 'stats');
+            });
+        });
+
+        // System Settings
+        Route::prefix('settings')->controller(SettingController::class)->group(function () {
+            Route::middleware('ability:admin-access')->group(function () {
+                Route::get('/', 'index');
+                Route::post('/', 'update');
+                Route::post('/test-smtp', 'testSmtp');
+                Route::post('/test-ai', 'testAiKey');
             });
         });
 
