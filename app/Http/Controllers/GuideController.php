@@ -107,8 +107,18 @@ class GuideController extends Controller
         $data = $request->validate([
             'title' => 'string|max:255',
             'description' => 'nullable|string',
+            'type' => 'in:student,school,company',
             'is_published' => 'boolean',
+            'file' => 'nullable|file|mimes:pdf|max:10240', // ganti file (opsional)
         ]);
+
+        if ($request->hasFile('file')) {
+            // Buang file lama supaya storage gak numpuk sampah.
+            if ($guide->file_path) {
+                Storage::disk('public')->delete($guide->file_path);
+            }
+            $data['file_path'] = $request->file('file')->store('guides', 'public');
+        }
 
         $guide->update($data);
 
