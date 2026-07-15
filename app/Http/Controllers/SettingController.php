@@ -45,6 +45,27 @@ class SettingController extends Controller
                     $valStr = (string)$value;
                 }
                 $setting->update(['value' => $valStr]);
+            } else {
+                // Self-healing: create the setting if it doesn't exist (e.g. if DB seeder wasn't run on VPS)
+                $type = 'string';
+                if (is_bool($value)) {
+                    $type = 'boolean';
+                    $valStr = $value ? 'true' : 'false';
+                } elseif (is_array($value)) {
+                    $type = 'json';
+                    $valStr = json_encode($value);
+                } elseif (is_numeric($value)) {
+                    $type = 'number';
+                    $valStr = (string)$value;
+                } else {
+                    $valStr = (string)$value;
+                }
+
+                Setting::create([
+                    'key' => $key,
+                    'value' => $valStr,
+                    'type' => $type,
+                ]);
             }
         }
 
