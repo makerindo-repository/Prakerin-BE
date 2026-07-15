@@ -268,6 +268,11 @@ Skema JSON yang harus Anda hasilkan wajib memiliki properti berikut:
             }
         }
 
+        // Ensure $jsonResponse is an associative array (fixes "Cannot use object of type stdClass as array")
+        if (is_object($jsonResponse) || is_array($jsonResponse)) {
+            $jsonResponse = json_decode(json_encode($jsonResponse), true);
+        }
+
         // Post-processing/correction on the credibility metrics to ensure determinism and compatibility
         if (isset($jsonResponse['credibility'])) {
             $credibility = $jsonResponse['credibility'];
