@@ -108,10 +108,36 @@ $jobsText
 
 Harap analisis CV PDF yang dilampirkan dan hasilkan response dalam format JSON yang terstruktur. Jika tidak ada lowongan yang aktif yang cocok, Anda diperbolehkan membuat rekomendasi umum (general recommendation) mengenai tipe posisi magang yang cocok dan menetapkan 'is_general_recommendation' menjadi true.
 
+Tugas Anda juga mencakup menganalisis kredibilitas dari CV/Resume yang diunggah. Kredibilitas dihitung secara terpisah untuk 3 komponen (aspek) berikut (skor awal masing-masing aspek adalah 100, batas minimum 0):
+
+1. Timeline Validation (Bobot 30%, Skor awal 100):
+   - Periksa tanggal kerja/pendidikan yang tumpang tindih (Overlap). Kurangi 15 poin untuk setiap overlap dan tambahkan objek flag di array flags dengan type: 'TIMELINE_OVERLAP', severity: 'high', dan berikan pesan 'message' detail tentang perusahaan yang bertabrakan.
+   - Periksa job hopping: Jika kandidat memiliki lebih dari 5 pekerjaan dalam 3 tahun terakhir, kurangi 10 poin dan tambahkan flag type: 'JOB_HOPPING', severity: 'medium', beserta message detail.
+   - Periksa kesesuaian lama pengalaman (Experience mismatch): Jika jumlah tahun pengalaman yang diklaim secara eksplisit berbeda lebih dari 5 tahun dengan total tahun dari daftar riwayat kerja, kurangi 20 poin dan tambahkan flag type: 'EXPERIENCE_MISMATCH', severity: 'high'.
+
+2. Claim Plausibility Check (Bobot 40%, Skor awal 100):
+   - Periksa klaim posisi/sertifikat/penghargaan yang mencurigakan (Suspicious Claims). Jika ada klaim posisi tidak realistis seperti 'founder of' Microsoft/Google, 'inventor of the Internet', atau 'Nobel Prize', kurangi poin (founder: -28.5, ceo: -27, nobel prize: -29.7, inventor: -28.5, key developer: -21, built: -18) dan berikan flag type: 'SUSPICIOUS_CLAIM' dengan severity 'high' atau 'medium' beserta detail claim dan context kalimatnya.
+   - Periksa kepadatan pencapaian (High achievement density): Jika kandidat mengklaim pencapaian yang tidak masuk akal (misalnya > 30 bullet points atau klaim prestasi yang terlalu padat dalam jangka waktu pendek), kurangi 15 poin dan tambahkan flag type: 'HIGH_ACHIEVEMENT_DENSITY', severity: 'medium'.
+   - Periksa inflasi keahlian (Expertise inflation): Jika keahlian tingkat expert/senior terlalu banyak dibanding lama pengalaman (misalnya jumlah skill expert > setengah dari total tahun pengalaman), kurangi 15 poin dan tambahkan flag type: 'EXPERTISE_INFLATION', severity: 'medium'.
+
+3. Consistency Check (Bobot 30%, Skor awal 100):
+   - Periksa ketidakselarasan skill dengan peran (Skill-to-role mismatch): Jika mengklaim expert di suatu skill teknis (misal Python/Kubernetes) tapi tidak ada riwayat pekerjaan/pendidikan/proyek yang relevan, kurangi 5 poin per mismatch dan tambahkan flag type: 'SKILL_ROLE_MISMATCH', severity: 'low'.
+   - Periksa kontradiksi:
+     - Jika masa studi full-time bertabrakan dengan pekerjaan full-time (overlap), kurangi 20 poin dan tambahkan flag type: 'CONTRADICTION' (message: 'Full-time study overlaps with full-time employment') dengan severity 'medium'.
+     - Jika progression karir tidak logis (misal CEO jadi Intern), kurangi 20 poin dan tambahkan flag type: 'CONTRADICTION' (message: 'Career progression seems unrealistic (e.g., CEO → Intern)') dengan severity 'medium'.
+   - Periksa buzzword overload: Jika menggunakan 4+ buzzwords klise (synergy, leverage, disrupt, blockchain, AI) di summary/bio, kurangi 8 poin dan tambahkan flag type: 'BUZZWORD_OVERLOAD', severity: 'low'.
+
+Skor Kredibilitas Akhir = (Timeline Score * 0.3) + (Plausibility Score * 0.4) + (Consistency Score * 0.3)
+Tentukan level dan action:
+- Skor < 33: level = 'LOW', action = 'REJECT', review_required = false.
+- Skor 34 - 66: level = 'MEDIUM', action = 'REVIEW', review_required = true.
+- Skor >= 67: level = 'HIGH', action = 'PROCEED', review_required = false.
+
 Skema JSON yang harus Anda hasilkan wajib memiliki properti berikut:
 - profile_summary (objek berisi name, education, skills[], strengths[])
 - recommendations (array berisi job_opening_id, title, company_name, match_score, reasoning, is_general_recommendation)
-- improvement_suggestions (array of string)";
+- improvement_suggestions (array of string)
+- credibility (objek berisi score, level, action, review_required, flags[], flags_by_level{}, summary{})";
 
         // 5. Define schema
         $schema = new Schema(
@@ -145,9 +171,52 @@ Skema JSON yang harus Anda hasilkan wajib memiliki properti berikut:
                 'improvement_suggestions' => new Schema(
                     type: DataType::ARRAY,
                     items: new Schema(type: DataType::STRING)
+                ),
+                'credibility' => new Schema(
+                    type: DataType::OBJECT,
+                    properties: [
+                        'score' => new Schema(type: DataType::INTEGER),
+                        'level' => new Schema(type: DataType::STRING),
+                        'action' => new Schema(type: DataType::STRING),
+                        'review_required' => new Schema(type: DataType::BOOLEAN),
+                        'flags' => new Schema(
+                            type: DataType::ARRAY,
+                            items: new Schema(
+                                type: DataType::OBJECT,
+                                properties: [
+                                    'type' => new Schema(type: DataType::STRING),
+                                    'severity' => new Schema(type: DataType::STRING),
+                                    'message' => new Schema(type: DataType::STRING),
+                                    'suggestion' => new Schema(type: DataType::STRING, nullable: true),
+                                    'claim' => new Schema(type: DataType::STRING, nullable: true),
+                                    'context' => new Schema(type: DataType::STRING, nullable: true),
+                                ],
+                                required: ['type', 'severity', 'message']
+                            )
+                        ),
+                        'flags_by_level' => new Schema(
+                            type: DataType::OBJECT,
+                            properties: [
+                                'critical' => new Schema(type: DataType::INTEGER),
+                                'warning' => new Schema(type: DataType::INTEGER),
+                                'info' => new Schema(type: DataType::INTEGER),
+                            ],
+                            required: ['critical', 'warning', 'info']
+                        ),
+                        'summary' => new Schema(
+                            type: DataType::OBJECT,
+                            properties: [
+                                'timeline_score' => new Schema(type: DataType::INTEGER),
+                                'plausibility_score' => new Schema(type: DataType::INTEGER),
+                                'consistency_score' => new Schema(type: DataType::INTEGER),
+                            ],
+                            required: ['timeline_score', 'plausibility_score', 'consistency_score']
+                        )
+                    ],
+                    required: ['score', 'level', 'action', 'review_required', 'flags', 'flags_by_level', 'summary']
                 )
             ],
-            required: ['profile_summary', 'recommendations', 'improvement_suggestions']
+            required: ['profile_summary', 'recommendations', 'improvement_suggestions', 'credibility']
         );
 
         // 6. Call Gemini (with automatic fallback to gemini-3.1-flash-lite on quota/limit errors)
@@ -196,6 +265,74 @@ Skema JSON yang harus Anda hasilkan wajib memiliki properti berikut:
                 return response()->json([
                     'message' => 'Gagal memproses resume menggunakan AI Gemini: ' . $errMessage
                 ], 500);
+            }
+        }
+
+        // Post-processing/correction on the credibility metrics to ensure determinism and compatibility
+        if (isset($jsonResponse['credibility'])) {
+            $credibility = $jsonResponse['credibility'];
+            
+            $timelineScore = $credibility['summary']['timeline_score'] ?? 100;
+            $plausibilityScore = $credibility['summary']['plausibility_score'] ?? 100;
+            $consistencyScore = $credibility['summary']['consistency_score'] ?? 100;
+            
+            // Re-calculate math to ensure exact weighted score
+            $score = ($timelineScore * 0.30) + ($plausibilityScore * 0.40) + ($consistencyScore * 0.30);
+            $score = max(0, min(100, (int)round($score)));
+            
+            $level = 'HIGH';
+            $action = 'PROCEED';
+            $reviewRequired = false;
+            
+            if ($score < 33) {
+                $level = 'LOW';
+                $action = 'REJECT';
+            } elseif ($score < 67) {
+                $level = 'MEDIUM';
+                $action = 'REVIEW';
+                $reviewRequired = true;
+            }
+            
+            $credibility['score'] = $score;
+            $credibility['level'] = $level;
+            $credibility['action'] = $action;
+            $credibility['review_required'] = $reviewRequired;
+            
+            // Support camelCase for frontend compatibility
+            $credibility['credibilityScore'] = $score;
+            $credibility['credibilityLevel'] = $level;
+            $credibility['reviewRequired'] = $reviewRequired;
+            
+            // Recalculate flags count
+            $flags = $credibility['flags'] ?? [];
+            $critical = 0;
+            $warning = 0;
+            $info = 0;
+            foreach ($flags as $flag) {
+                $severity = strtolower($flag['severity'] ?? '');
+                if ($severity === 'high' || $severity === 'critical') {
+                    $critical++;
+                } elseif ($severity === 'medium' || $severity === 'warning') {
+                    $warning++;
+                } else {
+                    $info++;
+                }
+            }
+            
+            $flagsByLevel = [
+                'critical' => $critical,
+                'warning' => $warning,
+                'info' => $info
+            ];
+            
+            $credibility['flags_by_level'] = $flagsByLevel;
+            $credibility['flagsByLevel'] = $flagsByLevel;
+            
+            $jsonResponse['credibility'] = $credibility;
+            
+            // Enforce: Low Credibility (0-33%) has no recommendations
+            if ($action === 'REJECT') {
+                $jsonResponse['recommendations'] = [];
             }
         }
 
@@ -301,6 +438,60 @@ Skema JSON yang harus Anda hasilkan wajib memiliki properti berikut:
         return response()->file($path, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="' . $analytic->file_name . '"'
+        ]);
+    }
+
+    /**
+     * Update the review status of an AI credibility check (admin only).
+     */
+    public function review(Request $request, $id)
+    {
+        $request->validate([
+            'action' => 'required|in:APPROVED,REJECTED'
+        ]);
+
+        $analytic = AiAnalytic::findOrFail($id);
+
+        $result = $analytic->analysis_result;
+        if (!isset($result['credibility'])) {
+            return response()->json(['message' => 'Analisis kredibilitas tidak ditemukan untuk record ini.'], 404);
+        }
+
+        $credibility = $result['credibility'];
+        
+        // Backup original action before updating
+        $originalAction = $credibility['original_action'] ?? ($credibility['action'] ?? 'REVIEW');
+        $credibility['original_action'] = $originalAction;
+        $credibility['originalAction'] = $originalAction;
+
+        $newAction = $request->action; // APPROVED or REJECTED
+        $credibility['action'] = $newAction;
+        $credibility['review_required'] = false;
+        $credibility['reviewRequired'] = false;
+        $credibility['reviewed_by'] = auth()->user()->name ?? 'Administrator';
+        $credibility['reviewed_at'] = now()->toIso8601String();
+
+        $result['credibility'] = $credibility;
+        $analytic->analysis_result = $result;
+        $analytic->save();
+
+        // Create log of activity
+        try {
+            \App\Models\ActivityLog::create([
+                'user_id' => auth()->id(),
+                'action' => 'update',
+                'resource_type' => 'AiAnalytic',
+                'resource_id' => $analytic->id,
+                'resource_name' => $analytic->file_name,
+                'description' => 'Recruiter approved/rejected CV credibility review: ' . $newAction
+            ]);
+        } catch (\Throwable $logEx) {
+            Log::warning('Failed to log review activity: ' . $logEx->getMessage());
+        }
+
+        return response()->json([
+            'message' => 'Keputusan review berhasil disimpan.',
+            'data' => $analytic
         ]);
     }
 }

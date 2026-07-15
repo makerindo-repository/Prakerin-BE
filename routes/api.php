@@ -322,6 +322,9 @@ Route::prefix('v1')->group(function () {
                 Route::delete('/{id}', 'destroy');
                 Route::get('/{id}/pdf', 'downloadPdf');
             });
+            Route::middleware('ability:admin-access')->group(function () {
+                Route::patch('/{id}/review', 'review');
+            });
         });
 
     // Internship Application

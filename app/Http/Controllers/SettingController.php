@@ -133,7 +133,7 @@ class SettingController extends Controller
 
         try {
             // Using a cheap lightweight model for API testing
-            $result = \Gemini\Laravel\Facades\Gemini::generativeModel("gemini-1.5-flash")
+            $result = \Gemini\Laravel\Facades\Gemini::generativeModel("gemini-2.0-flash")
                 ->generateContent("Hello, verify API connection. Keep response under 3 words.");
 
             if ($result && !empty($result->text())) {
