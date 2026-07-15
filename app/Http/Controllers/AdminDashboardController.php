@@ -107,10 +107,6 @@ class AdminDashboardController extends Controller
             ->whereHas('enrollments', function ($q) {
                 $q->whereRaw('attendance_count < total_sessions * 0.5 AND total_sessions > 0');
             })
-            ->get()
-            ->filter(function ($class) {
-                return $class->low_attendance_count > 0;
-            })
             ->count();
         $preInternshipSummary = [
             'total'        => $totalClasses,

@@ -79,7 +79,7 @@ class CompanyController extends Controller
         response: 404,
         description: 'Company tidak ditemukan'
     )]
-    public function show(int $id)
+    public function show(string $id)
     {
         // $company = Company::with(['user.profileImage', 'internships'])->find($id);
 

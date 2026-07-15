@@ -30,11 +30,18 @@ class AiAnalyticsController extends Controller
             'uploaded_file' => 'required|file|mimes:pdf|max:10240', // Max 10MB PDF
         ]);
 
-        // 2. Check Gemini API key
+        // 2. Check AI Provider and Gemini API key
+        $aiProvider = \App\Models\Setting::getVal('ai_provider', 'gemini');
+        if ($aiProvider === 'none') {
+            return response()->json([
+                'message' => 'Layanan AI Analytics dinonaktifkan oleh administrator.'
+            ], 403);
+        }
+
         if (!config('gemini.api_key')) {
             return response()->json([
                 'error_type' => 'missing_api_key',
-                'message' => 'Layanan AI Analytics belum siap. API Key Gemini belum dikonfigurasi di file .env backend (GEMINI_API_KEY).'
+                'message' => 'Layanan AI Analytics belum siap. Kunci API Gemini belum dikonfigurasi di menu Pengaturan Sistem.'
             ], 500);
         }
 

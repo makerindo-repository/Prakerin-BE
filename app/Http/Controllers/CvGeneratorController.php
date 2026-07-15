@@ -62,6 +62,20 @@ class CvGeneratorController extends Controller
             'prompt_user' => 'nullable|string'
         ]);
 
+        // Check AI Provider and Gemini API key
+        $aiProvider = \App\Models\Setting::getVal('ai_provider', 'gemini');
+        if ($aiProvider === 'none') {
+            return response()->json([
+                'message' => 'Layanan pembuatan CV berbasis AI dinonaktifkan oleh administrator.'
+            ], 403);
+        }
+
+        if (!config('gemini.api_key')) {
+            return response()->json([
+                'message' => 'Layanan Pembuatan CV belum siap. Kunci API Gemini belum dikonfigurasi di menu Pengaturan Sistem.'
+            ], 500);
+        }
+
         $profile = json_encode($validated['profile_user'], JSON_PRETTY_PRINT);
         $userPrompt = $validated['prompt_user'] ?? 'Buatkan rinkasan profile dan deskripsi pengalaman yang menarik.';
 
