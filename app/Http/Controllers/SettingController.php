@@ -48,6 +48,13 @@ class SettingController extends Controller
             }
         }
 
+        // Programmatically clear config cache so dynamic overrides apply cleanly
+        try {
+            \Illuminate\Support\Facades\Artisan::call('config:clear');
+        } catch (\Exception $e) {
+            Log::warning('Artisan config:clear failed: ' . $e->getMessage());
+        }
+
         // Return the fresh casted list of settings
         $settings = Setting::all()->mapWithKeys(function ($item) {
             return [$item->key => $item->getVal($item->key)];
