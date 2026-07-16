@@ -189,12 +189,28 @@ Skema JSON yang harus Anda hasilkan wajib memiliki properti berikut:
             );
 
             // Fetch PDF path and generate using Storage disk path with fallbacks
-            $pdfPath = \Illuminate\Support\Facades\Storage::disk('local')->path($analytic->file_path);
+            // Fetch PDF path using the default Storage disk path
+            $pdfPath = \Illuminate\Support\Facades\Storage::path($analytic->file_path);
+            if (!file_exists($pdfPath)) {
+                // Try local disk path
+                try {
+                    $pdfPath = \Illuminate\Support\Facades\Storage::disk('local')->path($analytic->file_path);
+                } catch (\Throwable $e) {}
+            }
+            if (!file_exists($pdfPath)) {
+                // Try public disk path
+                try {
+                    $pdfPath = \Illuminate\Support\Facades\Storage::disk('public')->path($analytic->file_path);
+                } catch (\Throwable $e) {}
+            }
             if (!file_exists($pdfPath)) {
                 $pdfPath = storage_path('app/' . $analytic->file_path);
             }
             if (!file_exists($pdfPath)) {
                 $pdfPath = storage_path('app/private/' . $analytic->file_path);
+            }
+            if (!file_exists($pdfPath)) {
+                $pdfPath = storage_path('app/public/' . $analytic->file_path);
             }
             if (!file_exists($pdfPath)) {
                 throw new \Exception("File PDF CV tidak ditemukan di path storage mana pun: " . $pdfPath);
