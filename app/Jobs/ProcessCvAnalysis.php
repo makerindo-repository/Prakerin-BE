@@ -188,11 +188,16 @@ Skema JSON yang harus Anda hasilkan wajib memiliki properti berikut:
                 required: ['profile_summary', 'recommendations', 'improvement_suggestions', 'credibility']
             );
 
-            // Fetch PDF path and generate
-            $pdfPath = storage_path('app/private/' . $analytic->file_path);
+            // Fetch PDF path and generate using Storage disk path with fallbacks
+            $pdfPath = \Illuminate\Support\Facades\Storage::disk('local')->path($analytic->file_path);
             if (!file_exists($pdfPath)) {
-                // Try fallback to local disk path
                 $pdfPath = storage_path('app/' . $analytic->file_path);
+            }
+            if (!file_exists($pdfPath)) {
+                $pdfPath = storage_path('app/private/' . $analytic->file_path);
+            }
+            if (!file_exists($pdfPath)) {
+                throw new \Exception("File PDF CV tidak ditemukan di path storage mana pun: " . $pdfPath);
             }
 
             $result = Gemini::generativeModel("gemini-3.5-flash")->withGenerationConfig(
