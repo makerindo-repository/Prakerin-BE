@@ -12,3 +12,10 @@ Schedule::command('app:delete-unverified-users')
     ->daily()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/laravel.log'));
+
+// Workaround for VPS environments without supervisor/terminal access:
+// Spawn the queue worker every minute to process database queue jobs and exit.
+Schedule::command('queue:work --stop-when-empty')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->runInBackground();
