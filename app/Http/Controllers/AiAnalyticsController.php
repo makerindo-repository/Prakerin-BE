@@ -56,10 +56,29 @@ class AiAnalyticsController extends Controller
         // Dispatch background job
         \App\Jobs\ProcessCvAnalysis::dispatch($analyticRecord->id);
 
+        // Force-run a background queue worker to process the job immediately (workaround for no supervisor/terminal access)
+        $this->triggerQueueWorker();
+
         return response()->json([
             'message' => 'Analisis CV sedang diproses di latar belakang.',
             'data' => $analyticRecord
         ]);
+    }
+
+    /**
+     * Start a queue worker process in the background.
+     */
+    private function triggerQueueWorker()
+    {
+        $command = "php " . base_path('artisan') . " queue:work --stop-when-empty --tries=1";
+        
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            // Windows background execution
+            pclose(popen("start /B " . $command . " > NUL 2>&1", "r"));
+        } else {
+            // Linux background execution
+            pclose(popen($command . " > /dev/null 2>&1 &", "r"));
+        }
     }
 
     /**
