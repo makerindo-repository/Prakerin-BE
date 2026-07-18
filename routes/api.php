@@ -619,6 +619,9 @@ Route::prefix('v1')->group(function () {
 
         // System Settings
         Route::prefix('settings')->controller(SettingController::class)->group(function () {
+            // Subset publik, boleh dibaca semua role yang login (bukan cuma admin).
+            Route::get('/public', 'publicSettings');
+
             Route::middleware('ability:admin-access')->group(function () {
                 Route::get('/', 'index');
                 Route::post('/', 'update');

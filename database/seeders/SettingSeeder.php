@@ -76,6 +76,11 @@ class SettingSeeder extends Seeder
                 'value' => '52',
                 'type' => 'number',
             ],
+            [
+                'key' => 'pre_internship_class_url',
+                'value' => 'https://makerindo.myr.id/',
+                'type' => 'string',
+            ],
 
             // Integrations
             [

@@ -893,7 +893,9 @@ class UserController extends Controller
  */
     public function profile(Request $request)
     {
-        $user = $request->user()->with(['student', 'school', 'company'])->find($request->user()->id);
+        $user = $request->user()
+            ->with(['student.school.cityRegency.province', 'school.cityRegency.province', 'company.cityRegency.province'])
+            ->find($request->user()->id);
 
 
         if (!$user->student) {
@@ -906,10 +908,15 @@ class UserController extends Controller
             $user->makeHidden('company');
         }
 
+        // Tentukan zona waktu dashboard berdasarkan provinsi institusi/sekolah
+        // pengguna (WIB/WITA/WIT), bukan zona waktu perangkat/browser.
+        $provinceName = null;
+
         if ($user->company) {
             $user->name = $user->company->name;
             if (isset($user->company->cityRegency)) {
                 $user['company']["province_id"] = $user->company->cityRegency->province_id;
+                $provinceName = $user->company->cityRegency->province->name ?? null;
             } else {
                 $user['company']["province_id"] = null;
             }
@@ -918,6 +925,7 @@ class UserController extends Controller
             $user->name = $user->school->name;
             if (isset($user->school->cityRegency)) {
                 $user['school']["province_id"] = $user->school->cityRegency->province_id;
+                $provinceName = $user->school->cityRegency->province->name ?? null;
             } else {
                 $user['school']["province_id"] = null;
             }
@@ -926,10 +934,15 @@ class UserController extends Controller
             $user->name = $user->student->name;
             if (isset($user->student->school)) {
                 $user['student']["school_name"] = $user->student->school->name;
+                $provinceName = $user->student->school->cityRegency->province->name ?? null;
             } else {
                 $user['student']["school_name"] = null;
             }
         }
+
+        $timezone = \App\Support\IndonesianTimezone::resolve($provinceName);
+        $user['timezone'] = $timezone['zone'];       // mis. "Asia/Jakarta"
+        $user['timezone_label'] = $timezone['label']; // mis. "WIB"
 
         return response()->json([
             'data' => $user,

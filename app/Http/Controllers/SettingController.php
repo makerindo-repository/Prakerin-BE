@@ -88,6 +88,25 @@ class SettingController extends Controller
     }
 
     /**
+     * Subset pengaturan yang aman dibaca semua role yang login (bukan cuma
+     * admin) — dipakai misalnya buat sidebar butuh link "Kelas Pra-Magang".
+     * SENGAJA whitelist manual di sini, jangan pernah expose semua Setting::all()
+     * ke endpoint ini karena ada value sensitif (SMTP password, AI API key, dst).
+     */
+    public function publicSettings()
+    {
+        $whitelist = ['pre_internship_class_url', 'platform_name', 'support_email', 'support_phone'];
+
+        $settings = Setting::whereIn('key', $whitelist)
+            ->get()
+            ->mapWithKeys(fn ($item) => [$item->key => $item->getVal($item->key)]);
+
+        return response()->json([
+            'data' => $settings,
+        ]);
+    }
+
+    /**
      * Test the connection to the SMTP server.
      */
     public function testSmtp()
