@@ -9,6 +9,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 #[OA\Tag(
@@ -240,12 +241,13 @@ class JobOpeningController extends Controller
             'is_paid' => 'required|boolean',
             'grade' => 'required|in:smk,mahasiswa,all',
             'type' => 'required|in:part_time,full_time',
-            'location' => 'required|in:onsite,remote,hybrid', //removing field as migration has no field in the enum
-            'qouta' => 'required|integer|min:1', //renaming quota to qouta to sync with migration
+            'location' => 'required|in:onsite,remote,hybrid',
+            'qouta' => 'required|integer|min:1',
             'is_available' => 'required|boolean',
             'tests' => 'array',
             'start_date' => 'required|date',
-            'closing_date' => 'required|date'
+            'closing_date' => 'required|date',
+            'poster' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ]);
 
         if ($validator->fails()) {
@@ -273,9 +275,14 @@ class JobOpeningController extends Controller
             $data['end_date'] = $startDate->copy()->addYears($duration->duration_value);
         }
 
-        // return response()->json([
-        //     $data
-        // ], 400);
+        // Handle poster upload
+        if ($request->hasFile('poster')) {
+            $file = $request->file('poster');
+            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->storeAs('job-opening-posters', $filename, 'public');
+            $data['poster'] = $filename;
+        }
+
         $jobOpening = JobOpening::create($data);
 
         if (!empty($data['tests'])) { //added handler if tests return empty (remove if actually required)
@@ -284,7 +291,6 @@ class JobOpeningController extends Controller
 
         return response()->json([
             'data' => $jobOpening->load('test') //changed 'with' to 'load' because 'with' is builder not instance
-            // 'test' => $data
         ], 201);
     }
 
@@ -403,7 +409,8 @@ class JobOpeningController extends Controller
             'type' => 'sometimes|required|in:part_time,full_time',
             'location'    => 'sometimes|required|in:onsite,remote,hybrid',
             'qouta' => 'sometimes|required|integer|min:1',
-            'is_available' => 'sometimes|required|boolean'
+            'is_available' => 'sometimes|required|boolean',
+            'poster' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ]);
 
         if ($validator->fails()) {
@@ -411,6 +418,18 @@ class JobOpeningController extends Controller
         }
 
         $data = $validator->validated();
+
+        // Handle poster upload
+        if ($request->hasFile('poster')) {
+            // Delete old poster if exists
+            if ($jobOpening->poster && Storage::disk('public')->exists("job-opening-posters/{$jobOpening->poster}")) {
+                Storage::disk('public')->delete("job-opening-posters/{$jobOpening->poster}");
+            }
+            $file = $request->file('poster');
+            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->storeAs('job-opening-posters', $filename, 'public');
+            $data['poster'] = $filename;
+        }
 
         $jobOpening->update($data);
         $jobOpening->save();
@@ -453,6 +472,11 @@ class JobOpeningController extends Controller
 
         if ($jobOpening->company_id !== auth()->user()->company->id) {
             throw new HttpResponseException(response()->json(['errors' => 'Forbidden.'], 403));
+        }
+
+        // Delete poster file if exists
+        if ($jobOpening->poster && Storage::disk('public')->exists("job-opening-posters/{$jobOpening->poster}")) {
+            Storage::disk('public')->delete("job-opening-posters/{$jobOpening->poster}");
         }
 
         $jobOpening->delete();

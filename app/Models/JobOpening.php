@@ -37,7 +37,8 @@ class JobOpening extends Model
         'role',
         'start_date',
         'end_date',
-        'closing_date'
+        'closing_date',
+        'poster'
     ];
 
     protected static function booted()
