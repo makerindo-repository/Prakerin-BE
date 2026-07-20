@@ -265,7 +265,7 @@ class AdminDashboardController extends Controller
                 return in_array($job->field?->name, $suitableFields);
             })->count();
 
-            $demandRate = $totalActiveJobs > 0 ? ($demandJobsCount / $totalActiveJobs) * 100 : 50;
+            $demandRate = $totalActiveJobs > 0 ? ($demandJobsCount / $totalActiveJobs) * 100 : 0;
 
             // Calculate student placement success rate for this major
             $totalStudents = $major->students_count;
@@ -278,8 +278,8 @@ class AdminDashboardController extends Controller
             // Compute matching score: 70% based on demand rate, 30% based on placement success rate
             $scoreValue = round(($demandRate * 0.7) + ($placementRate * 0.3));
 
-            // Smooth the value to keep it realistic (between 50% and 98%)
-            $scoreValue = max(50, min(98, $scoreValue));
+            // Smooth the value to keep it realistic (between 0% and 98%)
+            $scoreValue = max(0, min(98, $scoreValue));
 
             // Default fallback mappings if major name isn't explicitly mapped
             $props = $uiProps[$major->name] ?? [
