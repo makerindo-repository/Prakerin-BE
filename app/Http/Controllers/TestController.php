@@ -298,4 +298,75 @@ class TestController extends Controller
             'data' => true,
         ], 200);
     }
+
+    /**
+     * Generate test scenario using AI.
+     */
+    public function generateScenario(Request $request)
+    {
+        // Increase maximum execution time for AI processing
+        @set_time_limit(120);
+
+        $request->validate([
+            'job_title' => 'required|string|max:255',
+            'skills' => 'nullable|string|max:500',
+            'type' => 'required|in:theory,practice,other'
+        ]);
+
+        $jobTitle = $request->input('job_title');
+        $skills = $request->input('skills', 'Keahlian umum terkait posisi');
+        $type = $request->input('type');
+
+        $aiProvider = \App\Models\Setting::getVal('ai_provider', 'gemini');
+        if ($aiProvider === 'none') {
+            return response()->json(['message' => 'Layanan AI Generator dinonaktifkan oleh administrator.'], 403);
+        }
+
+        if (!config('gemini.api_key')) {
+            return response()->json([
+                'error_type' => 'missing_api_key',
+                'message' => 'Layanan AI belum siap. Kunci API Gemini belum dikonfigurasi di menu Pengaturan Sistem.'
+            ], 500);
+        }
+
+        $typeLabel = $type === 'theory' ? 'teori (pilihan ganda/essay)' : ($type === 'practice' ? 'praktik/koding' : 'lainnya');
+
+        $prompt = "Anda adalah instruktur/penguji profesional.
+Tugas Anda adalah merancang sebuah skenario tes seleksi magang untuk posisi: '$jobTitle'.
+Keahlian/Topik yang diuji: '$skills'.
+Tipe tes yang diinginkan: '$typeLabel'.
+
+Hasilkan skenario tes yang profesional dalam bahasa Indonesia dengan struktur JSON sebagai berikut:
+{
+  \"title\": \"(Judul tes yang menarik dan ringkas)\",
+  \"description\": \"(Deskripsi instruksi pengerjaan tes secara mendetail, kriteria penilaian, dan langkah-langkah penyelesaian)\"
+}";
+
+        try {
+            $result = \Gemini\Laravel\Facades\Gemini::generativeModel("gemini-2.0-flash")->withGenerationConfig(
+                generationConfig: new \Gemini\Data\GenerationConfig(
+                    responseMimeType: \Gemini\Enums\ResponseMimeType::APPLICATION_JSON,
+                    responseSchema: new \Gemini\Data\Schema(
+                        type: \Gemini\Enums\DataType::OBJECT,
+                        properties: [
+                            'title' => new \Gemini\Data\Schema(type: \Gemini\Enums\DataType::STRING),
+                            'description' => new \Gemini\Data\Schema(type: \Gemini\Enums\DataType::STRING),
+                        ],
+                        required: ['title', 'description']
+                    )
+                )
+            )->generateContent($prompt);
+
+            return response()->json([
+                'success' => true,
+                'data' => $result->json()
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('AI Test Generation Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat skenario tes berbasis AI: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

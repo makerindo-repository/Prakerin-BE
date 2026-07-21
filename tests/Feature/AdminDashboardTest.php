@@ -120,7 +120,12 @@ class AdminDashboardTest extends TestCase
         $this->assertNotEmpty($smkScores);
         $this->assertNotEmpty($collegeScores);
 
-        $this->assertEquals('RPL', $smkScores[0]['label']);
-        $this->assertEquals('Informatika', $collegeScores[0]['label']);
+        // BUG-12 fix: assert the stable full_name field, not the abbreviated label
+        // which is a UI-only mapping that can change independently of data correctness.
+        $smkMajorNames = array_column($smkScores, 'full_name');
+        $collegeMajorNames = array_column($collegeScores, 'full_name');
+
+        $this->assertContains('Rekayasa Perangkat Lunak', $smkMajorNames);
+        $this->assertContains('Teknik Informatika', $collegeMajorNames);
     }
 }

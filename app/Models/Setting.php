@@ -38,4 +38,12 @@ class Setting extends Model
                 return $value;
         }
     }
+
+    /**
+     * Send WhatsApp notification (stub).
+     */
+    public static function sendWhatsAppNotification(string $phone, string $messageText)
+    {
+        \Illuminate\Support\Facades\Log::info("WhatsApp Notification Dispatch to $phone: $messageText");
+    }
 }

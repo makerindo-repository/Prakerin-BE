@@ -66,7 +66,7 @@ class AdminDashboardController extends Controller
             'total_all_students'     => Student::count(),
             'total_job_openings'     => JobOpening::count(),
             'total_achievements'     => Achievement::count(),
-            'active_internships'     => $acceptedCount,
+            'active_internships'     => \App\Models\Internship::where('is_completed', false)->count(), // BUG-05 fix: count actual active internships, not accepted applications
             'total_feedback'         => Feedback::count(),
         ];
 
@@ -129,7 +129,7 @@ class AdminDashboardController extends Controller
                 'title'    => 'Siswa/Mahasiswa',
                 'subtitle' => 'Belum Mendapat Penempatan',
                 'badge'    => $unplacedStudents > 50 ? 'Tinggi' : ($unplacedStudents > 20 ? 'Sedang' : 'Rendah'),
-                'color'    => $unplacedStudents > 50 ? 'red' : 'orange',
+                'color'    => $unplacedStudents > 50 ? 'red' : ($unplacedStudents > 20 ? 'orange' : 'green'), // BUG-06 fix: add green for Rendah
             ],
             [
                 'key'      => 'matching_jobs',
@@ -257,6 +257,12 @@ class AdminDashboardController extends Controller
             'Desain Komunikasi Visual' => ['icon' => 'Zap', 'color' => 'orange', 'label' => 'DKV'],
         ];
 
+        // PERF-01 fix: pre-load all placed student counts in a single query instead of N+1
+        $placedByMajor = Student::selectRaw('major_id, COUNT(*) as placed')
+            ->whereIn('status', ['ongoing', 'completed'])
+            ->groupBy('major_id')
+            ->pluck('placed', 'major_id');
+
         foreach ($allMajors as $major) {
             $suitableFields = $majorFieldMapping[$major->name] ?? [];
             
@@ -269,9 +275,7 @@ class AdminDashboardController extends Controller
 
             // Calculate student placement success rate for this major
             $totalStudents = $major->students_count;
-            $placedStudents = Student::where('major_id', $major->id)
-                ->whereIn('status', ['ongoing', 'completed'])
-                ->count();
+            $placedStudents = $placedByMajor[$major->id] ?? 0; // PERF-01: use pre-loaded map
             
             $placementRate = $totalStudents > 0 ? ($placedStudents / $totalStudents) * 100 : 0;
 

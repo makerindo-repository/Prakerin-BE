@@ -222,4 +222,119 @@ class AiAnalyticsController extends Controller
             'data' => $analytic
         ]);
     }
+
+    /**
+     * Search internships using AI.
+     */
+    public function aiSearch(Request $request)
+    {
+        $request->validate([
+            'query' => 'required|string|max:500'
+        ]);
+
+        $userQuery = $request->input('query');
+
+        $aiProvider = \App\Models\Setting::getVal('ai_provider', 'gemini');
+        if ($aiProvider === 'none') {
+            return response()->json(['message' => 'Layanan AI Analytics / AI Search dinonaktifkan oleh administrator.'], 403);
+        }
+
+        if (!config('gemini.api_key')) {
+            return response()->json([
+                'error_type' => 'missing_api_key',
+                'message' => 'Layanan AI Search belum siap. Kunci API Gemini belum dikonfigurasi di menu Pengaturan Sistem.'
+            ], 500);
+        }
+
+        // Get all active job openings
+        $jobOpenings = JobOpening::where('is_available', true)->with(['company', 'field', 'duration'])->get();
+
+        if ($jobOpenings->isEmpty()) {
+            return response()->json([
+                'message' => 'Tidak ada lowongan magang aktif saat ini di sistem.',
+                'data' => []
+            ]);
+        }
+
+        $jobsText = "";
+        foreach ($jobOpenings as $job) {
+            $descriptionText = is_string($job->description) ? $job->description : '';
+            if ($job->description && is_array($job->description) && isset($job->description['blocks'])) {
+                $descriptionText = "";
+                foreach ($job->description['blocks'] as $block) {
+                    if ($block['type'] === 'paragraph' || $block['type'] === 'header') {
+                        $descriptionText .= ($block['data']['text'] ?? '') . "\n";
+                    } elseif ($block['type'] === 'list') {
+                        foreach ($block['data']['items'] ?? [] as $item) {
+                            $itemText = is_array($item) ? json_encode($item) : (string)$item;
+                            $descriptionText .= "- " . $itemText . "\n";
+                        }
+                    }
+                }
+            }
+            $jobsText .= "ID: {$job->id}\nTitle: {$job->title}\nCompany: " . ($job->company?->name ?? 'Unknown Company') . "\nDescription: {$descriptionText}\n-----------------------------------\n";
+        }
+
+        $prompt = "Anda adalah asisten AI pencari magang untuk Prakerin.ID.
+Tugas Anda adalah memproses kueri pencarian siswa dan mencocokkannya dengan lowongan magang aktif yang tersedia di bawah ini.
+Kueri Pencarian Pengguna: '$userQuery'
+
+Berikut adalah daftar lowongan magang aktif di sistem:
+$jobsText
+
+Pilihlah maksimal 5 lowongan magang yang paling relevan dengan kueri tersebut.
+Hasilkan response dalam format JSON yang berisi array dari objek rekomendasi.
+Response harus dalam bahasa Indonesia yang ramah, sopan, dan informatif.";
+
+        $schema = new Schema(
+            type: DataType::ARRAY,
+            items: new Schema(
+                type: DataType::OBJECT,
+                properties: [
+                    'job_opening_id' => new Schema(type: DataType::STRING),
+                    'title' => new Schema(type: DataType::STRING),
+                    'company_name' => new Schema(type: DataType::STRING),
+                    'match_score' => new Schema(type: DataType::INTEGER),
+                    'explanation' => new Schema(type: DataType::STRING),
+                ],
+                required: ['job_opening_id', 'title', 'company_name', 'match_score', 'explanation']
+            )
+        );
+
+        try {
+            $result = Gemini::generativeModel("gemini-2.0-flash")->withGenerationConfig(
+                generationConfig: new GenerationConfig(
+                    responseMimeType: ResponseMimeType::APPLICATION_JSON,
+                    responseSchema: $schema
+                )
+            )->generateContent($prompt);
+
+            $responseJson = $result->json();
+
+            // Log activity
+            try {
+                \App\Models\ActivityLog::create([
+                    'user_id' => auth()->id(),
+                    'action' => 'search',
+                    'resource_type' => 'JobOpening',
+                    'resource_id' => null,
+                    'resource_name' => substr($userQuery, 0, 50),
+                    'description' => 'User searched internships using AI with query: ' . $userQuery
+                ]);
+            } catch (\Throwable $logEx) {
+                Log::warning('Failed to log search activity: ' . $logEx->getMessage());
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $responseJson
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('AI Search Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memproses pencarian berbasis AI: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

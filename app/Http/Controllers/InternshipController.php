@@ -50,7 +50,7 @@ class InternshipController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        return response()->json(['errors' => 'Not implemented yet.'], 501);
     }
 
     /**
@@ -166,7 +166,15 @@ class InternshipController extends Controller
             ));
         }
 
-        if ($internship->internshipApplication->jobOpening->company_id !== auth()->user()->company->id) {
+        $companyId = auth()->user()->company?->id;
+        if (!$companyId) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => 'Company profile not found.'],
+                403
+            ));
+        }
+
+        if ($internship->internshipApplication?->jobOpening?->company_id !== $companyId) {
             throw new HttpResponseException(response()->json(
                 ['errors' => 'Forbidden.'],
                 403
@@ -245,7 +253,15 @@ class InternshipController extends Controller
             ));
         }
 
-        if ($internship->internshipApplication->jobOpening->company_id !== auth()->user()->company->id) {
+        $companyId = auth()->user()->company?->id;
+        if (!$companyId) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => 'Company profile not found.'],
+                403
+            ));
+        }
+
+        if ($internship->internshipApplication?->jobOpening?->company_id !== $companyId) {
             throw new HttpResponseException(response()->json(
                 ['errors' => 'Forbidden.'],
                 403
@@ -274,9 +290,14 @@ class InternshipController extends Controller
 )]
     public function count(Request $request)
     {
+        $companyId = $request->user()->company?->id;
+        if (!$companyId) {
+            return response()->json(['data' => 0]);
+        }
+
         $count = Internship::where('is_completed', false)
-            ->whereHas('internshipApplication.jobOpening', function ($query) use ($request) {
-                $query->where('company_id', $request->user()->company->id);
+            ->whereHas('internshipApplication.jobOpening', function ($query) use ($companyId) {
+                $query->where('company_id', $companyId);
             })
             ->count();
 
