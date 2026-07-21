@@ -284,8 +284,15 @@ class InternshipApplicationController extends Controller
             ));
         }
 
+        $companyId = auth()->user()->company?->id;
+        if (!$companyId) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => 'Company profile not found.'],
+                403
+            ));
+        }
 
-        if ($internshipApplication->jobOpening->company_id !== auth()->user()->company->id) {
+        if ($internshipApplication->jobOpening?->company_id !== $companyId) {
             throw new HttpResponseException(response()->json(
                 ['errors' => 'Forbidden.'],
                 403
@@ -365,7 +372,15 @@ class InternshipApplicationController extends Controller
 
         $jobOpening = $internshipApplication->jobOpening;
 
-        if ($internshipApplication->jobOpening->company_id !== auth()->user()->company->id) {
+        $companyId = auth()->user()->company?->id;
+        if (!$companyId) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => 'Company profile not found.'],
+                403
+            ));
+        }
+
+        if ($jobOpening?->company_id !== $companyId) {
             throw new HttpResponseException(response()->json(
                 ['errors' => 'Forbidden.'],
                 403
@@ -408,12 +423,21 @@ class InternshipApplicationController extends Controller
 
         Mail::send([], [], function ($message) use ($email, $pdf, $pdfContent) {
             $message->to($email)
-                ->subject('Dokumen PDF Anda')
-                ->html('<p>Halo, ini dokumen PDF yang Anda kirimkan!</p>')
-                ->attachData($pdfContent, $pdf->getClientOriginalName(), [
-                    'mime' => 'application/pdf',
-                ]);
+                ->subject('Update Status Lamaran Magang')
+                ->html('<p>Halo, status lamaran magang Anda telah di-update!</p>');
+            $message->attachData($pdfContent, $pdf->getClientOriginalName(), [
+                'mime' => 'application/pdf',
+            ]);
         });
+
+        $student = $internshipApplication->curriculumVitae->student;
+        if ($student->phone_number) {
+            $statusIndo = $data['status'] === 'accepted' ? 'DITERIMA' : 'DITOLAK';
+            \App\Models\Setting::sendWhatsAppNotification(
+                $student->phone_number,
+                "Halo {$student->name}, status lamaran magang Anda untuk posisi '{$internshipApplication->jobOpening->title}' telah diperbarui menjadi: {$statusIndo}."
+            );
+        }
 
         $internshipApplication->status = $data['status'];
         $internshipApplication->save();
@@ -456,7 +480,15 @@ class InternshipApplicationController extends Controller
             ));
         }
 
-        if ($internshipApplication->jobOpening->company_id !== auth()->user()->company->id) {
+        $companyId = auth()->user()->company?->id;
+        if (!$companyId) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => 'Company profile not found.'],
+                403
+            ));
+        }
+
+        if ($internshipApplication->jobOpening?->company_id !== $companyId) {
             throw new HttpResponseException(response()->json(
                 ['errors' => 'Forbidden.'],
                 403

@@ -395,7 +395,12 @@ class JobOpeningController extends Controller
             throw new HttpResponseException(response()->json(['errors' => 'Job opening not found.'], 404));
         }
 
-        if ($jobOpening->company_id !== auth()->user()->company->id) {
+        $companyId = auth()->user()->company?->id;
+        if (!$companyId) {
+            throw new HttpResponseException(response()->json(['errors' => 'Company profile not found.'], 403));
+        }
+
+        if ($jobOpening->company_id !== $companyId) {
             throw new HttpResponseException(response()->json(['errors' => 'Forbidden.'], 403));
         }
 
@@ -470,7 +475,12 @@ class JobOpeningController extends Controller
             throw new HttpResponseException(response()->json(['errors' => 'Job opening not found.'], 404));
         }
 
-        if ($jobOpening->company_id !== auth()->user()->company->id) {
+        $companyId = auth()->user()->company?->id;
+        if (!$companyId) {
+            throw new HttpResponseException(response()->json(['errors' => 'Company profile not found.'], 403));
+        }
+
+        if ($jobOpening->company_id !== $companyId) {
             throw new HttpResponseException(response()->json(['errors' => 'Forbidden.'], 403));
         }
 

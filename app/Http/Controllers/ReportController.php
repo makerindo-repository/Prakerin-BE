@@ -520,4 +520,152 @@ class ReportController extends Controller
             'data' => $report
         ]);
     }
+
+    /**
+     * Generate an AI-powered summary report of system activities.
+     */
+    public function generateAiSummary(Request $request)
+    {
+        // Increase maximum execution time for AI processing
+        @set_time_limit(120);
+
+        $aiProvider = \App\Models\Setting::getVal('ai_provider', 'gemini');
+        if ($aiProvider === 'none') {
+            return response()->json(['message' => 'Layanan AI Report dinonaktifkan oleh administrator.'], 403);
+        }
+
+        if (!config('gemini.api_key')) {
+            return response()->json([
+                'error_type' => 'missing_api_key',
+                'message' => 'Layanan AI Report belum siap. Kunci API Gemini belum dikonfigurasi di menu Pengaturan Sistem.'
+            ], 500);
+        }
+
+        $user = Auth::user();
+        if ($user && ($user->role === 'student' || ($user->student && $user->student()->exists()))) {
+            $student = $user->student;
+            if (!$student) {
+                return response()->json(['message' => 'Data profil siswa tidak ditemukan.'], 404);
+            }
+
+            // Find student's active internship
+            $internship = Internship::where('student_id', $student->id)->with(['company', 'tasks', 'jobPosition'])->first();
+            if (!$internship) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'summary' => 'Anda belum terdaftar dalam program magang aktif.',
+                        'insights' => ['Belum ada riwayat magang aktif yang tercatat.'],
+                        'recommendations' => ['Silakan ajukan lamaran magang pada posisi yang tersedia atau hubungi pembimbing sekolah Anda.']
+                    ]
+                ]);
+            }
+
+            // Gather student internship info
+            $companyName = $internship->company->name ?? 'Perusahaan';
+            $jobTitle = $internship->jobPosition->name ?? 'Peserta Magang';
+            $startDate = $internship->start_date;
+            $endDate = $internship->end_date;
+
+            $allTasks = $internship->tasks;
+            $totalTasks = $allTasks->count();
+            $completedTasks = $allTasks->where('status', 'completed');
+            $completedCount = $completedTasks->count();
+
+            $tasksText = "";
+            foreach ($allTasks as $idx => $task) {
+                $statusLabel = $task->status === 'completed' ? 'Selesai' : 'Pending';
+                $tasksText .= "- {$task->title} (Status: {$statusLabel}): {$task->description}\n";
+            }
+
+            $prompt = "Anda adalah asisten AI Prakerin.ID.
+Tugas Anda adalah membuat Laporan Pertanggungjawaban/Hasil Magang secara otomatis untuk siswa berikut dalam bahasa Indonesia yang formal, terstruktur, dan profesional.
+
+Profil Siswa & Detail Magang:
+- Nama Siswa: {$student->name}
+- Institusi Asal: " . ($student->school->name ?? 'Sekolah') . "
+- Jurusan: " . ($student->major->name ?? 'Tidak ada') . "
+- Tempat Magang: {$companyName}
+- Posisi Magang: {$jobTitle}
+- Periode Magang: {$startDate} s/d {$endDate}
+- Statistik Tugas: {$completedCount} dari {$totalTasks} tugas telah diselesaikan.
+
+Daftar Tugas & Status:
+{$tasksText}
+
+Hasilkan laporan evaluasi hasil magang dalam format JSON dengan struktur berikut:
+{
+  \"summary\": \"(Ringkasan laporan magang eksekutif yang formal dalam 2-3 paragraf, merangkum apa saja yang dikerjakan siswa, kontribusinya kepada perusahaan, serta evaluasi performa umum)\",
+  \"insights\": [\"(Wawasan/Keahlian baru yang diperoleh selama magang)\", \"(Poin pembelajaran/hasil dari tugas-tugas yang diselesaikan)\", \"(Evaluasi pencapaian kerja)\"],
+  \"recommendations\": [\"(Rekomendasi area pengembangan diri untuk siswa ke depannya)\", \"(Saran penambahan skill yang perlu dikembangkan)\"]
+}";
+        } else {
+            // Fetch recent activity logs (e.g., last 30 days)
+            $logs = \App\Models\ActivityLog::orderBy('created_at', 'desc')->limit(150)->get();
+
+            if ($logs->isEmpty()) {
+                return response()->json([
+                    'message' => 'Tidak ada aktivitas baru di sistem untuk dianalisis.',
+                    'data' => [
+                        'summary' => 'Tidak ada aktivitas baru di sistem untuk dianalisis.',
+                        'insights' => [],
+                        'recommendations' => ['Pastikan siswa dan perusahaan mulai menggunakan sistem untuk menghasilkan log aktivitas.']
+                    ]
+                ]);
+            }
+
+            $logsText = "";
+            foreach ($logs as $log) {
+                $logsText .= "- [{$log->created_at}] User #{$log->user_id} performed '{$log->action}' on '{$log->resource_type}' (Name: {$log->resource_name}): {$log->description}\n";
+            }
+
+            $prompt = "Anda adalah analis sistem Prakerin.ID.
+Tugas Anda adalah meninjau log aktivitas sistem di bawah ini dan menghasilkan laporan analitik cerdas dalam bahasa Indonesia.
+Laporan harus merangkum aktivitas secara keseluruhan, menyoroti wawasan utama (insights) seperti keaktifan siswa atau kendala sistem, serta memberikan rekomendasi tindakan konkret untuk administrator.
+
+Berikut adalah log aktivitas sistem terbaru:
+$logsText
+
+Hasilkan respons dalam format JSON dengan struktur berikut:
+{
+  \"summary\": \"(Ringkasan analisis dalam 2-3 paragraf)\",
+  \"insights\": [\"(Wawasan 1)\", \"(Wawasan 2)\", \"(Wawasan 3)\"],
+  \"recommendations\": [\"(Rekomendasi 1)\", \"(Rekomendasi 2)\"]
+}";
+        }
+
+        try {
+            $result = \Gemini\Laravel\Facades\Gemini::generativeModel("gemini-2.0-flash")->withGenerationConfig(
+                generationConfig: new \Gemini\Data\GenerationConfig(
+                    responseMimeType: \Gemini\Enums\ResponseMimeType::APPLICATION_JSON,
+                    responseSchema: new \Gemini\Data\Schema(
+                        type: \Gemini\Enums\DataType::OBJECT,
+                        properties: [
+                            'summary' => new \Gemini\Data\Schema(type: \Gemini\Enums\DataType::STRING),
+                            'insights' => new \Gemini\Data\Schema(
+                                type: \Gemini\Enums\DataType::ARRAY,
+                                items: new \Gemini\Data\Schema(type: \Gemini\Enums\DataType::STRING)
+                            ),
+                            'recommendations' => new \Gemini\Data\Schema(
+                                type: \Gemini\Enums\DataType::ARRAY,
+                                items: new \Gemini\Data\Schema(type: \Gemini\Enums\DataType::STRING)
+                            )
+                        ],
+                        required: ['summary', 'insights', 'recommendations']
+                    )
+                )
+            )->generateContent($prompt);
+
+            return response()->json([
+                'success' => true,
+                'data' => $result->json()
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('AI Report Generation Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat laporan berbasis AI: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

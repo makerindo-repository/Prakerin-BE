@@ -89,7 +89,6 @@ class CvGeneratorController extends Controller
             Dan permintaan tambahan dari pengguna: '$userPrompt'
             Tolong hasilkan konten CV yang profesional dan menarik sesuai data yang diberikan.
         ";
-        // 3. Panggil API Gemini (tangani exception karena client bisa mencoba json_decode pada response)
         try {
             $result = Gemini::generativeModel("gemini-2.0-flash")->withGenerationConfig(
                 generationConfig: new GenerationConfig(
@@ -142,10 +141,10 @@ class CvGeneratorController extends Controller
             )->generateContent($prompt);
         } catch (\JsonException $e) {
             Log::error('Gemini JSON decode error (vendor): ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            return response()->json(['message' => 'Terjadi kesalahan pada respons AI: respons tidak dapat di-decode.'], 502);
+            return response()->json(['message' => 'Terjadi kesalahan pada respons AI: respons tidak dapat di-decode.'], 500);
         } catch (\Throwable $e) {
             Log::error('Gemini API Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            return response()->json(['message' => 'Terjadi kesalahan saat menghubungi layanan AI.'], 502);
+            return response()->json(['message' => 'Terjadi kesalahan saat menghubungi layanan AI: ' . $e->getMessage()], 500);
         }
         // $result = Gemini::generativeModel(model: 'gemini-2.0-flash')
         //     ->withGenerationConfig(

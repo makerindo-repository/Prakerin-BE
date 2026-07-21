@@ -112,6 +112,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('/', 'store');
                 Route::patch('/{id}', 'update');
                 Route::delete('/{id}', 'destroy');
+                Route::post('/generate', 'generateScenario');
             });
         });
 
@@ -297,10 +298,12 @@ Route::prefix('v1')->group(function () {
         ->controller(CurriculumVitaeController::class)
         ->middleware('auth:sanctum')
         ->group(function () {
+            Route::middleware('ability:student-access,admin-access')->group(function () {
+                Route::post('/generate-cv', [CvGeneratorController::class, 'generate']);
+            });
             Route::middleware('abilities:student-access')->group(function () {
                 Route::get('/', 'index');
                 Route::post('/', 'store');
-                Route::post('/generate-cv', [CvGeneratorController::class, 'generate']);
                 Route::get('/{id}', 'show');
                 Route::patch('/{id}', 'update');
                 Route::delete('/{id}', 'destroy');
@@ -321,6 +324,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('/', 'index');
                 Route::delete('/{id}', 'destroy');
                 Route::get('/{id}/pdf', 'downloadPdf');
+                Route::post('/search', 'aiSearch');
             });
             Route::middleware('ability:admin-access')->group(function () {
                 Route::patch('/{id}/review', 'review');
@@ -590,6 +594,9 @@ Route::prefix('v1')->group(function () {
 
         // P2 Reports
         Route::prefix('reports')->controller(ReportController::class)->group(function () {
+            Route::middleware('ability:admin-access,student-access,school-access')->group(function () {
+                Route::post('/ai-summary', 'generateAiSummary');
+            });
             Route::middleware('abilities:admin-access')->group(function () {
                 Route::get('/internship-stats', 'internshipStats');
                 Route::get('/student-progress', 'studentProgress');

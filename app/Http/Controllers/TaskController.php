@@ -10,6 +10,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Log;
 
 class TaskController extends Controller
@@ -205,7 +206,31 @@ class TaskController extends Controller
             }
         }
 
-        Task::create($data);
+        $task = Task::create($data);
+
+        // Notify student about new task
+        try {
+            $student = $task->internship->student;
+            $email = $student->user->email;
+            
+            Mail::send([], [], function ($message) use ($email, $task) {
+                $message->to($email)
+                    ->subject('Tugas Baru Ditugaskan: ' . $task->title)
+                    ->html('<h3>Halo, Anda menerima tugas magang baru!</h3>' .
+                           '<p><strong>Judul Tugas:</strong> ' . htmlspecialchars($task->title) . '</p>' .
+                           '<p><strong>Tenggat Waktu:</strong> ' . htmlspecialchars($task->due_date) . '</p>' .
+                           '<p>Silakan buka dashboard Anda untuk melihat detail tugas dan melaporkan perkembangannya.</p>');
+            });
+
+            if ($student->phone_number) {
+                \App\Models\Setting::sendWhatsAppNotification(
+                    $student->phone_number,
+                    "Halo {$student->name}, Anda menerima tugas magang baru: '{$task->title}' dengan tenggat waktu {$task->due_date}."
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mengirim email/whatsapp notifikasi tugas baru: ' . $e->getMessage());
+        }
 
         return response()->json(['data' => true], 201);
     }
@@ -385,7 +410,12 @@ class TaskController extends Controller
             throw new HttpResponseException(response()->json(['errors' => 'Task not found,'], 404));
         }
 
-        if ($task->internship->internshipApplications->jobOpening->company_id !== auth()->user()->company->id) {
+        $companyId = auth()->user()->company?->id;
+        if (!$companyId) {
+            throw new HttpResponseException(response()->json(['errors' => 'Company profile not found.'], 403));
+        }
+
+        if ($task->internship?->internshipApplication?->jobOpening?->company_id !== $companyId) {
             throw new HttpResponseException(response()->json(['errors' => 'Forbidden.'], 403));
         }
 
