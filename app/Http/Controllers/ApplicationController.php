@@ -207,6 +207,6 @@ class ApplicationController extends Controller
     )]
     public function destroy(string $id)
     {
-        //
+        //tes
     }
 }
