@@ -302,7 +302,7 @@ Response harus dalam bahasa Indonesia yang ramah, sopan, dan informatif.";
         );
 
         try {
-            $result = Gemini::generativeModel("gemini-2.0-flash")->withGenerationConfig(
+            $result = Gemini::generativeModel("gemini-3.1-flash-lite")->withGenerationConfig(
                 generationConfig: new GenerationConfig(
                     responseMimeType: ResponseMimeType::APPLICATION_JSON,
                     responseSchema: $schema

@@ -216,7 +216,7 @@ Skema JSON yang harus Anda hasilkan wajib memiliki properti berikut:
                 throw new \Exception("File PDF CV tidak ditemukan di path storage mana pun: " . $pdfPath);
             }
 
-            $result = Gemini::generativeModel("gemini-3.5-flash")->withGenerationConfig(
+            $result = Gemini::generativeModel("gemini-3.1-flash-lite")->withGenerationConfig(
                 generationConfig: new GenerationConfig(
                     responseMimeType: ResponseMimeType::APPLICATION_JSON,
                     responseSchema: $schema

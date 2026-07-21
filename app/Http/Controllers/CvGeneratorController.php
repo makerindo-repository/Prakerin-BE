@@ -90,7 +90,7 @@ class CvGeneratorController extends Controller
             Tolong hasilkan konten CV yang profesional dan menarik sesuai data yang diberikan.
         ";
         try {
-            $result = Gemini::generativeModel("gemini-2.0-flash")->withGenerationConfig(
+            $result = Gemini::generativeModel("gemini-3.1-flash-lite")->withGenerationConfig(
                 generationConfig: new GenerationConfig(
                     responseMimeType: ResponseMimeType::APPLICATION_JSON,
                     responseSchema: new Schema(
@@ -146,7 +146,7 @@ class CvGeneratorController extends Controller
             Log::error('Gemini API Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json(['message' => 'Terjadi kesalahan saat menghubungi layanan AI: ' . $e->getMessage()], 500);
         }
-        // $result = Gemini::generativeModel(model: 'gemini-2.0-flash')
+        // $result = Gemini::generativeModel(model: 'gemini-3.1-flash-lite')
         //     ->withGenerationConfig(
         //         generationConfig: new GenerationConfig(
         //             responseMimeType: ResponseMimeType::APPLICATION_JSON,

@@ -343,7 +343,7 @@ Hasilkan skenario tes yang profesional dalam bahasa Indonesia dengan struktur JS
 }";
 
         try {
-            $result = \Gemini\Laravel\Facades\Gemini::generativeModel("gemini-2.0-flash")->withGenerationConfig(
+            $result = \Gemini\Laravel\Facades\Gemini::generativeModel("gemini-3.1-flash-lite")->withGenerationConfig(
                 generationConfig: new \Gemini\Data\GenerationConfig(
                     responseMimeType: \Gemini\Enums\ResponseMimeType::APPLICATION_JSON,
                     responseSchema: new \Gemini\Data\Schema(
