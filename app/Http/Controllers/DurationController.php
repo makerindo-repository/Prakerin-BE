@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use OpenApi\Attributes as OA;
 use App\Models\Duration;
+use App\Models\JobOpening;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -265,6 +266,18 @@ class DurationController extends Controller
             throw new HttpResponseException(response([
                 'errors' => 'Duration not found.',
             ], 404));
+        }
+
+        // Cegah menghapus Duration yang masih dipakai oleh lowongan (job_openings).
+        // Tanpa guard ini, penghapusan bisa meninggalkan job_openings.duration_id
+        // yang yatim (menunjuk ke record yang sudah tidak ada) jika FK constraint
+        // di database tidak benar-benar tereksekusi (mis. karena schema drift),
+        // yang menyebabkan frontend crash saat membaca `duration.duration_value`.
+        $inUseCount = JobOpening::where('duration_id', $id)->count();
+        if ($inUseCount > 0) {
+            throw new HttpResponseException(response([
+                'errors' => "Duration ini masih digunakan oleh {$inUseCount} lowongan dan tidak dapat dihapus. Ubah atau hapus lowongan tersebut terlebih dahulu.",
+            ], 409));
         }
 
         $duration->delete();
