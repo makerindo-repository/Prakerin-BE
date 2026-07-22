@@ -1015,7 +1015,7 @@ class UserController extends Controller
                         ], 403));
                     }
                     // Verify the student belongs to this school
-                    if (!$targetUser->student || $targetUser->student->school_id !== $request->user()->school->id) {
+                    if (!$targetUser->student || $targetUser->student->school_id !== $request->user()->school?->id) {
                         throw new HttpResponseException(response([
                             "errors" => "Unauthorized. This student does not belong to your school."
                         ], 403));
@@ -1038,7 +1038,7 @@ class UserController extends Controller
         $user->username = $data['username'] ?? $user->username;
         $user->email = $data['email'] ?? $user->email;
         if (isset($data['password']) && !empty($data['password'])) {
-            $user->password = Hash::make($data['password']);
+            $user->password = $data['password'];
         }
 
         if (isset($data['email'])) {

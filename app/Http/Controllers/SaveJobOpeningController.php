@@ -58,7 +58,7 @@ class SaveJobOpeningController extends Controller
                 'created_at' => $item->created_at,
                 'updated_at' => $item->updated_at,
 
-                'job_opening' => [
+                'job_opening' => $item->jobOpening ? [
                     'id' => $item->jobOpening->id,
                     'title' => $item->jobOpening->title,
                     'description' => $item->jobOpening->description,
@@ -66,21 +66,21 @@ class SaveJobOpeningController extends Controller
                     'type' => $item->jobOpening->type,
                     'is_paid' => $item->jobOpening->is_paid,
                     'is_available' => $item->jobOpening->is_available,
-                ],
+                ] : null,
 
-                'company' => [
+                'company' => $item->jobOpening?->company ? [
                     'id' => $item->jobOpening->company->id,
                     'name' => $item->jobOpening->company->name,
                     'address' => $item->jobOpening->company->address,
                     'phone_number' => $item->jobOpening->company->phone_number,
-                ],
+                ] : null,
 
-                'user' => [
+                'user' => $item->jobOpening?->company?->user ? [
                     'id' => $item->jobOpening->company->user->id,
                     'username' => $item->jobOpening->company->user->username,
                     'email' => $item->jobOpening->company->user->email,
                     'role' => $item->jobOpening->company->user->role,
-                ]
+                ] : null
             ];
         });
 

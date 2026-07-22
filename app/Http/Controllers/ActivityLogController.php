@@ -88,7 +88,7 @@ class ActivityLogController extends Controller
             'total_week' => $totalWeek,
             'total_month' => $totalMonth,
             'most_active_user' => $mostActiveUser ? [
-                'username' => $mostActiveUser->user->username ?? 'Deleted User',
+                'username' => $mostActiveUser->user?->username ?? 'Deleted User',
                 'count' => $mostActiveUser->count
             ] : null,
             'most_logged_action' => $mostLoggedAction ? [

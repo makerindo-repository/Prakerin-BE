@@ -43,11 +43,19 @@ class AdminDashboardController extends Controller
         $totalSekolah         = School::where('type', 'school')->count();
         $totalPerguruanTinggi = School::where('type', 'university')->count();
 
-        // ── Segmented student counts (join on schools.type) ───────────────
-        $totalSiswa     = Student::join('schools', 'students.school_id', '=', 'schools.id')
-                            ->where('schools.type', 'school')->count();
-        $totalMahasiswa = Student::join('schools', 'students.school_id', '=', 'schools.id')
-                            ->where('schools.type', 'university')->count();
+        // ── Segmented student counts (matching StudentController filters) ───────
+        $totalSiswa = Student::where('is_verified', true)
+            ->whereHas('school', function ($q) {
+                $q->where('type', 'school');
+            })
+            ->whereIn('class', ['11', '12'])
+            ->count();
+
+        $totalMahasiswa = Student::where('is_verified', true)
+            ->whereHas('school', function ($q) {
+                $q->where('type', 'university');
+            })
+            ->count();
 
         // ── Application status counts (reused across sections) ────────────
         $totalApplications = InternshipApplication::count();
@@ -63,7 +71,7 @@ class AdminDashboardController extends Controller
             'total_companies'        => Company::count(),
             'total_students'         => $totalSiswa,
             'total_mahasiswa'        => $totalMahasiswa,
-            'total_all_students'     => Student::count(),
+            'total_all_students'     => $totalSiswa + $totalMahasiswa,
             'total_job_openings'     => JobOpening::count(),
             'total_achievements'     => Achievement::count(),
             'active_internships'     => \App\Models\Internship::where('is_completed', false)->count(), // BUG-05 fix: count actual active internships, not accepted applications

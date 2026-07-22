@@ -73,7 +73,7 @@ class UserUpdateProfileRequest extends FormRequest
         $rules['phone_number'] = [
             'nullable',
             'string',
-            'regex:/^\+628[0-9]{8,10}$/',
+            'regex:/^(?:\+628|628|08)[0-9]{8,11}$/',
             'min:10',
             'max:20',
         ];

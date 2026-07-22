@@ -40,6 +40,7 @@ use App\Http\Controllers\GuideController;
 use App\Http\Controllers\PreInternshipClassController;
 use App\Http\Controllers\MentorController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\SchoolController;
 use Illuminate\Support\Facades\Route;
 
 // Route::get('/docs', function () {
@@ -591,6 +592,14 @@ Route::prefix('v1')->group(function () {
 
         Route::apiResource('students', StudentController::class);
         Route::apiResource('companies', CompanyController::class)->except(['store', 'update', 'destroy']);
+
+        // School Custom Report Template
+        Route::prefix('school')->controller(SchoolController::class)->group(function () {
+            Route::middleware('ability:school-access')->group(function () {
+                Route::get('/report-template', 'getReportTemplate');
+                Route::post('/report-template', 'updateReportTemplate');
+            });
+        });
 
         // P2 Reports
         Route::prefix('reports')->controller(ReportController::class)->group(function () {

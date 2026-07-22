@@ -104,7 +104,7 @@ class InternshipApplicationController extends Controller
                     'name' => $app->curriculumVitae->name,
                 ],
 
-                'job_opening' => [
+                'job_opening' => $app->jobOpening ? [
                     'id' => $app->jobOpening->id,
                     'title' => $app->jobOpening->title,
                     'description' => $app->jobOpening->description,
@@ -113,26 +113,26 @@ class InternshipApplicationController extends Controller
                     'qouta' => $app->jobOpening->qouta,
                     'is_paid' => $app->jobOpening->is_paid,
                     'is_available' => $app->jobOpening->is_available,
-                ],
+                ] : null,
 
                 'test' => $app->test,
 
-                'company' => [
+                'company' => $app->jobOpening?->company ? [
                     'id' => $app->jobOpening->company->id,
                     'name' => $app->jobOpening->company->name,
                     'address' => $app->jobOpening->company->address,
                     'phone_number' => $app->jobOpening->company->phone_number,
                     'is_verified' => $app->jobOpening->company->is_verified,
-                ],
+                ] : null,
 
-                'user' => [
+                'user' => $app->jobOpening?->company?->user ? [
                     'id' => $app->jobOpening->company->user->id,
                     'username' => $app->jobOpening->company->user->username,
                     'email' => $app->jobOpening->company->user->email,
                     'role' => $app->jobOpening->company->user->role,
-                ],
-                'city_regency' => $app->jobOpening->company->cityRegency->makeHidden('province'),
-                'province' => $app->jobOpening->company->cityRegency->province,
+                ] : null,
+                'city_regency' => $app->jobOpening?->company?->cityRegency?->makeHidden('province'),
+                'province' => $app->jobOpening?->company?->cityRegency?->province,
             ];
         });
 
