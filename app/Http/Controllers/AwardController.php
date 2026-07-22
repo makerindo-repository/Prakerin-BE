@@ -65,7 +65,9 @@ class AwardController extends Controller
     // GET /api/v1/awards/{id}
     public function show($id)
     {
-        $award = Award::withCount('studentAwards')->findOrFail($id);
+        $award = Award::withCount('studentAwards')
+            ->with('studentAwards.student.student')
+            ->findOrFail($id);
         return response()->json(['data' => $award]);
     }
 
