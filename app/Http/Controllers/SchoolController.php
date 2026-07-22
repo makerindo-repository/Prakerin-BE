@@ -334,4 +334,50 @@ class SchoolController extends Controller
         $count = School::count();
         return response()->json(['data' => $count], 200);
     }
+
+    /**
+     * Get school report template.
+     */
+    public function getReportTemplate(Request $request)
+    {
+        $user = $request->user();
+        $school = $user->school ?? School::where('user_id', $user->id)->first();
+
+        if (!$school) {
+            return response()->json(['message' => 'Sekolah tidak ditemukan.'], 404);
+        }
+
+        return response()->json([
+            'data' => [
+                'report_template' => $school->report_template ?? ''
+            ]
+        ], 200);
+    }
+
+    /**
+     * Update school report template.
+     */
+    public function updateReportTemplate(Request $request)
+    {
+        $user = $request->user();
+        $school = $user->school ?? School::where('user_id', $user->id)->first();
+
+        if (!$school) {
+            return response()->json(['message' => 'Sekolah tidak ditemukan.'], 404);
+        }
+
+        $request->validate([
+            'report_template' => 'nullable|string'
+        ]);
+
+        $school->report_template = $request->input('report_template');
+        $school->save();
+
+        return response()->json([
+            'message' => 'Template laporan berhasil disimpan.',
+            'data' => [
+                'report_template' => $school->report_template
+            ]
+        ], 200);
+    }
 }

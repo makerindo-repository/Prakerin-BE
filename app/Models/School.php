@@ -32,6 +32,7 @@ class School extends Model
         'npsn',
         'status',
         'description',
+        'report_template',
     ];
 
     protected static function booted()

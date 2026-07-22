@@ -45,29 +45,23 @@ class ReportController extends Controller
             });
         }
 
-        $allInternships = $query->get();
+        $today = Carbon::today()->format('Y-m-d');
 
-        $total = $allInternships->count();
-        $completedCount = 0;
-        $ongoingCount = 0;
-        $pendingCount = 0;
+        $completedCount = (clone $query)->where(function ($q) use ($today) {
+            $q->where('is_completed', true)
+              ->orWhere('end_date', '<', $today);
+        })->count();
 
-        $today = Carbon::today();
+        $ongoingCount = (clone $query)->where('is_completed', false)
+            ->where('start_date', '<=', $today)
+            ->where('end_date', '>=', $today)
+            ->count();
 
-        foreach ($allInternships as $internship) {
-            $start = Carbon::parse($internship->start_date);
-            $end = Carbon::parse($internship->end_date);
+        $pendingCount = (clone $query)->where('is_completed', false)
+            ->where('start_date', '>', $today)
+            ->count();
 
-            if ($internship->is_completed) {
-                $completedCount++;
-            } elseif ($today->between($start, $end)) {
-                $ongoingCount++;
-            } elseif ($today->lessThan($start)) {
-                $pendingCount++;
-            } else {
-                $completedCount++; // Past end date without completed flag can be treated as completed or ongoing, let's treat as completed
-            }
-        }
+        $total = $completedCount + $ongoingCount + $pendingCount;
 
         if ($status) {
             if ($status === 'completed') {
@@ -90,7 +84,7 @@ class ReportController extends Controller
             ->get()
             ->map(function ($item) {
                 return [
-                    'company_name' => $item->company->name ?? 'Unknown Company',
+                    'company_name' => $item->company?->name ?? 'Unknown Company',
                     'count' => $item->count
                 ];
             });
@@ -562,8 +556,8 @@ class ReportController extends Controller
             }
 
             // Gather student internship info
-            $companyName = $internship->company->name ?? 'Perusahaan';
-            $jobTitle = $internship->jobPosition->name ?? 'Peserta Magang';
+            $companyName = $internship->company?->name ?? 'Perusahaan';
+            $jobTitle = $internship->jobPosition?->name ?? 'Peserta Magang';
             $startDate = $internship->start_date;
             $endDate = $internship->end_date;
 
@@ -578,13 +572,27 @@ class ReportController extends Controller
                 $tasksText .= "- {$task->title} (Status: {$statusLabel}): {$task->description}\n";
             }
 
+            $school = $student->school ?? \App\Models\School::find($student->school_id);
+            $schoolTemplateInstruction = "";
+            $summaryStructureDesc = "Ringkasan laporan magang eksekutif yang formal dalam 2-3 paragraf, merangkum apa saja yang dikerjakan siswa, kontribusinya kepada perusahaan, serta evaluasi performa umum";
+
+            if ($school && !empty($school->report_template)) {
+                $schoolTemplateInstruction = "\nATURAN UTAMA - PANDUAN & FORMAT LAPORAN SEKOLAH (" . ($school->name ?? 'Sekolah') . "):
+" . $school->report_template . "
+
+WAJIB PERHATIKAN: Sekolah siswa (" . ($school->name ?? 'Sekolah') . ") mewajibkan laporan magang disusun mengikuti struktur/template khusus di atas. 
+1. Anda HARUS menyusun teks bidang 'summary' secara utuh dengan mengikuti judul bab/bagian, urutan nomor, dan instruksi dari Template Format Laporan Sekolah di atas!
+2. FORMATTING KHUSUS: Setiap nomor/bab/bagian WAJIB diawali dengan dua kali baris baru ('\n\n') agar membentuk paragraf dan bagian tersendiri yang rapi (Contoh format di bidang 'summary': '\n\n1. PENDAHULUAN: LATAR BELAKANG DAN TUJUAN MAGANG\nIsi penjelasan...\n\n2. GAMBARAN UMUM PERUSAHAAN MITRA\nIsi penjelasan...'). Jangan menggabungkan bab/nomor dalam satu paragraf panjang!\n";
+                $summaryStructureDesc = "Teks laporan lengkap yang disusun dan dikelompokkan secara ketat berdasarkan Bab/Bagian/Nomor dari Template Format Laporan Sekolah di atas, di mana setiap Bab/Nomor dipisahkan oleh dua baris baru ('\\n\\n') dan diisi penjelasan komprehensif";
+            }
+
             $prompt = "Anda adalah asisten AI Prakerin.ID.
 Tugas Anda adalah membuat Laporan Pertanggungjawaban/Hasil Magang secara otomatis untuk siswa berikut dalam bahasa Indonesia yang formal, terstruktur, dan profesional.
-
+{$schoolTemplateInstruction}
 Profil Siswa & Detail Magang:
 - Nama Siswa: {$student->name}
-- Institusi Asal: " . ($student->school->name ?? 'Sekolah') . "
-- Jurusan: " . ($student->major->name ?? 'Tidak ada') . "
+- Institusi Asal: " . ($school?->name ?? 'Sekolah') . "
+- Jurusan: " . ($student->major?->name ?? 'Tidak ada') . "
 - Tempat Magang: {$companyName}
 - Posisi Magang: {$jobTitle}
 - Periode Magang: {$startDate} s/d {$endDate}
@@ -595,7 +603,7 @@ Daftar Tugas & Status:
 
 Hasilkan laporan evaluasi hasil magang dalam format JSON dengan struktur berikut:
 {
-  \"summary\": \"(Ringkasan laporan magang eksekutif yang formal dalam 2-3 paragraf, merangkum apa saja yang dikerjakan siswa, kontribusinya kepada perusahaan, serta evaluasi performa umum)\",
+  \"summary\": \"({$summaryStructureDesc})\",
   \"insights\": [\"(Wawasan/Keahlian baru yang diperoleh selama magang)\", \"(Poin pembelajaran/hasil dari tugas-tugas yang diselesaikan)\", \"(Evaluasi pencapaian kerja)\"],
   \"recommendations\": [\"(Rekomendasi area pengembangan diri untuk siswa ke depannya)\", \"(Saran penambahan skill yang perlu dikembangkan)\"]
 }";
