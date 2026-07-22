@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use OpenApi\Attributes as OA;
 use App\Models\Internship;
+use App\Models\InboxItem;
 use App\Models\InternshipApplication;
+use App\Services\NotificationService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Log;
+
 
 class InternshipApplicationController extends Controller
 {
@@ -220,7 +223,28 @@ class InternshipApplicationController extends Controller
 
         $internshipApplication->test()->attach($test);
 
-        // dd($test);
+        // Notify the company about the new application
+        try {
+            $companyUser = $internshipApplication->jobOpening?->company?->user;
+            if ($companyUser) {
+                $studentName = $user->student?->name ?? $user->username;
+                $jobTitle    = $internshipApplication->jobOpening?->title ?? 'Lowongan';
+                $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
+
+                app(NotificationService::class)->notify(
+                    userId      : $companyUser->id,
+                    title       : "Lamaran Baru: {$jobTitle}",
+                    content     : "{$studentName} telah melamar untuk posisi '{$jobTitle}'. Segera tinjau lamaran ini.",
+                    type        : 'new_application',
+                    actionUrl   : "{$frontendUrl}/dashboard/industry/lamaran/{$internshipApplication->id}",
+                    relatedType : 'InternshipApplication',
+                    relatedId   : $internshipApplication->id,
+                    senderId    : $user->id
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[InternshipApplicationController] Company notification failed: ' . $e->getMessage());
+        }
 
         return response()->json([
             'data' => $test
@@ -434,11 +458,16 @@ class InternshipApplicationController extends Controller
             $internshipApplication->curriculumVitae->student->status = "ongoing";
             $internshipApplication->curriculumVitae->student->save();
         }
-        $email = $internshipApplication->curriculumVitae->student->user->email;
+        $studentUser  = $internshipApplication->curriculumVitae->student->user;
+        $statusIndo   = $data['status'] === 'accepted' ? 'DITERIMA 🎉' : 'DITOLAK';
+        $jobTitle     = $internshipApplication->jobOpening?->title ?? 'Lowongan';
+        $frontendUrl  = config('app.frontend_url', 'http://localhost:3000');
 
         $pdf = $request->file('file');
-        $pdfContent = file_get_contents($pdf->getRealPath()); // ambil isi file dari memori
+        $pdfContent = file_get_contents($pdf->getRealPath());
 
+        // Legacy direct email with PDF attachment (kept because it attaches the file)
+        $email = $studentUser->email;
         Mail::send([], [], function ($message) use ($email, $pdf, $pdfContent) {
             $message->to($email)
                 ->subject('Update Status Lamaran Magang')
@@ -448,13 +477,19 @@ class InternshipApplicationController extends Controller
             ]);
         });
 
-        $student = $internshipApplication->curriculumVitae->student;
-        if ($student->phone_number) {
-            $statusIndo = $data['status'] === 'accepted' ? 'DITERIMA' : 'DITOLAK';
-            \App\Models\Setting::sendWhatsAppNotification(
-                $student->phone_number,
-                "Halo {$student->name}, status lamaran magang Anda untuk posisi '{$internshipApplication->jobOpening->title}' telah diperbarui menjadi: {$statusIndo}."
+        // Inbox + WhatsApp notification for student
+        try {
+            app(NotificationService::class)->notify(
+                userId      : $studentUser->id,
+                title       : "Status Lamaran: {$statusIndo}",
+                content     : "Lamaran Anda untuk posisi '{$jobTitle}' telah diperbarui menjadi {$statusIndo}. Silakan cek detail lamaran untuk informasi selengkapnya.",
+                type        : 'application_status',
+                actionUrl   : "{$frontendUrl}/dashboard/student/lamaran/{$internshipApplication->id}",
+                relatedType : 'InternshipApplication',
+                relatedId   : $internshipApplication->id
             );
+        } catch (\Throwable $e) {
+            Log::warning('[InternshipApplicationController] Student notification failed: ' . $e->getMessage());
         }
 
         $internshipApplication->status = $data['status'];

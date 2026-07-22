@@ -13,6 +13,7 @@ use App\Http\Controllers\DevController;
 use App\Http\Controllers\DurationController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FieldController;
+use App\Http\Controllers\InboxController;
 use App\Http\Controllers\InternshipApplicationController;
 use App\Http\Controllers\InternshipController;
 use App\Http\Controllers\JobOpeningController;
@@ -41,6 +42,7 @@ use App\Http\Controllers\PreInternshipClassController;
 use App\Http\Controllers\MentorController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 // Route::get('/docs', function () {
@@ -673,4 +675,28 @@ Route::prefix('v1')->group(function () {
     Route::get('/awards/{id}', [AwardController::class, 'show']);
     Route::get('/students/{studentId}/awards', [AwardController::class, 'studentAwards']);
     Route::get('/student-awards/{id}/certificate', [AwardController::class, 'printCertificate']);
+
+    // ─── Inbox / Notifications ───────────────────────────────────────────────
+    Route::prefix('inbox')
+        ->controller(InboxController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
+            Route::get('/', 'index');
+            Route::get('/unread-count', 'unreadCount');
+            Route::patch('/mark-all-read', 'markAllRead');
+            Route::patch('/{id}/read', 'markRead');
+        });
+
+    // User notification preference settings
+    Route::patch('/users/notification-settings', [UserController::class, 'updateNotificationSettings'])
+        ->middleware('auth:sanctum');
+
+    // WhatsApp test connection (admin only)
+    Route::post('/settings/test-whatsapp', [SettingController::class, 'testWhatsApp'])
+        ->middleware(['auth:sanctum', 'ability:admin-access']);
+});
+
+// ─── Public Webhooks (outside v1 prefix, no auth — provider calls these) ───
+Route::prefix('webhooks')->group(function () {
+    Route::post('/whatsapp/status', [WebhookController::class, 'whatsappStatus']);
 });

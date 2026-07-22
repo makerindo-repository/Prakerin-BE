@@ -145,7 +145,7 @@ class SettingController extends Controller
         $apiKey = config('gemini.api_key');
         if (empty($apiKey)) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'Gemini API Key is empty.'
             ], 400);
         }
@@ -157,21 +157,38 @@ class SettingController extends Controller
 
             if ($result && !empty($result->text())) {
                 return response()->json([
-                    'status' => 'success',
+                    'status'  => 'success',
                     'message' => 'Successfully connected to Google Gemini API! Response: ' . trim($result->text())
                 ]);
             }
 
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'Received an empty response from Gemini API.'
             ], 400);
         } catch (\Exception $e) {
             Log::error('SMTP/Settings AI Connection Test Error: ' . $e->getMessage());
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'Failed to connect to Gemini API: ' . $e->getMessage()
             ], 400);
         }
+    }
+
+    /**
+     * Test the WhatsApp (Twilio) connection.
+     * POST /api/v1/settings/test-whatsapp
+     */
+    public function testWhatsApp()
+    {
+        $whatsApp = new \App\Services\WhatsAppService();
+        $result   = $whatsApp->testConnection();
+
+        $statusCode = $result['success'] ? 200 : 400;
+
+        return response()->json([
+            'status'  => $result['success'] ? 'success' : 'error',
+            'message' => $result['message'],
+        ], $statusCode);
     }
 }

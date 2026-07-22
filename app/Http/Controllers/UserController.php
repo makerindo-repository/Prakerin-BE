@@ -1421,4 +1421,36 @@ class UserController extends Controller
             'data' => true
         ]);
     }
+
+    /**
+     * PATCH /api/v1/users/notification-settings
+     * Update the authenticated user's notification preferences.
+     */
+    public function updateNotificationSettings(Request $request)
+    {
+        $user = Auth::user();
+
+        $validated = $request->validate([
+            'email_notifications_enabled'    => 'sometimes|boolean',
+            'whatsapp_notifications_enabled' => 'sometimes|boolean',
+            'whatsapp_number'                => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:20',
+                'regex:/^[0-9+\s\-]{7,20}$/',
+            ],
+        ]);
+
+        $user->update($validated);
+
+        return response()->json([
+            'message' => 'Notification settings updated successfully',
+            'data'    => [
+                'email_notifications_enabled'    => $user->email_notifications_enabled,
+                'whatsapp_notifications_enabled' => $user->whatsapp_notifications_enabled,
+                'whatsapp_number'                => $user->whatsapp_number,
+            ],
+        ]);
+    }
 }

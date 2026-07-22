@@ -31,7 +31,10 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at',
         'last_login_at',
         'is_pro',
-        'is_verified'
+        'is_verified',
+        'email_notifications_enabled',
+        'whatsapp_notifications_enabled',
+        'whatsapp_number',
     ];
 
     protected $hidden = [
@@ -114,10 +117,22 @@ class User extends Authenticatable implements MustVerifyEmail
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'last_login_at' => 'datetime',
-            'password' => 'hashed',
+            'email_verified_at'               => 'datetime',
+            'last_login_at'                   => 'datetime',
+            'password'                        => 'hashed',
+            'email_notifications_enabled'     => 'boolean',
+            'whatsapp_notifications_enabled'  => 'boolean',
         ];
+    }
+
+    public function inboxItems()
+    {
+        return $this->hasMany(InboxItem::class);
+    }
+
+    public function notificationLogs()
+    {
+        return $this->hasMany(NotificationLog::class);
     }
 
 

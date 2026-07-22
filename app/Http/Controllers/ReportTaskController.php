@@ -6,10 +6,13 @@ use OpenApi\Attributes as OA;
 use App\Events\MessageSent;
 use App\Models\ReportTask;
 use App\Models\ReportTaskMessage;
+use App\Services\NotificationService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+
 
 class ReportTaskController extends Controller
 {
@@ -135,6 +138,48 @@ class ReportTaskController extends Controller
         $reportTaskMessage->save();
 
         Broadcast(new MessageSent('aa', 'aa'));
+
+        // Notify the student when company sends a message (feedback)
+        // and notify the company when a student sends a message (update)
+        try {
+            $senderUser    = auth()->user();
+            $frontendUrl   = config('app.frontend_url', 'http://localhost:3000');
+            $taskTitle     = $reportTask->task?->title ?? 'Tugas';
+
+            if ($senderUser?->company) {
+                // Company sent feedback → notify student
+                $studentUser = $reportTask->task?->internship?->student?->user;
+                if ($studentUser) {
+                    app(NotificationService::class)->notify(
+                        userId      : $studentUser->id,
+                        title       : "Feedback Laporan: {$taskTitle}",
+                        content     : "Perusahaan mengirimkan feedback pada laporan tugas '{$taskTitle}': " . \Str::limit($data['message'], 120),
+                        type        : 'report_feedback',
+                        actionUrl   : "{$frontendUrl}/dashboard/tasklist/{$reportTask->task_id}",
+                        relatedType : 'ReportTask',
+                        relatedId   : $reportTask->id,
+                        senderId    : $senderUser->id
+                    );
+                }
+            } elseif ($senderUser?->student) {
+                // Student sent update → notify company supervisor
+                $companyUser = $reportTask->task?->internship?->company?->user;
+                if ($companyUser) {
+                    app(NotificationService::class)->notify(
+                        userId      : $companyUser->id,
+                        title       : "Laporan Diperbarui: {$taskTitle}",
+                        content     : "Siswa/Mahasiswa memperbarui laporan tugas '{$taskTitle}': " . \Str::limit($data['message'], 120),
+                        type        : 'report_feedback',
+                        actionUrl   : "{$frontendUrl}/dashboard/tasklist/{$reportTask->task_id}",
+                        relatedType : 'ReportTask',
+                        relatedId   : $reportTask->id,
+                        senderId    : $senderUser->id
+                    );
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[ReportTaskController] Notification failed: ' . $e->getMessage());
+        }
 
         return response()->json([
             'data' => $reportTaskMessage

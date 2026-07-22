@@ -6,12 +6,14 @@ use OpenApi\Attributes as OA;
 use App\Models\Internship;
 use App\Models\Student;
 use App\Models\Task;
+use App\Services\NotificationService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Log;
+
 
 class TaskController extends Controller
 {
@@ -208,28 +210,23 @@ class TaskController extends Controller
 
         $task = Task::create($data);
 
-        // Notify student about new task
+        // Notify student about new task via inbox + email + WhatsApp
         try {
-            $student = $task->internship->student;
-            $email = $student->user->email;
-            
-            Mail::send([], [], function ($message) use ($email, $task) {
-                $message->to($email)
-                    ->subject('Tugas Baru Ditugaskan: ' . $task->title)
-                    ->html('<h3>Halo, Anda menerima tugas magang baru!</h3>' .
-                           '<p><strong>Judul Tugas:</strong> ' . htmlspecialchars($task->title) . '</p>' .
-                           '<p><strong>Tenggat Waktu:</strong> ' . htmlspecialchars($task->due_date) . '</p>' .
-                           '<p>Silakan buka dashboard Anda untuk melihat detail tugas dan melaporkan perkembangannya.</p>');
-            });
+            $student     = $task->internship->student;
+            $studentUser = $student->user;
+            $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
 
-            if ($student->phone_number) {
-                \App\Models\Setting::sendWhatsAppNotification(
-                    $student->phone_number,
-                    "Halo {$student->name}, Anda menerima tugas magang baru: '{$task->title}' dengan tenggat waktu {$task->due_date}."
-                );
-            }
+            app(NotificationService::class)->notify(
+                userId      : $studentUser->id,
+                title       : "Tugas Baru: {$task->title}",
+                content     : "Anda menerima tugas magang baru: '{$task->title}'. Tenggat waktu: {$task->due_date}. Silakan buka dashboard untuk melihat detail tugas.",
+                type        : 'new_task',
+                actionUrl   : "{$frontendUrl}/dashboard/student/tasklist/{$task->id}",
+                relatedType : 'Task',
+                relatedId   : $task->id
+            );
         } catch (\Throwable $e) {
-            Log::warning('Gagal mengirim email/whatsapp notifikasi tugas baru: ' . $e->getMessage());
+            Log::warning('[TaskController] Gagal mengirim notifikasi tugas baru: ' . $e->getMessage());
         }
 
         return response()->json(['data' => true], 201);
