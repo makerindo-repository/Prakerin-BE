@@ -196,6 +196,24 @@ class InternshipApplicationController extends Controller
             ], 400));
         }
 
+        // Batasi jumlah lamaran yang masih "menunggu" (belum accepted/rejected)
+        // sesuai pengaturan admin di Pengaturan > Program Magang, supaya siswa
+        // gak nge-spam lamaran ke banyak perusahaan sekaligus.
+        $maxConcurrent = (int) \App\Models\Setting::getVal('max_concurrent_applications', 3);
+        if ($maxConcurrent > 0) {
+            $pendingApplicationsCount = InternshipApplication::where('status', 'in_progress')
+                ->whereHas('curriculumVitae.student', function ($query) use ($user) {
+                    $query->where('id', $user->student->id);
+                })
+                ->count();
+
+            if ($pendingApplicationsCount >= $maxConcurrent) {
+                throw new HttpResponseException(response()->json([
+                    'errors' => "Anda sudah mencapai batas maksimal ({$maxConcurrent}) lamaran yang masih menunggu. Tunggu hasil lamaran sebelumnya sebelum melamar lagi.",
+                ], 400));
+            }
+        }
+
         $internshipApplication = InternshipApplication::create($data);
 
         $test = $internshipApplication->jobOpening->test->pluck('pivot.test_id')->toArray();
