@@ -42,7 +42,10 @@ use App\Http\Controllers\PreInternshipClassController;
 use App\Http\Controllers\MentorController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WebhookController;
+use App\Http\Controllers\Admin\SubscriptionAdminController;
+use App\Http\Controllers\Admin\RevenueController;
 use Illuminate\Support\Facades\Route;
 
 // Route::get('/docs', function () {
@@ -694,9 +697,30 @@ Route::prefix('v1')->group(function () {
     // WhatsApp test connection (admin only)
     Route::post('/settings/test-whatsapp', [SettingController::class, 'testWhatsApp'])
         ->middleware(['auth:sanctum', 'ability:admin-access']);
+
+    // ─── Subscription (user-facing) ───────────────────────────────────────
+    Route::prefix('subscriptions')
+        ->middleware('auth:sanctum')
+        ->group(function () {
+            Route::get('/user/{userId}', [SubscriptionController::class, 'getUserSubscription']);
+            Route::post('/create-payment', [SubscriptionController::class, 'createPayment']);
+            Route::get('/payment-status/{invoiceId}', [SubscriptionController::class, 'getPaymentStatus']);
+        });
+
+    // ─── Admin: Subscription Tier Management ──────────────────────────────
+    Route::prefix('admin')
+        ->middleware(['auth:sanctum', 'ability:admin-access'])
+        ->group(function () {
+            Route::get('/subscriptions/list', [SubscriptionAdminController::class, 'list']);
+            Route::post('/subscriptions/toggle', [SubscriptionAdminController::class, 'toggleTier']);
+
+            Route::get('/revenue/dashboard', [RevenueController::class, 'dashboard']);
+            Route::get('/revenue/accounts', [RevenueController::class, 'accounts']);
+        });
 });
 
 // ─── Public Webhooks (outside v1 prefix, no auth — provider calls these) ───
 Route::prefix('webhooks')->group(function () {
     Route::post('/whatsapp/status', [WebhookController::class, 'whatsappStatus']);
+    Route::post('/xendit', [WebhookController::class, 'handleXenditWebhook']);
 });

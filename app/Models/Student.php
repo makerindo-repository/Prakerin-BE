@@ -26,10 +26,11 @@ class Student extends Model
         'is_verified',
         'class',
         'skill',
-        'status',
+        'status_magang',
+        'status_subscription',
+        'subscription_renewed_at',
         'portofolio_link',
-        'social_media_link'
-
+        'social_media_link',
     ];
 
 
@@ -43,7 +44,8 @@ class Student extends Model
     }
 
     protected $casts = [
-        'is_verified' => 'boolean',
+        'is_verified'            => 'boolean',
+        'subscription_renewed_at' => 'datetime',
     ];
 
     public function user()
@@ -74,5 +76,24 @@ class Student extends Model
     public function internships()
     {
         return $this->hasMany(Internship::class);
+    }
+
+    public function subscription()
+    {
+        return $this->hasOne(\App\Models\Subscription::class, 'user_id');
+    }
+
+    public function revenues()
+    {
+        return $this->hasMany(\App\Models\Revenue::class, 'user_id');
+    }
+
+    /**
+     * Derive user_type for subscription based on the linked school's type.
+     * Returns 'siswa' if school.type == 'school', else 'mahasiswa'.
+     */
+    public function getSubscriptionUserTypeAttribute(): string
+    {
+        return optional($this->school)->type === 'school' ? 'siswa' : 'mahasiswa';
     }
 }

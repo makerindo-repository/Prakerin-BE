@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\NotificationLog;
+use App\Services\XenditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -83,5 +84,45 @@ class WebhookController extends Controller
             'undelivered'   => 'failed',
             default         => $twilioStatus,
         };
+    }
+
+    // ─── Xendit Webhook ────────────────────────────────────────────────────
+
+    /**
+     * POST /api/webhooks/xendit
+     *
+     * Public endpoint — Xendit calls this after a payment event.
+     * Secured by verifying the X-CALLBACK-TOKEN (Xendit-Webhook-Token) header.
+     *
+     * Xendit sends JSON with at least: id, status, external_id, amount
+     */
+    public function handleXenditWebhook(Request $request): \Illuminate\Http\Response
+    {
+        $token = $request->header('x-callback-token')
+            ?? $request->header('xendit-webhook-token')
+            ?? '';
+
+        $xendit = app(XenditService::class);
+
+        if (!$xendit->verifyWebhookToken($token)) {
+            Log::warning('[Webhook/Xendit] Invalid webhook token');
+            return response('Unauthorized', 403);
+        }
+
+        $payload = $request->json()->all();
+
+        Log::info('[Webhook/Xendit] Received payload', [
+            'invoice_id' => $payload['id'] ?? null,
+            'status'     => $payload['status'] ?? null,
+        ]);
+
+        try {
+            $xendit->handleWebhook($payload);
+        } catch (\Throwable $e) {
+            Log::error('[Webhook/Xendit] handleWebhook exception: ' . $e->getMessage());
+            // Still return 200 so Xendit doesn't keep retrying
+        }
+
+        return response('OK', 200);
     }
 }

@@ -106,7 +106,7 @@ class HomepageController extends Controller
                 ->where('schools.type', 'university')->count();
 
             $totalStudents = (int) Student::count();
-            $placed = (int) Student::whereIn('status', ['ongoing', 'completed'])->count();
+            $placed = (int) Student::whereIn('status_magang', ['ongoing', 'completed'])->count();
             $placementRate = $totalStudents > 0 ? round($placed / $totalStudents * 100, 1) : 0;
 
             return [

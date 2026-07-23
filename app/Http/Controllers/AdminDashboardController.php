@@ -123,7 +123,7 @@ class AdminDashboardController extends Controller
         ];
 
         // ── Deterministic insights (zero API calls) ────────────────────────
-        $unplacedStudents = Student::where('status', 'not_started')->count();
+        $unplacedStudents = Student::where('status_magang', 'not_started')->count();
         $matchingJobCount = JobOpening::where('is_available', true)
             ->whereDate('closing_date', '>=', now()->toDateString())
             ->whereHas('internshipApplications')
@@ -162,7 +162,7 @@ class AdminDashboardController extends Controller
         // ── Deterministic recommendations (from real DB conditions) ────────
         $recommendations = [];
 
-        $studentsWithoutMentor = Student::whereIn('status', ['not_started', 'ongoing'])
+        $studentsWithoutMentor = Student::whereIn('status_magang', ['not_started', 'ongoing'])
             ->whereDoesntHave('user', function ($q) {
                 $q->whereHas('mentorAssignments');
             })->count();
@@ -267,7 +267,7 @@ class AdminDashboardController extends Controller
 
         // PERF-01 fix: pre-load all placed student counts in a single query instead of N+1
         $placedByMajor = Student::selectRaw('major_id, COUNT(*) as placed')
-            ->whereIn('status', ['ongoing', 'completed'])
+            ->whereIn('status_magang', ['ongoing', 'completed'])
             ->groupBy('major_id')
             ->pluck('placed', 'major_id');
 

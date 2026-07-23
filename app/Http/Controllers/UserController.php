@@ -1199,14 +1199,14 @@ class UserController extends Controller
         $totalStudentInternship = Student::where([
             'school_id' => $request->user()?->school?->id,
             'is_verified' => true,
-            'status' => 'ongoing'
+            'status_magang' => 'ongoing'
         ])->count();
 
         // student dengan internship selesai
         $totalStudentWithInternship = Student::where([
             'school_id' => $request->user()?->school?->id,
             'is_verified' => true,
-            'status' => 'completed'
+            'status_magang' => 'completed'
         ])->count();
 
         return response()->json([

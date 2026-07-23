@@ -98,6 +98,7 @@ class ReportController extends Controller
             ->get();
 
         // Average duration in days
+        $allInternships = (clone $query)->get();
         $durations = $allInternships->map(function ($internship) {
             return Carbon::parse($internship->start_date)->diffInDays(Carbon::parse($internship->end_date));
         });
@@ -130,19 +131,19 @@ class ReportController extends Controller
             $studentQuery->where('school_id', $schoolId);
         }
         if ($status) {
-            $studentQuery->where('status', $status);
+            $studentQuery->where('status_magang', $status);
         }
 
         $totalStudents = $studentQuery->count();
 
         // Status breakdown
-        $statusBreakdown = Student::select('status', DB::raw('count(*) as count'))
+        $statusBreakdown = Student::select('status_magang', DB::raw('count(*) as count'))
             ->when($schoolId, function ($q) use ($schoolId) {
                 $q->where('school_id', $schoolId);
             })
-            ->groupBy('status')
+            ->groupBy('status_magang')
             ->get()
-            ->pluck('count', 'status');
+            ->pluck('count', 'status_magang');
 
         // Pre-internship enrollment count
         $preInternshipEnrolled = PreInternshipEnrollment::distinct('student_id')
