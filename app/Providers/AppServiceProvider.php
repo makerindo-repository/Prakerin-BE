@@ -53,6 +53,18 @@ class AppServiceProvider extends ServiceProvider
                 ]);
             }
 
+            // Dynamic Xendit (Payment Gateway) config overrides
+            if (isset($settings['xendit_secret_key']) && !empty($settings['xendit_secret_key'])) {
+                config([
+                    'subscription.xendit.secret_key' => $settings['xendit_secret_key'],
+                ]);
+            }
+            if (isset($settings['xendit_webhook_token']) && !empty($settings['xendit_webhook_token'])) {
+                config([
+                    'subscription.xendit.webhook_token' => $settings['xendit_webhook_token'],
+                ]);
+            }
+
         } catch (\Throwable $e) {
             // Avoid breaking artisan commands if database is not fully set up or table does not exist yet
         }

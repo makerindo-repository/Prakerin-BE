@@ -42,11 +42,15 @@ class XenditService
             'description'     => $description,
             'payer_email'     => $user?->email ?? 'noreply@makerindo.id',
             'payment_methods' => ['QRCODE'], // QRIS only
-            'customer'        => [
+            // array_filter membuang key yang value-nya null/kosong — Xendit menolak
+            // (400 API_VALIDATION_ERROR) kalau sebuah field dikirim eksplisit null,
+            // jadi field opsional yang belum diisi siswa (mis. phone_number) harus
+            // dihilangkan sama sekali, bukan dikirim sebagai null.
+            'customer'        => array_filter([
                 'given_names'  => $student->name,
                 'email'        => $user?->email,
-                'phone_number' => $student->phone_number,
-            ],
+                'phone_number' => $student->phone_number ? (string) $student->phone_number : null,
+            ], fn ($value) => $value !== null && $value !== ''),
             'currency'        => 'IDR',
             'success_redirect_url' => config('app.frontend_url') . '/dashboard?payment=success',
             'failure_redirect_url' => config('app.frontend_url') . '/dashboard?payment=failed',

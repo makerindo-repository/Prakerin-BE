@@ -191,4 +191,50 @@ class SettingController extends Controller
             'message' => $result['message'],
         ], $statusCode);
     }
+
+    /**
+     * Test the connection to the Xendit API (Payment Gateway).
+     * Pakai endpoint /balance — ringan, cuma butuh secret key valid, tidak
+     * membuat invoice/transaksi apapun jadi aman dipanggil berkali-kali.
+     * POST /api/v1/settings/test-xendit
+     */
+    public function testXendit()
+    {
+        $secretKey = config('subscription.xendit.secret_key');
+
+        if (empty($secretKey)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Xendit Secret Key masih kosong.',
+            ], 400);
+        }
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::withBasicAuth($secretKey, '')
+                ->timeout(15)
+                ->get('https://api.xendit.co/balance');
+
+            if ($response->successful()) {
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => 'Berhasil terhubung ke Xendit API! Mode: ' .
+                        (str_starts_with($secretKey, 'xnd_development_') ? 'Test/Development' : 'Live/Production'),
+                ]);
+            }
+
+            $body = $response->json();
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gagal terhubung ke Xendit: ' . ($body['message'] ?? $response->body()),
+            ], 400);
+        } catch (\Exception $e) {
+            Log::error('Settings Xendit Connection Test Error: ' . $e->getMessage());
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gagal menghubungi Xendit API: ' . $e->getMessage(),
+            ], 400);
+        }
+    }
 }
