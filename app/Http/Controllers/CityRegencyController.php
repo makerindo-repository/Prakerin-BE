@@ -65,39 +65,27 @@ class CityRegencyController extends Controller
         $search = $request->query('search', '');
         $provinceId = $request->query('province_id', []);
         $limit = $request->query('limit', 10);
-        Log::info($provinceId);
+        $isLimit = filter_var($request->query('is_limit', false), FILTER_VALIDATE_BOOLEAN);
 
+        $sortBy = $request->query('sort_by', 'external_id');
+        $sortDir = strtolower($request->query('sort_direction', 'asc')) === 'desc' ? 'desc' : 'asc';
+        $column = in_array($sortBy, ['code', 'external_id']) ? 'external_id' : 'name';
 
-        if ($is_accepted === false && !Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
-            throw new HttpResponseException(response([
-                'errors' => 'Forbidden.',
-            ], 403));
-        }
+        Log::info("CityRegency Controller limit = $limit, sort = {$column} {$sortDir}");
 
-        if (Auth::guard('sanctum')->user()?->tokenCan("admin-access")) {
-            $cityRegencies = CityRegency::where('is_accepted', $is_accepted)
-                ->with('province')
-                ->where('name', "like", "%$search%")
-                ->when(!empty($provinceId), function ($query) use ($provinceId) {
-                    $query->whereIn('province_id', Arr::wrap($provinceId));
-                })
-                ->paginate($limit);
+        $query = CityRegency::where('is_accepted', $is_accepted)
+            ->with('province')
+            ->where('name', "like", "%$search%")
+            ->when(!empty($provinceId), function ($q) use ($provinceId) {
+                $q->whereIn('province_id', Arr::wrap($provinceId));
+            })
+            ->orderBy($column, $sortDir);
 
-
-            return response()->json(
-                $cityRegencies,
-                200
-            );
+        if (Auth::guard('sanctum')->user()?->tokenCan("admin-access") || $isLimit || $request->has('limit')) {
+            $cityRegencies = $query->paginate($limit);
+            return response()->json($cityRegencies, 200);
         } else {
-            $cityRegencies = CityRegency::where('is_accepted', $is_accepted)
-                ->where('name', "like", "%$search%")
-                ->when(!empty($provinceId), function ($query) use ($provinceId) {
-                    $query->whereIn('province_id', Arr::wrap($provinceId));
-                })
-                ->get();
-
-
-
+            $cityRegencies = $query->get();
             return response()->json([
                 'data' => $cityRegencies,
             ], 200);
@@ -136,113 +124,28 @@ class CityRegencyController extends Controller
     )]
     public function store(CityRegencyCreateRequest $request)
     {
-        $data = $request->validated();
-
-        $cityRegency = new CityRegency();
-        $cityRegency->name = $data['name'];
-        $cityRegency->province_id = $data['province_id'];
-        if ($request->user()->tokenCan("admin-access")) {
-            $cityRegency->is_accepted = $data['is_accepted'];
-        }
-
-        $cityRegency->save();
-
         return response()->json([
-            'data' => $cityRegency,
-        ], 201);
+            'message' => 'Manual creation of cities/regencies is disabled. Regional data is automatically synchronized from official Kemendagri records. Run `php artisan sync:regional-data`.',
+        ], 405);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    #[OA\Put(
-        path: '/city-regencies/{id}',
-        summary: 'Update city regency',
-        tags: ['City Regency']
-    )]
-    #[OA\Parameter(
-        name: 'id',
-        in: 'path',
-        required: true,
-        schema: new OA\Schema(type: 'integer')
-    )]
-    #[OA\RequestBody(
-        required: true,
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'name', type: 'string'),
-                new OA\Property(property: 'province_id', type: 'integer'),
-                new OA\Property(property: 'is_accepted', type: 'boolean')
-            ]
-        )
-    )]
-    #[OA\Response(
-        response: 200,
-        description: 'City Regency berhasil diupdate'
-    )]
-    #[OA\Response(
-        response: 404,
-        description: 'City Regency tidak ditemukan'
-    )]
     public function update(CityRegencyUpdateRequest $request, string $id)
     {
-        $cityRegency = CityRegency::find($id);
-
-        if (!$cityRegency) {
-            throw new HttpResponseException(response([
-                'errors' => 'City Regency not found',
-            ], 404));
-        }
-
-        $data = $request->validated();
-
-        $cityRegency->name = $data['name'] ?? $cityRegency->name;
-        $cityRegency->province_id = $data['province_id'] ?? $cityRegency->province_id;
-        $cityRegency->is_accepted = $data['is_accepted'] ?? $cityRegency->is_accepted;
-
-        $cityRegency->save();
-
         return response()->json([
-            'data' => $cityRegency,
-        ], 200);
+            'message' => 'Manual editing of cities/regencies is disabled. Regional data is automatically synchronized from official Kemendagri records. Run `php artisan sync:regional-data`.',
+        ], 405);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    #[OA\Delete(
-        path: '/city-regencies/{id}',
-        summary: 'Hapus city regency',
-        tags: ['City Regency']
-    )]
-    #[OA\Parameter(
-        name: 'id',
-        in: 'path',
-        required: true,
-        schema: new OA\Schema(type: 'integer')
-    )]
-    #[OA\Response(
-        response: 200,
-        description: 'City Regency berhasil dihapus'
-    )]
-    #[OA\Response(
-        response: 404,
-        description: 'City Regency tidak ditemukan'
-    )]
     public function destroy(string $id)
     {
-        $cityRegency = CityRegency::find($id);
-
-        if (!$cityRegency) {
-            throw new HttpResponseException(response([
-                'errors' => 'City Regency not found',
-            ], 404));
-        }
-
-        $cityRegency->delete();
-
         return response()->json([
-            'message' => 'CityRegency deleted successfully',
-        ], 200);
+            'message' => 'Manual deletion of cities/regencies is disabled. Regional data is automatically synchronized from official Kemendagri records. Run `php artisan sync:regional-data`.',
+        ], 405);
     }
 }

@@ -553,6 +553,7 @@ Route::prefix('v1')->group(function () {
             ->withoutMiddleware('auth:sanctum');
 
         // Province
+        Route::get('/regional-sync/status', [ProvinceController::class, 'syncStatus'])->withoutMiddleware('auth:sanctum');
         Route::apiResource('provinces', ProvinceController::class)
             ->only(['store'])
             ->middleware('ability:admin-access,company-access');

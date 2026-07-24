@@ -19,7 +19,9 @@ class CityRegency extends Model
         'id',
         'province_id',
         'name',
+        'external_id',
         'is_accepted',
+        'synced_at',
     ];
 
     protected static function booted()

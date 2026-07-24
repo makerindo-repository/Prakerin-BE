@@ -18,7 +18,9 @@ class Province extends Model
     protected $fillable = [
         'id',
         'name',
+        'external_id',
         'is_accepted',
+        'synced_at',
     ];
 
     protected static function booted()
