@@ -64,6 +64,13 @@ class AppServiceProvider extends ServiceProvider
                     'subscription.xendit.webhook_token' => $settings['xendit_webhook_token'],
                 ]);
             }
+            if (isset($settings['xendit_payment_methods']) && !empty($settings['xendit_payment_methods'])) {
+                config([
+                    'subscription.xendit.payment_methods' => array_values(array_filter(
+                        explode(',', (string) $settings['xendit_payment_methods'])
+                    )),
+                ]);
+            }
 
         } catch (\Throwable $e) {
             // Avoid breaking artisan commands if database is not fully set up or table does not exist yet

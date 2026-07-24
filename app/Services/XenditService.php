@@ -41,7 +41,6 @@ class XenditService
             'amount'          => $amount,
             'description'     => $description,
             'payer_email'     => $user?->email ?? 'noreply@makerindo.id',
-            'payment_methods' => ['QRCODE'], // QRIS only
             // array_filter membuang key yang value-nya null/kosong — Xendit menolak
             // (400 API_VALIDATION_ERROR) kalau sebuah field dikirim eksplisit null,
             // jadi field opsional yang belum diisi siswa (mis. phone_number) harus
@@ -55,6 +54,18 @@ class XenditService
             'success_redirect_url' => config('app.frontend_url') . '/dashboard?payment=success',
             'failure_redirect_url' => config('app.frontend_url') . '/dashboard?payment=failed',
         ];
+
+        // Batasi metode pembayaran HANYA kalau memang dikonfigurasi (mis. sudah
+        // approved QRIS di akun Xendit). Kalau kosong, kita SENGAJA tidak kirim
+        // key ini sama sekali supaya Xendit menampilkan metode apapun yang
+        // sudah aktif di akun (Virtual Account, e-wallet test, dll) — channel
+        // ini bisa langsung dipakai tanpa perlu approval, beda dengan QRIS yang
+        // butuh aktivasi ~5 hari kerja / kontak Account Manager Xendit dulu.
+        // Ubah XENDIT_PAYMENT_METHODS di .env / Settings kalau QRIS sudah aktif.
+        $paymentMethods = config('subscription.xendit.payment_methods', []);
+        if (!empty($paymentMethods)) {
+            $payload['payment_methods'] = $paymentMethods;
+        }
 
         $response = Http::withBasicAuth($this->secretKey, '')
             ->timeout(30)

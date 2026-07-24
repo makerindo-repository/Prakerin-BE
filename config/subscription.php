@@ -49,6 +49,15 @@ return [
         'secret_key'     => env('XENDIT_SECRET_KEY'),
         'webhook_token'  => env('XENDIT_WEBHOOK_TOKEN'),
         'base_url'       => 'https://api.xendit.co',
+
+        // Kosongkan (default) supaya Xendit menampilkan metode pembayaran
+        // apapun yang SUDAH AKTIF di akun kamu (Virtual Account, e-wallet
+        // test, dll — semua ini langsung bisa dipakai tanpa approval).
+        // Isi dengan "QRCODE" (pisahkan koma kalau lebih dari satu, mis.
+        // "QRCODE,EWALLET") HANYA setelah QRIS approved di akun Xendit kamu
+        // (Settings > Payment Channels > aktivasi QRIS — butuh ~5 hari kerja
+        // atau hubungi Account Manager/Customer Success Xendit).
+        'payment_methods' => array_values(array_filter(explode(',', (string) env('XENDIT_PAYMENT_METHODS', '')))),
     ],
 
 ];
