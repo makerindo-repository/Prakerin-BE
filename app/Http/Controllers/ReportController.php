@@ -240,10 +240,30 @@ class ReportController extends Controller
         ]);
     }
 
-    // POST /api/v1/reports/export
+    // POST/GET /api/v1/reports/export
     public function export(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        if ($request->has('token') && !Auth::check()) {
+            $token = $request->query('token');
+            $accessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+            if ($accessToken && $accessToken->tokenable) {
+                Auth::setUser($accessToken->tokenable);
+            }
+        }
+
+        $type = $request->input('type', $request->query('type', 'internship_stats'));
+        $format = $request->input('format', $request->query('format', 'csv'));
+        $filters = $request->input('filters', $request->except(['type', 'format', 'token']));
+
+        if (!is_array($filters)) {
+            $filters = [];
+        }
+
+        $validator = Validator::make([
+            'type' => $type,
+            'format' => $format,
+            'filters' => $filters,
+        ], [
             'type' => 'required|in:internship_stats,student_progress,company_performance',
             'format' => 'required|in:csv,pdf',
             'filters' => 'nullable|array'
@@ -252,10 +272,6 @@ class ReportController extends Controller
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
-
-        $type = $request->input('type');
-        $format = $request->input('format');
-        $filters = $request->input('filters', []);
 
         // Retrieve data by simulating the requests internally
         $subRequest = new Request($filters);
@@ -278,58 +294,64 @@ class ReportController extends Controller
     {
         $filename = "report_{$type}_" . date('Ymd_His') . ".csv";
 
+        $output = fopen('php://temp', 'r+');
+
+        // Header info
+        fputcsv($output, ["REPORT: " . strtoupper(str_replace('_', ' ', $type))]);
+        fputcsv($output, ["Generated At", Carbon::now()->toDateTimeString()]);
+        fputcsv($output, []);
+
+        if ($type === 'internship_stats') {
+            fputcsv($output, ["Total Internships", $data['total_internships'] ?? 0]);
+            fputcsv($output, ["Success Rate (%)", $data['success_rate_percentage'] ?? 0]);
+            fputcsv($output, ["Average Duration (Days)", $data['average_duration_days'] ?? 0]);
+            fputcsv($output, []);
+            fputcsv($output, ["Status", "Count"]);
+            if (isset($data['by_status']) && is_array($data['by_status'])) {
+                foreach ($data['by_status'] as $status => $count) {
+                    fputcsv($output, [ucfirst($status), $count]);
+                }
+            }
+        } elseif ($type === 'student_progress') {
+            fputcsv($output, ["Total Students", $data['total_students'] ?? 0]);
+            fputcsv($output, ["Average Rating", $data['average_rating'] ?? 0]);
+            fputcsv($output, ["Pre-Internship Enrolled", $data['pre_internship_enrolled'] ?? 0]);
+            fputcsv($output, ["Pre-Internship Completed", $data['pre_internship_completed'] ?? 0]);
+            fputcsv($output, ["Dropout Rate (%)", $data['dropout_rate_percentage'] ?? 0]);
+            fputcsv($output, []);
+            fputcsv($output, ["Status", "Count"]);
+            if (isset($data['by_status']) && is_array($data['by_status'])) {
+                foreach ($data['by_status'] as $status => $count) {
+                    fputcsv($output, [ucfirst(str_replace('_', ' ', $status)), $count]);
+                }
+            }
+        } else {
+            fputcsv($output, ["Total Companies", $data['total_companies'] ?? 0]);
+            fputcsv($output, ["Average Company Rating", $data['average_rating'] ?? 0]);
+            fputcsv($output, ["Retention Rate (%)", $data['retention_rate_percentage'] ?? 0]);
+            fputcsv($output, ["Job Offer Rate (%)", $data['job_offer_rate_percentage'] ?? 0]);
+            fputcsv($output, []);
+            fputcsv($output, ["Company ID", "Company Name", "Placements Count"]);
+            if (isset($data['placements_per_company']) && is_iterable($data['placements_per_company'])) {
+                foreach ($data['placements_per_company'] as $company) {
+                    fputcsv($output, [$company['id'] ?? '', $company['name'] ?? '', $company['placements_count'] ?? 0]);
+                }
+            }
+        }
+
+        rewind($output);
+        $csvContent = stream_get_contents($output);
+        fclose($output);
+
         $headers = [
-            "Content-type" => "text/csv",
-            "Content-Disposition" => "attachment; filename={$filename}",
+            "Content-Type" => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=\"{$filename}\"",
             "Pragma" => "no-cache",
             "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
             "Expires" => "0"
         ];
 
-        $callback = function() use ($data, $type) {
-            $file = fopen('php://output', 'w');
-
-            // Header info
-            fputcsv($file, ["REPORT: " . strtoupper(str_replace('_', ' ', $type))]);
-            fputcsv($file, ["Generated At", Carbon::now()->toDateTimeString()]);
-            fputcsv($file, []);
-
-            if ($type === 'internship_stats') {
-                fputcsv($file, ["Total Internships", $data['total_internships']]);
-                fputcsv($file, ["Success Rate (%)", $data['success_rate_percentage']]);
-                fputcsv($file, ["Average Duration (Days)", $data['average_duration_days']]);
-                fputcsv($file, []);
-                fputcsv($file, ["Status", "Count"]);
-                foreach ($data['by_status'] as $status => $count) {
-                    fputcsv($file, [ucfirst($status), $count]);
-                }
-            } elseif ($type === 'student_progress') {
-                fputcsv($file, ["Total Students", $data['total_students']]);
-                fputcsv($file, ["Average Rating", $data['average_rating']]);
-                fputcsv($file, ["Pre-Internship Enrolled", $data['pre_internship_enrolled']]);
-                fputcsv($file, ["Pre-Internship Completed", $data['pre_internship_completed']]);
-                fputcsv($file, ["Dropout Rate (%)", $data['dropout_rate_percentage']]);
-                fputcsv($file, []);
-                fputcsv($file, ["Status", "Count"]);
-                foreach ($data['by_status'] as $status => $count) {
-                    fputcsv($file, [ucfirst(str_replace('_', ' ', $status)), $count]);
-                }
-            } else {
-                fputcsv($file, ["Total Companies", $data['total_companies']]);
-                fputcsv($file, ["Average Company Rating", $data['average_rating']]);
-                fputcsv($file, ["Retention Rate (%)", $data['retention_rate_percentage']]);
-                fputcsv($file, ["Job Offer Rate (%)", $data['job_offer_rate_percentage']]);
-                fputcsv($file, []);
-                fputcsv($file, ["Company ID", "Company Name", "Placements Count"]);
-                foreach ($data['placements_per_company'] as $company) {
-                    fputcsv($file, [$company['id'], $company['name'], $company['placements_count']]);
-                }
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return response($csvContent, 200, $headers);
     }
 
     private function exportToPDF($data, $type)

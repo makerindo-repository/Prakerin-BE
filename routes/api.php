@@ -274,7 +274,7 @@ Route::prefix('v1')->group(function () {
                 Route::delete('/profile', 'deleteProfile');
                 Route::get('/count', 'count');
 
-                Route::middleware('abilities:school-access')->group(function () {
+                Route::middleware('ability:admin-access,school-access')->group(function () {
                     Route::get('/student/summary', 'studentSummary');
                     Route::get('/student/import/template', 'importStudentTemplate');
                     Route::post('/student/import', 'importStudent');
@@ -612,10 +612,11 @@ Route::prefix('v1')->group(function () {
             Route::middleware('ability:admin-access,student-access,school-access')->group(function () {
                 Route::post('/ai-summary', 'generateAiSummary');
             });
-            Route::middleware('abilities:admin-access')->group(function () {
+            Route::middleware('ability:admin-access,school-access,company-access')->group(function () {
                 Route::get('/internship-stats', 'internshipStats');
                 Route::get('/student-progress', 'studentProgress');
                 Route::get('/company-performance', 'companyPerformance');
+                Route::get('/export', 'export');
                 Route::post('/export', 'export');
             });
         });

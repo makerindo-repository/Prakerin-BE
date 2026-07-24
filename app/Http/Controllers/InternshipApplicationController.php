@@ -444,38 +444,44 @@ class InternshipApplicationController extends Controller
         $data = $validator->validated();
 
         if ($data['status'] === 'accepted') {
-            $internship = new Internship();
+            $existingInternship = Internship::where('internship_application_id', $internshipApplication->id)->first();
+            if (!$existingInternship) {
+                $internship = new Internship();
+                $internship->internship_application_id = $internshipApplication->id;
+                $internship->start_date = $jobOpening->start_date;
+                $internship->end_date = $jobOpening->end_date;
+                $internship->student_id = $internshipApplication->curriculumVitae->student_id;
+                $internship->company_id = $request->user()->company->id;
+                $internship->save();
+            }
 
-            $internship->internship_application_id = $internshipApplication->id;
-
-            $internship->start_date = $jobOpening->start_date;
-            $internship->end_date = $jobOpening->end_date;
-            $internship->student_id = $internshipApplication->curriculumVitae->student_id;
-            $internship->company_id = $request->user()->company->id;
-
-            $internship->save();
-
-            $internshipApplication->curriculumVitae->student->status = "ongoing";
-            $internshipApplication->curriculumVitae->student->save();
+            if ($internshipApplication->curriculumVitae?->student) {
+                $internshipApplication->curriculumVitae->student->status_magang = "ongoing";
+                $internshipApplication->curriculumVitae->student->save();
+            }
         }
-        $studentUser  = $internshipApplication->curriculumVitae->student->user;
+        $studentUser  = $internshipApplication->curriculumVitae?->student?->user;
         $statusIndo   = $data['status'] === 'accepted' ? 'DITERIMA 🎉' : 'DITOLAK';
         $jobTitle     = $internshipApplication->jobOpening?->title ?? 'Lowongan';
         $frontendUrl  = config('app.frontend_url', 'http://localhost:3000');
 
         $pdf = $request->file('file');
-        $pdfContent = file_get_contents($pdf->getRealPath());
-
-        // Legacy direct email with PDF attachment (kept because it attaches the file)
-        $email = $studentUser->email;
-        Mail::send([], [], function ($message) use ($email, $pdf, $pdfContent) {
-            $message->to($email)
-                ->subject('Update Status Lamaran Magang')
-                ->html('<p>Halo, status lamaran magang Anda telah di-update!</p>');
-            $message->attachData($pdfContent, $pdf->getClientOriginalName(), [
-                'mime' => 'application/pdf',
-            ]);
-        });
+        if ($pdf && $studentUser?->email) {
+            try {
+                $pdfContent = file_get_contents($pdf->getRealPath());
+                $email = $studentUser->email;
+                Mail::send([], [], function ($message) use ($email, $pdf, $pdfContent) {
+                    $message->to($email)
+                        ->subject('Update Status Lamaran Magang')
+                        ->html('<p>Halo, status lamaran magang Anda telah di-update!</p>');
+                    $message->attachData($pdfContent, $pdf->getClientOriginalName(), [
+                        'mime' => 'application/pdf',
+                    ]);
+                });
+            } catch (\Throwable $e) {
+                Log::warning('[InternshipApplicationController] Email sending failed: ' . $e->getMessage());
+            }
+        }
 
         // Inbox + WhatsApp notification for student
         try {

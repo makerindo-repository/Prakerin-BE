@@ -89,9 +89,8 @@ class UserController extends Controller
                     'student.curriculumVitae.internshipApplications.jobOpening.company.cityRegency.province'
                 );
                 $query->where('role', 'student');
-                $query->whereHas('student', function ($q) use ($search, $isVerified, $user) {
+                $query->whereHas('student', function ($q) use ($isVerified, $user) {
                     $q->where('is_verified', $isVerified);
-                    $q->where('name', 'like', "%$search%");
                     $q->where('school_id', $user->school->id);
                     if ($user->school->type === 'school') {
                         if ($isVerified) {
@@ -103,6 +102,13 @@ class UserController extends Controller
                         }
                     }
                 });
+                if ($search !== '' && $search !== null) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('username', 'like', "%{$search}%")
+                          ->orWhere('email', 'like', "%{$search}%")
+                          ->orWhereHas('student', fn($sq) => $sq->where('name', 'like', "%{$search}%"));
+                    });
+                }
                 $query->when(in_array($status, ['ongoing', 'completed', 'not_started']), function ($query) use ($status) {
                     $query->whereHas('student', function ($q) use ($status) {
                         $q->where('status', $status);
@@ -184,7 +190,7 @@ class UserController extends Controller
                     $q->where('name', 'like', "%$search%");
                 });
             })
-            ->when($user?->tokenCan('admin-access'), function ($query) use ($role, $request) {
+            ->when($user?->tokenCan('admin-access'), function ($query) use ($role, $request, $search) {
                 $schoolId = $request->query('school_id');
                 $schoolType = $request->query('school_type'); // 'school' or 'university'
                 $isVerified = $request->has('is_verified')
@@ -238,9 +244,37 @@ class UserController extends Controller
                             ->orWhereHas('company', fn($q2) => $q2->where('is_verified', $isVerified));
                     });
                 });
+
+                if ($search !== '' && $search !== null) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('username', 'like', "%{$search}%")
+                          ->orWhere('email', 'like', "%{$search}%")
+                          ->orWhereHas('student', fn($sq) => $sq->where('name', 'like', "%{$search}%"))
+                          ->orWhereHas('school', fn($sq) => $sq->where('name', 'like', "%{$search}%"))
+                          ->orWhereHas('company', fn($sq) => $sq->where('name', 'like', "%{$search}%"));
+                    });
+                }
             })
-            ->when($isSchool !== null, function ($q) use ($isSchool) {
-                $q->whereHas('school', fn($q2) => $q2->where('type', $isSchool ? 'school' : 'university'));
+            ->when(!empty($search), function ($q) use ($search) {
+                $searchLower = strtolower($search);
+                $q->orderByRaw("
+                    CASE
+                        WHEN EXISTS (SELECT 1 FROM students WHERE students.user_id = users.id AND LOWER(students.name) = ?) THEN 1
+                        WHEN EXISTS (SELECT 1 FROM students WHERE students.user_id = users.id AND LOWER(students.name) LIKE ?) THEN 2
+                        WHEN LOWER(users.username) = ? THEN 3
+                        WHEN LOWER(users.username) LIKE ? THEN 4
+                        WHEN EXISTS (SELECT 1 FROM students WHERE students.user_id = users.id AND LOWER(students.name) LIKE ?) THEN 5
+                        WHEN LOWER(users.username) LIKE ? THEN 6
+                        ELSE 7
+                    END ASC
+                ", [
+                    $searchLower,
+                    "{$searchLower}%",
+                    $searchLower,
+                    "{$searchLower}%",
+                    "%{$searchLower}%",
+                    "%{$searchLower}%",
+                ]);
             })
             ->orderBy('updated_at', 'desc')
             ->paginate($limit)
@@ -1318,7 +1352,15 @@ class UserController extends Controller
     {
         $path = Storage::path('/import-template/csv-template.csv');
 
-        return response()->download($path, 'csv-template.csv', [
+        if (!file_exists($path)) {
+            $dir = dirname($path);
+            if (!file_exists($dir)) {
+                mkdir($dir, 0755, true);
+            }
+            file_put_contents($path, "username,nama,email,password\n");
+        }
+
+        return response()->download($path, 'prakerin-siswa-template.csv', [
             'Content-Type' => 'text/csv'
         ]);
     }
@@ -1405,7 +1447,7 @@ class UserController extends Controller
                 $students[] = [
                     'id' => $studentId,
                     'user_id' => $userId,
-                    'school_id' => $request->user()->school->id,
+                    'school_id' => $request->user()->school?->id,
                     'name' => $nama,
                     'is_verified' => true,
                 ];
