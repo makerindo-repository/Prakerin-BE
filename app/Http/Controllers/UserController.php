@@ -111,7 +111,7 @@ class UserController extends Controller
                 }
                 $query->when(in_array($status, ['ongoing', 'completed', 'not_started']), function ($query) use ($status) {
                     $query->whereHas('student', function ($q) use ($status) {
-                        $q->where('status', $status);
+                        $q->where('status_magang', $status);
                     });
                 });
                 // Guard: halaman "Data Siswa" (school_type=school) / "Data Mahasiswa"
@@ -1206,13 +1206,13 @@ class UserController extends Controller
             ->count();
 
         $mouCount = Mou::when($request->user()->tokenCan("company-access"), function ($query) use ($request) {
-            $query->where("company_id", $request->user()->company->id);
+            $query->where("company_id", $request->user()?->company?->id);
         })
             ->when($request->user()->tokenCan("school-access"), function ($query) use ($request) {
-                $query->where("school_id", $request->user()->school->id);
+                $query->where("school_id", $request->user()?->school?->id);
             })
             ->when($request->user()->tokenCan("student-access"), function ($query) use ($request) {
-                $query->where("school_id", $request->user()->student->school_id);
+                $query->where("school_id", $request->user()?->student?->school_id);
             })
             ->where('status', 'accepted')
             ->count();

@@ -311,7 +311,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('/', 'index');
                 Route::post('/', 'store');
                 Route::get('/{id}', 'show');
-                Route::patch('/{id}', 'update');
+                Route::match(['patch', 'post'], '/{id}', 'update');
                 Route::delete('/{id}', 'destroy');
             });
             Route::get('/{id}/download', 'download');

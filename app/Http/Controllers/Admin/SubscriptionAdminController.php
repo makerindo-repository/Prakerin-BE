@@ -65,10 +65,32 @@ class SubscriptionAdminController extends Controller
         ]);
 
         $student = Student::findOrFail($validated['student_id']);
-        $student->update(['status_subscription' => $validated['status_subscription']]);
 
-        // If downgrading to free, expire the active subscription
-        if ($validated['status_subscription'] === 'free') {
+        if ($validated['status_subscription'] === 'premium') {
+            $now = now();
+            $endDate = $now->copy()->addYear();
+
+            Subscription::updateOrCreate(
+                ['user_id' => $student->id],
+                [
+                    'user_type'               => $student->subscription_user_type,
+                    'amount'                  => 0,
+                    'currency'                => 'IDR',
+                    'status'                  => 'active',
+                    'subscription_start_date' => $now,
+                    'subscription_end_date'   => $endDate,
+                    'renewal_date'            => $endDate,
+                    'payment_method'          => 'MANUAL_ADMIN',
+                ]
+            );
+
+            $student->update([
+                'status_subscription'     => 'premium',
+                'subscription_renewed_at' => $now,
+            ]);
+        } else {
+            $student->update(['status_subscription' => 'free']);
+
             Subscription::where('user_id', $student->id)
                 ->where('status', 'active')
                 ->update(['status' => 'expired']);

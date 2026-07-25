@@ -409,7 +409,7 @@ class StudentController extends Controller
             ->mapWithKeys(function ($status) use ($request) {
                 $count = Student::where('school_id', $request->user()?->school?->id)
                     ->where('is_verified', true)
-                    ->where('status', $status)
+                    ->where('status_magang', $status)
                     ->count();
                 return [$status => $count];
             });

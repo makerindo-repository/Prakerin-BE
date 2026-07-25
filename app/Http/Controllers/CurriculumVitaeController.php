@@ -9,6 +9,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class CurriculumVitaeController extends Controller
 {
@@ -212,9 +213,9 @@ class CurriculumVitaeController extends Controller
             ], 403));
         }
 
-        $validator = Validator::make($request->all(), [
+        $validator = Validator::make(array_merge($request->all(), $request->allFiles()), [
             'name' => 'sometimes|required|string|max:255',
-            'file' => 'sometimes|required|file|mimes:pdf|max:2048',
+            'file' => 'sometimes|nullable|file|mimes:pdf|max:10240',
         ]);
 
         if ($validator->fails()) {
@@ -225,19 +226,22 @@ class CurriculumVitaeController extends Controller
 
         $data = $validator->validated();
 
-
         $curriculumVitae->name = $data['name'] ?? $curriculumVitae->name;
 
-        if (isset($data['file'])) {
-            // Hapus file lama kalau ada
-            if (Storage::exists("/curriculum-vitaes/$curriculumVitae->file")) {
-                Storage::delete("/curriculum-vitaes/$curriculumVitae->file");
+        if ($request->hasFile('file')) {
+            $oldFile = $curriculumVitae->file;
+            if ($oldFile) {
+                if (Storage::exists("curriculum-vitaes/$oldFile")) {
+                    Storage::delete("curriculum-vitaes/$oldFile");
+                } elseif (Storage::exists("/curriculum-vitaes/$oldFile")) {
+                    Storage::delete("/curriculum-vitaes/$oldFile");
+                }
             }
 
-            // Simpan file baru
-            $filename = now()->format('Ymd_His') . '.' . $request->file('file')->getClientOriginalExtension();
+            $file = $request->file('file');
+            $filename = now()->format('Ymd_His') . '_' . Str::random(6) . '.' . $file->getClientOriginalExtension();
             $curriculumVitae->file = $filename;
-            $request->file('file')->storeAs('curriculum-vitaes', $filename);
+            $file->storeAs('curriculum-vitaes', $filename);
         }
 
         $curriculumVitae->save();
@@ -291,7 +295,9 @@ class CurriculumVitaeController extends Controller
         }
 
         // Hapus file lama kalau ada
-        if (Storage::exists("/curriculum-vitaes/$curriculumVitae->file")) {
+        if (Storage::exists("curriculum-vitaes/$curriculumVitae->file")) {
+            Storage::delete("curriculum-vitaes/$curriculumVitae->file");
+        } elseif (Storage::exists("/curriculum-vitaes/$curriculumVitae->file")) {
             Storage::delete("/curriculum-vitaes/$curriculumVitae->file");
         }
 
@@ -334,21 +340,23 @@ class CurriculumVitaeController extends Controller
             ], 404);
         }
 
-        // if ($cv->student_id !== $request->user()->student->id) {
-        //     return response()->json([
-        //         'errors' => 'Forbidden.'
-        //     ], 403);
-        // }
+        $relPath = "curriculum-vitaes/$cv->file";
+        $altPath = "/curriculum-vitaes/$cv->file";
 
-        if (!Storage::exists("/curriculum-vitaes/$cv->file")) {
+        if (!Storage::exists($relPath) && !Storage::exists($altPath)) {
             $title = "Placeholder CV for Student: " . ($cv->student->name ?? 'Student');
             $pdfContent = $this->getPlaceholderPdf($title);
-            Storage::put("/curriculum-vitaes/$cv->file", $pdfContent);
+            Storage::put($relPath, $pdfContent);
         }
-        $path = Storage::path("/curriculum-vitaes/$cv->file");
+
+        $targetPath = Storage::exists($relPath) ? $relPath : $altPath;
+        $path = Storage::path($targetPath);
 
         return response()->file($path, [
             'Content-Type' => 'application/pdf',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
         ]);
     }
 
@@ -382,19 +390,17 @@ class CurriculumVitaeController extends Controller
             ], 404);
         }
 
-        // if ($cv->student_id !== $request->user()->student->id) {
-        //     return response()->json([
-        //         'errors' => 'Forbidden.'
-        //     ], 403);
-        // }
+        $relPath = "curriculum-vitaes/$cv->file";
+        $altPath = "/curriculum-vitaes/$cv->file";
 
-        if (!Storage::exists("/curriculum-vitaes/$cv->file")) {
+        if (!Storage::exists($relPath) && !Storage::exists($altPath)) {
             $title = "Placeholder CV for Student: " . ($cv->student->name ?? 'Student');
             $pdfContent = $this->getPlaceholderPdf($title);
-            Storage::put("/curriculum-vitaes/$cv->file", $pdfContent);
+            Storage::put($relPath, $pdfContent);
         }
-        $path = Storage::path("/curriculum-vitaes/$cv->file");
 
+        $targetPath = Storage::exists($relPath) ? $relPath : $altPath;
+        $path = Storage::path($targetPath);
 
         return response()->download($path, 'cv_' . now()->format('Ymd_His') . '.pdf', [
             'Content-Type' => 'application/pdf',

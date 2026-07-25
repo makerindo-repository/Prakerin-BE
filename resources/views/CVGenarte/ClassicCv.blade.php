@@ -15,23 +15,23 @@
 <head>
   <meta charset="utf-8">
   <style>
-    @page { margin: 30px; }
-    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10pt; color: #2d3748; line-height: 1.5; margin: 0; padding: 0; }
-    .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #2b6cb0; padding-bottom: 15px; }
-    .name { font-size: 22pt; font-weight: bold; text-transform: uppercase; color: #1a202c; letter-spacing: 1px; margin: 0; }
-    .title { font-size: 11pt; color: #2b6cb0; font-weight: 600; margin: 4px 0 8px 0; }
-    .contact-info { font-size: 9pt; color: #4a5568; }
-    .contact-info span { margin: 0 6px; }
-    .section-title { font-size: 11pt; font-weight: bold; text-transform: uppercase; color: #1a202c; border-bottom: 1px solid #cbd5e0; padding-bottom: 3px; margin-top: 18px; margin-bottom: 10px; letter-spacing: 0.5px; }
-    .job-item, .edu-item { margin-bottom: 12px; }
+    @page { margin: 35px; }
+    body { font-family: 'Georgia', Times, 'Times New Roman', serif; font-size: 10pt; color: #1a202c; line-height: 1.6; margin: 0; padding: 0; }
+    .header { text-align: left; margin-bottom: 20px; border-bottom: 2px solid #1a202c; padding-bottom: 15px; }
+    .name { font-size: 24pt; font-weight: bold; color: #1a202c; margin: 0 0 4px 0; font-family: 'Georgia', serif; }
+    .title { font-size: 12pt; color: #4a5568; font-style: italic; margin-bottom: 8px; }
+    .contact-info { font-size: 9pt; color: #4a5568; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+    .contact-info span { margin-right: 12px; }
+    .section-title { font-size: 12pt; font-weight: bold; color: #1a202c; border-bottom: 1px solid #a0aec0; padding-bottom: 3px; margin-top: 20px; margin-bottom: 12px; font-family: 'Georgia', serif; text-transform: uppercase; letter-spacing: 0.5px; }
+    .job-item, .edu-item { margin-bottom: 14px; }
     .flex-between { display: table; width: 100%; margin-bottom: 2px; }
     .flex-left { display: table-cell; text-align: left; }
-    .flex-right { display: table-cell; text-align: right; font-style: italic; color: #718096; font-size: 9pt; }
-    .job-title { font-size: 10pt; font-weight: bold; color: #2d3748; }
-    .company-name { font-weight: 600; color: #4a5568; }
-    ul.desc-list { margin: 4px 0 0 16px; padding: 0; font-size: 9.5pt; color: #4a5568; }
-    ul.desc-list li { margin-bottom: 3px; }
-    .skills-text { font-size: 9.5pt; color: #2d3748; }
+    .flex-right { display: table-cell; text-align: right; font-style: italic; color: #718096; font-size: 9pt; font-family: 'Helvetica Neue', sans-serif; }
+    .job-title { font-size: 10.5pt; font-weight: bold; color: #1a202c; }
+    .company-name { font-style: italic; color: #4a5568; }
+    ul.desc-list { margin: 4px 0 0 18px; padding: 0; font-size: 9.5pt; color: #2d3748; }
+    ul.desc-list li { margin-bottom: 4px; }
+    .skill-tag { display: inline-block; background-color: #edf2f7; color: #2d3748; padding: 3px 8px; margin-right: 6px; margin-bottom: 6px; font-size: 8.5pt; font-family: 'Helvetica Neue', sans-serif; border-radius: 4px; }
   </style>
 </head>
 <body>
@@ -40,9 +40,9 @@
     <h1 class="name">{{ $fullName }}</h1>
     <div class="title">{{ $jobTitle }}</div>
     <div class="contact-info">
-      @if($phone)<span>{{ $phone }}</span>@endif
-      @if($email)<span>| {{ $email }}</span>@endif
-      @if($linkedin)<span>| {{ $linkedin }}</span>@endif
+      @if($email)<span>Email: {{ $email }}</span>@endif
+      @if($phone)<span>Telepon: {{ $phone }}</span>@endif
+      @if($linkedin)<span>LinkedIn: {{ $linkedin }}</span>@endif
     </div>
   </div>
 
@@ -85,10 +85,10 @@
       <div class="edu-item">
         <div class="flex-between">
           <div class="flex-left">
-            <strong style="color: #1a202c;">{{ $edu['institution'] ?? '-' }}</strong> — {{ $edu['degree'] ?? '' }} ({{ $edu['field_of_study'] ?? '' }})
+            <strong style="color: #1a202c;">{{ $edu['institution'] ?? '-' }}</strong> — {{ $edu['degree'] ?? '' }} di {{ $edu['field_of_study'] ?? '' }}
           </div>
           <div class="flex-right">
-            {{ $edu['graduation_year'] ?? '' }}
+            Lulus: {{ $edu['graduation_year'] ?? '' }}
           </div>
         </div>
       </div>
@@ -99,9 +99,11 @@
   @if(!empty($skills))
   <div class="section">
     <div class="section-title">Keterampilan</div>
-    <p class="skills-text" style="margin: 0;">
-      {{ implode(', ', $skills) }}
-    </p>
+    <div style="margin-top: 4px;">
+      @foreach($skills as $skill)
+        <span class="skill-tag">{{ $skill }}</span>
+      @endforeach
+    </div>
   </div>
   @endif
 

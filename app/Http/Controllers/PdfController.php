@@ -78,12 +78,36 @@ class PdfController extends Controller
 )]
     public function generateCv(Request $request, PDF $PDF) {
         $user = $request->user();
-        // dd($request->work_experience);
-        $pdf = $PDF->loadView('CVGenarte.ModernCv', ['data' => $request])->setOptions(['isHtml5ParserEnabled' => true, 'isRemoteEnabled' => true]);
-        $filename = 'cv_'.$user->id.'.pdf';
-        $path = storage_path('app/public'.$filename);
+        $data = $request->all();
+
+        $template = $data['template'] ?? 'Modern';
+        $viewName = match (strtoupper($template)) {
+            'ATS' => 'CVGenarte.AtsCv',
+            'CLASSIC' => 'CVGenarte.ClassicCv',
+            default => 'CVGenarte.ModernCv',
+        };
+
+        if (!view()->exists($viewName)) {
+            $viewName = 'CVGenarte.ModernCv';
+        }
+
+        $pdf = $PDF->loadView($viewName, ['data' => $data])
+            ->setOptions([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => true,
+                'defaultFont' => 'sans-serif'
+            ]);
+
+        $filename = 'cv_' . ($user ? $user->id : 'guest') . '_' . time() . '.pdf';
+        $directory = storage_path('app/public/cv');
+        if (!file_exists($directory)) {
+            mkdir($directory, 0755, true);
+        }
+        $path = $directory . '/' . $filename;
         $pdf->save($path);
 
-        return response()->file($path);
+        return response()->download($path, 'CV_' . preg_replace('/[^A-Za-z0-9]/', '_', $data['full_name'] ?? 'Prakerin') . '.pdf', [
+            'Content-Type' => 'application/pdf',
+        ]);
     }
 }
