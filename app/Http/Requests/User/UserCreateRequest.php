@@ -16,6 +16,17 @@ class UserCreateRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    protected function prepareForValidation()
+    {
+        $input = $this->all();
+        foreach ($input as $key => $value) {
+            if ($value === '' || $value === 'null' || $value === 'undefined') {
+                $input[$key] = null;
+            }
+        }
+        $this->replace($input);
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
