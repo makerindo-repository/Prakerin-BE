@@ -755,7 +755,21 @@ class UserController extends Controller
             $request->file('image')->storeAs('photo-profile', $filename, 'public');
         }
         $user->save();
-        $user->sendEmailVerificationNotification();
+
+        // JANGAN biarkan kegagalan kirim email verifikasi menggagalkan
+        // seluruh proses registrasi (akun/student/school/company udah
+        // kesimpen duluan sebelum baris ini). Kalau SMTP lagi bermasalah
+        // (host gak nyambung, kredensial salah, dll), user tetap harus
+        // dapat akun & token-nya — verifikasi email bisa dikirim ulang
+        // belakangan lewat fitur "Kirim Ulang Verifikasi".
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('[register] Gagal mengirim email verifikasi: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'email'   => $user->email,
+            ]);
+        }
 
 
         $token = null;
