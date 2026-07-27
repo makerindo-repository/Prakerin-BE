@@ -22,6 +22,16 @@ class SubscriptionController extends Controller
      */
     public function getUserSubscription(Request $request, string $userId): JsonResponse
     {
+        $authUser = $request->user();
+        $isOwner  = $authUser?->student?->id === $userId;
+        $isAdmin  = $authUser?->role === 'super_admin';
+
+        if (!$isOwner && !$isAdmin) {
+            return response()->json([
+                'errors' => 'Anda tidak memiliki akses ke data langganan siswa ini.',
+            ], 403);
+        }
+
         $student = Student::where('id', $userId)
             ->with(['subscription', 'school'])
             ->firstOrFail();
@@ -57,6 +67,16 @@ class SubscriptionController extends Controller
             'student_id' => 'required|uuid|exists:students,id',
             'package'    => 'required|in:monthly,yearly',
         ]);
+
+        $authUser = $request->user();
+        $isOwner  = $authUser?->student?->id === $validated['student_id'];
+        $isAdmin  = $authUser?->role === 'super_admin';
+
+        if (!$isOwner && !$isAdmin) {
+            return response()->json([
+                'errors' => 'Anda tidak bisa membuat pembayaran untuk akun siswa lain.',
+            ], 403);
+        }
 
         $student  = Student::with('school')->findOrFail($validated['student_id']);
         $packages = config('subscription.packages');
@@ -131,10 +151,32 @@ class SubscriptionController extends Controller
      */
     public function getPaymentStatus(Request $request, string $invoiceId): JsonResponse
     {
+        $authUser = $request->user();
+        $isAdmin  = $authUser?->role === 'super_admin';
+
+        if (!$isAdmin) {
+            $revenue = Revenue::where('xendit_invoice_id', $invoiceId)->first();
+            $isOwner = $revenue && $authUser?->student?->id === $revenue->user_id;
+
+            if (!$isOwner) {
+                return response()->json([
+                    'errors' => 'Anda tidak memiliki akses ke invoice ini.',
+                ], 403);
+            }
+        }
+
         try {
             $status = $this->xendit->getInvoiceStatus($invoiceId);
         } catch (\Throwable $e) {
             return response()->json(['errors' => 'Gagal memeriksa status pembayaran.'], 502);
+        }
+
+        // Fallback kalau webhook Xendit belum/gagal nyampe: begitu polling
+        // ini lihat status-nya sudah PAID/SETTLED, langsung jalankan proses
+        // upgrade yang sama seperti yang dilakukan webhook. Idempotent, jadi
+        // aman kalau ternyata webhook-nya nyampe duluan atau menyusul.
+        if ($status['paid']) {
+            $this->xendit->confirmPayment($invoiceId);
         }
 
         return response()->json([

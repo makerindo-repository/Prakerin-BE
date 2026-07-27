@@ -17,6 +17,7 @@ class Subscription extends Model
         'renewal_date',
         'payment_method',
         'xendit_invoice_id',
+        'external_id',
     ];
 
     protected $casts = [

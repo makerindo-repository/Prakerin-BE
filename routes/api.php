@@ -324,7 +324,7 @@ Route::prefix('v1')->group(function () {
         ->controller(AiAnalyticsController::class)
         ->middleware('auth:sanctum')
         ->group(function () {
-            Route::middleware('ability:student-access,admin-access')->group(function () {
+            Route::middleware(['ability:student-access,admin-access', 'premium'])->group(function () {
                 Route::post('/', 'analyze');
                 Route::get('/latest', 'latest');
                 Route::get('/', 'index');

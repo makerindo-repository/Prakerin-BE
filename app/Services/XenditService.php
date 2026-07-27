@@ -116,11 +116,6 @@ class XenditService
     /**
      * Handle an incoming Xendit webhook payload.
      *
-     * On PAID/SETTLED:
-     *   1. Marks the Revenue record as paid
-     *   2. Marks the Subscription as active, extends dates
-     *   3. Upgrades the Student's status_subscription to 'premium'
-     *
      * @param  array $payload  The JSON-decoded webhook body
      * @return bool            Whether the event was handled
      */
@@ -133,16 +128,40 @@ class XenditService
             return false;
         }
 
+        return $this->confirmPayment($invoiceId);
+    }
+
+    /**
+     * Tandai invoice sebagai lunas & upgrade student ke premium.
+     *
+     * Idempotent — aman dipanggil berkali-kali untuk invoice yang sama
+     * (dicek lewat `payment_status === 'paid'`).
+     *
+     * SENGAJA dibuat method terpisah dan reusable (bukan cuma dipanggil dari
+     * webhook) — dipakai juga sebagai fallback oleh endpoint polling
+     * (`SubscriptionController::getPaymentStatus`). Webhook Xendit kadang
+     * gagal nyampe (URL callback belum di-set di dashboard Xendit, mati
+     * jaringan sesaat, dll) — tanpa fallback ini, siswa yang sudah bayar
+     * lunas di Xendit bisa selamanya gak ke-upgrade ke premium karena
+     * satu-satunya jalur upgrade cuma nunggu webhook yang gak pernah datang.
+     *
+     * 1. Marks the Revenue record as paid
+     * 2. Marks the Subscription as active, extends dates
+     * 3. Upgrades the Student's status_subscription to 'premium'
+     */
+    public function confirmPayment(string $invoiceId): bool
+    {
         // Find the Revenue record
         $revenue = Revenue::where('xendit_invoice_id', $invoiceId)->first();
 
         if (!$revenue) {
-            Log::warning("[XenditService] Webhook received for unknown invoice={$invoiceId}");
+            Log::warning("[XenditService] confirmPayment: unknown invoice={$invoiceId}");
             return false;
         }
 
         if ($revenue->payment_status === 'paid') {
-            Log::info("[XenditService] Invoice {$invoiceId} already processed, skipping.");
+            // Sudah pernah diproses (baik lewat webhook atau polling
+            // sebelumnya) — idempotent, gak perlu diulang.
             return true;
         }
 

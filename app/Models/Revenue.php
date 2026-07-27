@@ -19,6 +19,7 @@ class Revenue extends Model
         'period_start',
         'period_end',
         'xendit_invoice_id',
+        'external_id',
         'notes',
     ];
 
