@@ -102,6 +102,11 @@ class SubscriptionController extends Controller
         );
 
         // Create pending Revenue record
+        // external_id di-generate & disimpan DI SINI (sebelum manggil Xendit),
+        // supaya kalau response createInvoice gagal sampai ke server nanti
+        // (timeout/crash setelah Xendit sebenarnya sudah berhasil bikin invoice),
+        // webhook/polling yang masuk belakangan TETAP bisa mencocokkan record
+        // ini lewat external_id (lihat XenditService::confirmPayment).
         $referenceId = 'SUB-' . strtoupper(Str::random(12)) . '-' . $student->id;
         $revenue = Revenue::create([
             'subscription_id'  => $subscription->id,
@@ -112,7 +117,9 @@ class SubscriptionController extends Controller
             'payment_status'   => 'pending',
             'period_start'     => $now,
             'period_end'       => $endDate,
+            'external_id'      => $referenceId,
         ]);
+        $subscription->update(['external_id' => $referenceId]);
 
         // Create Xendit invoice
         try {
@@ -125,7 +132,15 @@ class SubscriptionController extends Controller
         } catch (\Throwable $e) {
             $revenue->delete();
             Log::error('[SubscriptionController] createInvoice failed: ' . $e->getMessage());
-            return response()->json(['errors' => 'Gagal membuat invoice pembayaran. Coba lagi.'], 500);
+
+            // Sertakan pesan error ASLI (dari Xendit/exception PHP) di response —
+            // aman ($e->getMessage() isinya body respons Xendit, bukan secret
+            // key), supaya bisa didiagnosis dari tab Response DevTools browser
+            // tanpa perlu akses storage/logs di server.
+            return response()->json([
+                'errors' => 'Gagal membuat invoice pembayaran. Coba lagi.',
+                'debug'  => $e->getMessage(),
+            ], 500);
         }
 
         // Store invoice ID on revenue + subscription

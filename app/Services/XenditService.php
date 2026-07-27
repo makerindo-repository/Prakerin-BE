@@ -121,14 +121,15 @@ class XenditService
      */
     public function handleWebhook(array $payload): bool
     {
-        $invoiceId = $payload['id']      ?? null;
-        $status    = $payload['status']  ?? null;
+        $invoiceId  = $payload['id']          ?? null;
+        $externalId = $payload['external_id'] ?? null;
+        $status     = $payload['status']      ?? null;
 
-        if (!$invoiceId || !in_array($status, ['PAID', 'SETTLED'])) {
+        if ((!$invoiceId && !$externalId) || !in_array($status, ['PAID', 'SETTLED'])) {
             return false;
         }
 
-        return $this->confirmPayment($invoiceId);
+        return $this->confirmPayment($invoiceId, $externalId);
     }
 
     /**
@@ -145,18 +146,42 @@ class XenditService
      * lunas di Xendit bisa selamanya gak ke-upgrade ke premium karena
      * satu-satunya jalur upgrade cuma nunggu webhook yang gak pernah datang.
      *
+     * @param  string|null  $externalId  Fallback matching kalau xendit_invoice_id
+     *                                   belum sempat tersimpan (mis. response
+     *                                   createInvoice() gagal balik ke server
+     *                                   karena timeout/crash, padahal Xendit
+     *                                   sudah berhasil bikin invoice-nya).
+     *
      * 1. Marks the Revenue record as paid
      * 2. Marks the Subscription as active, extends dates
      * 3. Upgrades the Student's status_subscription to 'premium'
      */
-    public function confirmPayment(string $invoiceId): bool
+    public function confirmPayment(?string $invoiceId, ?string $externalId = null): bool
     {
-        // Find the Revenue record
-        $revenue = Revenue::where('xendit_invoice_id', $invoiceId)->first();
+        if (!$invoiceId && !$externalId) {
+            return false;
+        }
+
+        // Cocokkan pakai xendit_invoice_id ATAU external_id (fallback).
+        $revenue = Revenue::where(function ($q) use ($invoiceId, $externalId) {
+            if ($invoiceId) {
+                $q->where('xendit_invoice_id', $invoiceId);
+            }
+            if ($externalId) {
+                $q->orWhere('external_id', $externalId);
+            }
+        })->first();
 
         if (!$revenue) {
-            Log::warning("[XenditService] confirmPayment: unknown invoice={$invoiceId}");
+            Log::warning("[XenditService] confirmPayment: unknown invoice={$invoiceId} external_id={$externalId}");
             return false;
+        }
+
+        // Kalau ketemunya lewat external_id (xendit_invoice_id belum sempat
+        // kesimpan), lengkapi sekarang juga supaya query berikutnya konsisten.
+        if ($invoiceId && !$revenue->xendit_invoice_id) {
+            $revenue->xendit_invoice_id = $invoiceId;
+            $revenue->save();
         }
 
         if ($revenue->payment_status === 'paid') {
