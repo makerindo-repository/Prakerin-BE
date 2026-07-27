@@ -1091,6 +1091,9 @@ class UserController extends Controller
                 $student->name = $data['name'] ?? $student->name;
                 $student->address = $data['address'] ?? $student->address;
                 $student->phone_number = $data['phone_number'] ?? $student->phone_number;
+                if (!empty($student->phone_number)) {
+                    $user->whatsapp_number = $student->phone_number;
+                }
                 $student->school_id = $data['school_id'] ?? $student->school_id;
                 $student->date_of_birth = $data['date_of_birth'] ?? $student->date_of_birth;
                 $student->gender = $data['gender'] ?? $student->gender;
@@ -1470,28 +1473,36 @@ class UserController extends Controller
      */
     public function updateNotificationSettings(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         $validated = $request->validate([
             'email_notifications_enabled'    => 'sometimes|boolean',
             'whatsapp_notifications_enabled' => 'sometimes|boolean',
-            'whatsapp_number'                => [
-                'sometimes',
-                'nullable',
-                'string',
-                'max:20',
-                'regex:/^[0-9+\s\-]{7,20}$/',
-            ],
+            'whatsapp_number'                => 'sometimes|nullable|string|max:20',
         ]);
 
-        $user->update($validated);
+        if (array_key_exists('email_notifications_enabled', $validated)) {
+            $user->email_notifications_enabled = $validated['email_notifications_enabled'];
+        }
+
+        if (array_key_exists('whatsapp_notifications_enabled', $validated)) {
+            $user->whatsapp_notifications_enabled = $validated['whatsapp_notifications_enabled'];
+        }
+
+        // Automatically sync whatsapp_number from profile phone_number
+        $profilePhone = $user->phone_number ?: $user->student?->phone_number ?: $user->school?->phone_number ?: $user->company?->phone_number;
+        $user->whatsapp_number = !empty($validated['whatsapp_number']) ? $validated['whatsapp_number'] : ($profilePhone ?: $user->whatsapp_number);
+
+        $user->save();
 
         return response()->json([
             'message' => 'Notification settings updated successfully',
             'data'    => [
-                'email_notifications_enabled'    => $user->email_notifications_enabled,
-                'whatsapp_notifications_enabled' => $user->whatsapp_notifications_enabled,
+                'email_notifications_enabled'    => (bool) $user->email_notifications_enabled,
+                'whatsapp_notifications_enabled' => (bool) $user->whatsapp_notifications_enabled,
                 'whatsapp_number'                => $user->whatsapp_number,
+                'profile_phone_number'           => $profilePhone,
             ],
         ]);
     }

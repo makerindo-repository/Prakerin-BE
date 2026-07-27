@@ -193,6 +193,193 @@ class SettingController extends Controller
     }
 
     /**
+     * Broadcast custom WhatsApp notification to targeted audience groups.
+     * POST /api/v1/settings/broadcast-whatsapp
+     */
+    public function sendWhatsAppBroadcast(Request $request)
+    {
+        $validated = $request->validate([
+            'target_group'           => 'required|string|in:all_wa_users,unapplied_students,active_interns,pro_users,test_single_user',
+            'title'                  => 'required|string|max:150',
+            'message'                => 'required|string',
+            'action_url'             => 'nullable|string',
+            'single_user_identifier' => 'required_if:target_group,test_single_user|nullable|string',
+        ]);
+
+        $whatsAppService = new \App\Services\WhatsAppService();
+        if (!$whatsAppService->isConfigured()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'WhatsApp Gateway belum dikonfigurasi atau belum diaktifkan oleh admin.',
+            ], 400);
+        }
+
+        $targetGroup = $validated['target_group'];
+        $title       = $validated['title'];
+        $rawMessage  = $validated['message'];
+        $actionUrl   = $validated['action_url'] ?? config('app.frontend_url', 'http://localhost:3000') . '/dashboard';
+
+        $query = \App\Models\User::query();
+
+        if ($targetGroup === 'test_single_user') {
+            $identifier = $validated['single_user_identifier'];
+            $query->where(function ($q) use ($identifier) {
+                $q->where('id', $identifier)
+                  ->orWhere('email', $identifier)
+                  ->orWhere('whatsapp_number', $identifier);
+            });
+        } elseif ($targetGroup === 'unapplied_students') {
+            $query->where('role', 'student')
+                  ->where('whatsapp_notifications_enabled', true)
+                  ->whereNotNull('whatsapp_number')
+                  ->whereDoesntHave('student.curriculumVitae.internshipApplications');
+        } elseif ($targetGroup === 'active_interns') {
+            $query->where('role', 'student')
+                  ->where('whatsapp_notifications_enabled', true)
+                  ->whereNotNull('whatsapp_number')
+                  ->whereHas('student.curriculumVitae.internshipApplications', function ($q) {
+                      $q->where('status', 'approved');
+                  });
+        } elseif ($targetGroup === 'pro_users') {
+            $query->where('is_pro', true)
+                  ->where('whatsapp_notifications_enabled', true)
+                  ->whereNotNull('whatsapp_number');
+        } elseif ($targetGroup === 'all_wa_users') {
+            $query->where('whatsapp_notifications_enabled', true)
+                  ->whereNotNull('whatsapp_number');
+        }
+
+        $targetUsers = $query->get();
+
+        if ($targetUsers->isEmpty()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Tidak ada pengguna yang memenuhi kriteria penerima WhatsApp (pastikan nomor WA valid dan notifikasi aktif).',
+            ], 404);
+        }
+
+        $notificationService = app(\App\Services\NotificationService::class);
+        $queuedCount = 0;
+
+        foreach ($targetUsers as $targetUser) {
+            // Replace dynamic placeholders
+            $personalizedMessage = str_replace(
+                ['{name}', '{role}', '{link}'],
+                [$targetUser->username ?? 'Pengguna', ucfirst($targetUser->role ?? 'User'), $actionUrl],
+                $rawMessage
+            );
+
+            $notificationService->notify(
+                userId: $targetUser->id,
+                title: $title,
+                content: $personalizedMessage,
+                type: 'broadcast',
+                actionUrl: $actionUrl
+            );
+
+            $queuedCount++;
+        }
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => "Berhasil menjadwalkan broadcast WhatsApp untuk {$queuedCount} pengguna!",
+            'data'    => [
+                'target_group' => $targetGroup,
+                'queued_count' => $queuedCount,
+            ],
+        ]);
+    }
+
+    /**
+     * Send an email broadcast notification to targeted user segments.
+     * POST /api/v1/settings/broadcast-email
+     */
+    public function sendEmailBroadcast(Request $request)
+    {
+        $validated = $request->validate([
+            'target_group'           => 'required|string|in:all_email_users,unapplied_students,active_interns,pro_users,test_single_user',
+            'title'                  => 'required|string|max:150',
+            'message'                => 'required|string',
+            'action_url'             => 'nullable|string',
+            'single_user_identifier' => 'required_if:target_group,test_single_user|nullable|string',
+        ]);
+
+        $targetGroup = $validated['target_group'];
+        $title       = $validated['title'];
+        $rawMessage  = $validated['message'];
+        $actionUrl   = $validated['action_url'] ?? config('app.frontend_url', 'http://localhost:3000') . '/dashboard';
+
+        $query = \App\Models\User::query();
+
+        if ($targetGroup === 'test_single_user') {
+            $identifier = $validated['single_user_identifier'];
+            $query->where(function ($q) use ($identifier) {
+                $q->where('id', $identifier)
+                  ->orWhere('email', $identifier)
+                  ->orWhere('whatsapp_number', $identifier);
+            });
+        } elseif ($targetGroup === 'unapplied_students') {
+            $query->where('role', 'student')
+                  ->where('email_notifications_enabled', true)
+                  ->whereNotNull('email')
+                  ->whereDoesntHave('student.curriculumVitae.internshipApplications');
+        } elseif ($targetGroup === 'active_interns') {
+            $query->where('role', 'student')
+                  ->where('email_notifications_enabled', true)
+                  ->whereNotNull('email')
+                  ->whereHas('student.curriculumVitae.internshipApplications', function ($q) {
+                      $q->where('status', 'approved');
+                  });
+        } elseif ($targetGroup === 'pro_users') {
+            $query->where('is_pro', true)
+                  ->where('email_notifications_enabled', true)
+                  ->whereNotNull('email');
+        } elseif ($targetGroup === 'all_email_users') {
+            $query->where('email_notifications_enabled', true)
+                  ->whereNotNull('email');
+        }
+
+        $targetUsers = $query->get();
+
+        if ($targetUsers->isEmpty()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Tidak ada pengguna yang memenuhi kriteria penerima Email (pastikan email valid dan notifikasi email aktif).',
+            ], 404);
+        }
+
+        $notificationService = app(\App\Services\NotificationService::class);
+        $queuedCount = 0;
+
+        foreach ($targetUsers as $targetUser) {
+            $personalizedMessage = str_replace(
+                ['{name}', '{role}', '{link}'],
+                [$targetUser->username ?? 'Pengguna', ucfirst($targetUser->role ?? 'User'), $actionUrl],
+                $rawMessage
+            );
+
+            $notificationService->notify(
+                userId: $targetUser->id,
+                title: $title,
+                content: $personalizedMessage,
+                type: 'broadcast',
+                actionUrl: $actionUrl
+            );
+
+            $queuedCount++;
+        }
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => "Berhasil menjadwalkan broadcast Email untuk {$queuedCount} pengguna!",
+            'data'    => [
+                'target_group' => $targetGroup,
+                'queued_count' => $queuedCount,
+            ],
+        ]);
+    }
+
+    /**
      * Test the connection to the Xendit API (Payment Gateway).
      * Pakai endpoint /balance — ringan, cuma butuh secret key valid, tidak
      * membuat invoice/transaksi apapun jadi aman dipanggil berkali-kali.

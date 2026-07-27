@@ -28,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
             // Dynamic mail config overrides
             if (isset($settings['smtp_host']) && !empty($settings['smtp_host'])) {
                 config([
+                    'mail.default'                 => 'smtp',
                     'mail.mailers.smtp.host'       => $settings['smtp_host'],
                     'mail.mailers.smtp.port'       => (int) ($settings['smtp_port'] ?? 587),
                     'mail.mailers.smtp.username'   => $settings['smtp_username'] ?? '',
@@ -36,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
                     'mail.from.address'            => $settings['smtp_from_email'] ?? config('mail.from.address'),
                     'mail.from.name'               => $settings['smtp_from_name'] ?? config('mail.from.name'),
                 ]);
+                \Illuminate\Support\Facades\Mail::purge('smtp');
             }
 
             // Dynamic reCAPTCHA config overrides

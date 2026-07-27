@@ -271,6 +271,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('/profile', 'profile');
                 Route::get('/me/permissions', 'myPermissions'); // GET current user's roles & permissions
                 Route::patch('/profile', 'updateProfile');
+                Route::patch('/notification-settings', 'updateNotificationSettings');
                 Route::delete('/profile', 'deleteProfile');
                 Route::get('/count', 'count');
 
@@ -693,12 +694,12 @@ Route::prefix('v1')->group(function () {
             Route::patch('/{id}/read', 'markRead');
         });
 
-    // User notification preference settings
-    Route::patch('/users/notification-settings', [UserController::class, 'updateNotificationSettings'])
-        ->middleware('auth:sanctum');
-
     // WhatsApp test connection (admin only)
     Route::post('/settings/test-whatsapp', [SettingController::class, 'testWhatsApp'])
+        ->middleware(['auth:sanctum', 'ability:admin-access']);
+    Route::post('/settings/broadcast-whatsapp', [SettingController::class, 'sendWhatsAppBroadcast'])
+        ->middleware(['auth:sanctum', 'ability:admin-access']);
+    Route::post('/settings/broadcast-email', [SettingController::class, 'sendEmailBroadcast'])
         ->middleware(['auth:sanctum', 'ability:admin-access']);
 
     // ─── Subscription (user-facing) ───────────────────────────────────────

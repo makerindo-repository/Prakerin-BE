@@ -88,10 +88,7 @@ class NotificationService
             $senderId
         );
 
-        // Observer will handle this — but if observer is not fired (e.g. in tests),
-        // we call it directly too.
-        $this->sendInboxNotification($inboxItem);
-
+        // InboxItemObserver handles sendInboxNotification automatically on 'created' event
         return $inboxItem;
     }
 
@@ -108,7 +105,7 @@ class NotificationService
         ]);
 
         try {
-            SendEmailNotification::dispatch($inboxItem, $user, $log->id);
+            SendEmailNotification::dispatch($inboxItem, $user, $log->id)->afterResponse();
             Log::info("[NotificationService] Email job queued for user {$user->id}");
         } catch (\Throwable $e) {
             $log->update(['status' => 'failed', 'error_message' => $e->getMessage()]);
@@ -127,7 +124,7 @@ class NotificationService
         ]);
 
         try {
-            SendWhatsAppNotification::dispatch($inboxItem, $user, $log->id);
+            SendWhatsAppNotification::dispatch($inboxItem, $user, $log->id)->afterResponse();
             Log::info("[NotificationService] WhatsApp job queued for user {$user->id}");
         } catch (\Throwable $e) {
             $log->update(['status' => 'failed', 'error_message' => $e->getMessage()]);

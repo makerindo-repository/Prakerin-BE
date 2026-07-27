@@ -27,6 +27,11 @@ class Setting extends Model
 
         $value = $setting->value;
 
+        // Force string type for IDs, phone numbers, keys, and tokens
+        if (str_contains($key, 'id') || str_contains($key, 'number') || str_contains($key, 'key') || str_contains($key, 'token') || str_starts_with($key, 'whatsapp_')) {
+            return (string) $value;
+        }
+
         switch ($setting->type) {
             case 'boolean':
                 return filter_var($value, FILTER_VALIDATE_BOOLEAN);
@@ -35,7 +40,7 @@ class Setting extends Model
             case 'json':
                 return json_decode($value, true);
             default:
-                return $value;
+                return (string) $value;
         }
     }
 
