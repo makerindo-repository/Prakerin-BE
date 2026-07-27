@@ -95,7 +95,7 @@ class UserController extends Controller
                     if ($user->school->type === 'school') {
                         if ($isVerified) {
                             $q->where(function ($subQuery) {
-                                $subQuery->whereIn('class', ['11', '12'])
+                                $subQuery->whereIn('class', ['10', '11', '12', '13', '14'])
                                     ->orWhereNull('class')
                                     ->orWhere('class', '');
                             });
@@ -675,11 +675,20 @@ class UserController extends Controller
  */
     public function destroy(string $id)
     {
-        $user = User::find($id);
+        $user = User::with(['student'])->find($id);
         if (!$user) {
             throw new HttpResponseException(response([
                 "errors" => "User not found."
             ], 404));
+        }
+
+        $currentUser = auth()->user();
+        if ($currentUser->tokenCan('school-access') && !$currentUser->tokenCan('admin-access')) {
+            if ($user->role !== 'student' || !$user->student || $user->student->school_id !== $currentUser->school?->id) {
+                throw new HttpResponseException(response([
+                    "errors" => "Unauthorized. You can only delete students belonging to your school."
+                ], 403));
+            }
         }
 
         if ($user->photo_profile) {

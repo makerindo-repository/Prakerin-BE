@@ -285,7 +285,7 @@ Route::prefix('v1')->group(function () {
                     Route::post('/', 'store');
                 });
 
-                Route::middleware('abilities:admin-access')->group(function () {
+                Route::middleware('ability:admin-access,school-access')->group(function () {
                     Route::delete('/{id}', 'destroy');
                 });
 
