@@ -719,6 +719,7 @@ Route::prefix('v1')->group(function () {
 
             Route::get('/revenue/dashboard', [RevenueController::class, 'dashboard']);
             Route::get('/revenue/accounts', [RevenueController::class, 'accounts']);
+            Route::post('/revenue/{id}/sync', [RevenueController::class, 'syncStatus']);
         });
 });
 

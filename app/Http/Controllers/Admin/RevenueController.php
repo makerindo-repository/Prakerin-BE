@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Revenue;
 use App\Models\Student;
+use App\Services\XenditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class RevenueController extends Controller
 {
+    public function __construct(protected XenditService $xendit) {}
+
     // ── GET /api/v1/admin/revenue/dashboard ───────────────────────────────
 
     /**
@@ -93,6 +96,58 @@ class RevenueController extends Controller
                 'current_page' => $records->currentPage(),
                 'last_page'    => $records->lastPage(),
             ],
+        ]);
+    }
+
+    // ── POST /api/v1/admin/revenue/{id}/sync ──────────────────────────────
+
+    /**
+     * Cek ulang status invoice ini LANGSUNG ke Xendit, dan perbaiki record
+     * yang statusnya nyangkut "pending" di DB kita padahal sudah lunas di
+     * Xendit (mis. webhook belum di-setup / gagal nyampe, atau admin cuma
+     * nutup modal QRIS sebelum polling sempat mendeteksi status "paid").
+     *
+     * Idempotent & aman dipanggil berkali-kali — kalau sudah paid ya
+     * dibiarkan, kalau belum ya cuma dilaporkan statusnya masih pending.
+     */
+    public function syncStatus(string $id): JsonResponse
+    {
+        $revenue = Revenue::findOrFail($id);
+
+        if ($revenue->payment_status === 'paid') {
+            return response()->json([
+                'message' => 'Record ini sudah berstatus paid.',
+                'data'    => $revenue,
+            ]);
+        }
+
+        if (!$revenue->xendit_invoice_id) {
+            return response()->json([
+                'errors' => 'Record ini belum punya xendit_invoice_id (invoice mungkin gagal dibuat), tidak bisa disinkronkan.',
+            ], 422);
+        }
+
+        try {
+            $status = $this->xendit->getInvoiceStatus($revenue->xendit_invoice_id);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'errors' => 'Gagal menghubungi Xendit.',
+                'debug'  => $e->getMessage(),
+            ], 502);
+        }
+
+        if ($status['paid']) {
+            $this->xendit->confirmPayment($revenue->xendit_invoice_id, $revenue->external_id);
+
+            return response()->json([
+                'message' => 'Status berhasil disinkronkan — pembayaran dikonfirmasi lunas.',
+                'data'    => $revenue->fresh(),
+            ]);
+        }
+
+        return response()->json([
+            'message' => "Status di Xendit masih \"{$status['status']}\" (belum dibayar), tidak ada yang diubah.",
+            'data'    => $revenue,
         ]);
     }
 }
