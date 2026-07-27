@@ -302,7 +302,18 @@ class SettingController extends Controller
             'message'                => 'required|string',
             'action_url'             => 'nullable|string',
             'single_user_identifier' => 'required_if:target_group,test_single_user|nullable|string',
+            'header_logo_url'        => 'nullable|string',
+            'header_title'           => 'nullable|string',
+            'header_icon'            => 'nullable|string',
         ]);
+
+        // If custom header logo URL is provided, save to app_logo setting
+        if (!empty($validated['header_logo_url'])) {
+            \App\Models\Setting::updateOrCreate(
+                ['key' => 'app_logo'],
+                ['value' => $validated['header_logo_url'], 'type' => 'string']
+            );
+        }
 
         $targetGroup = $validated['target_group'];
         $title       = $validated['title'];

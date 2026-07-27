@@ -166,10 +166,16 @@
 
             <!-- Header -->
             <div class="header">
-                <div class="header-logo">Prakerin Platform</div>
-                <span class="header-icon">📬</span>
+                @if(!empty($appLogoUrl))
+                    <div style="margin-bottom: 16px;">
+                        <img src="{{ $appLogoUrl }}" alt="{{ $appName ?? 'Prakerin' }}" style="max-height: 48px; max-width: 180px; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.15));" />
+                    </div>
+                @else
+                    <div class="header-logo">{{ $appName ?? 'PRAKERIN PLATFORM' }}</div>
+                    <span class="header-icon">📬</span>
+                @endif
                 <div class="header-title">Ada Notifikasi Baru!</div>
-                <div class="header-sub">Kamu punya pembaruan di Prakerin</div>
+                <div class="header-sub">Kamu punya pembaruan di {{ $appName ?? 'Prakerin' }}</div>
             </div>
 
             <!-- Content -->

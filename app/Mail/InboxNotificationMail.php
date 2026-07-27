@@ -27,9 +27,11 @@ class InboxNotificationMail extends Mailable
             'new_application'    => 'Lamaran Masuk',
         ];
 
-        $typeLabel = $typeLabels[$this->inboxItem->type] ?? ucfirst(str_replace('_', ' ', $this->inboxItem->type));
+        $typeLabel  = $typeLabels[$this->inboxItem->type] ?? ucfirst(str_replace('_', ' ', $this->inboxItem->type));
+        $appLogoUrl = \App\Models\Setting::getVal('app_logo');
+        $appName    = \App\Models\Setting::getVal('app_name', 'Prakerin Platform');
 
-        return $this->subject($this->inboxItem->title . ' — Prakerin')
+        return $this->subject($this->inboxItem->title . ' — ' . $appName)
                     ->view('emails.inbox-notification')
                     ->with([
                         'title'      => $this->inboxItem->title,
@@ -37,6 +39,8 @@ class InboxNotificationMail extends Mailable
                         'type'       => $typeLabel,
                         'actionUrl'  => $this->inboxItem->action_url,
                         'userName'   => $this->inboxItem->user->username ?? 'Pengguna',
+                        'appLogoUrl' => $appLogoUrl,
+                        'appName'    => $appName,
                     ]);
     }
 }
