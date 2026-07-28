@@ -33,10 +33,17 @@ class SendWhatsAppNotification implements ShouldQueue
 
     public function handle(WhatsAppService $whatsApp): void
     {
-        $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
-
-        // Build concise WhatsApp message (plain text, no HTML)
-        $link = $this->inboxItem->action_url ?? $frontendUrl . '/dashboard/inbox';
+        $frontendUrl = rtrim(config('app.frontend_url', 'http://localhost:3000'), '/');
+        $rawUrl      = $this->inboxItem->action_url ?? '/dashboard/inbox';
+        if (!str_starts_with($rawUrl, 'http://') && !str_starts_with($rawUrl, 'https://')) {
+            $link = $frontendUrl . '/' . ltrim($rawUrl, '/');
+        } elseif (str_contains($rawUrl, 'localhost') || str_contains($rawUrl, '127.0.0.1')) {
+            $parsed = parse_url($rawUrl);
+            $path   = ($parsed['path'] ?? '') . (isset($parsed['query']) ? '?' . $parsed['query'] : '') . (isset($parsed['fragment']) ? '#' . $parsed['fragment'] : '');
+            $link   = $frontendUrl . '/' . ltrim($path, '/');
+        } else {
+            $link = $rawUrl;
+        }
 
         $message = "📬 *{$this->inboxItem->title}*\n\n"
             . "{$this->inboxItem->content}\n\n"

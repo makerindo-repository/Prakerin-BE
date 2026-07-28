@@ -47,6 +47,36 @@ class InboxItem extends Model
         $this->update(['is_read' => true]);
     }
 
+    public function setActionUrlAttribute(?string $value): void
+    {
+        if (empty($value)) {
+            $this->attributes['action_url'] = null;
+            return;
+        }
+
+        $trimmed = trim($value);
+
+        if (str_starts_with($trimmed, '/')) {
+            $this->attributes['action_url'] = $trimmed;
+            return;
+        }
+
+        $parsed = parse_url($trimmed);
+        if (isset($parsed['path']) && str_starts_with($parsed['path'], '/dashboard')) {
+            $path = $parsed['path'];
+            if (!empty($parsed['query'])) {
+                $path .= '?' . $parsed['query'];
+            }
+            if (!empty($parsed['fragment'])) {
+                $path .= '#' . $parsed['fragment'];
+            }
+            $this->attributes['action_url'] = $path;
+            return;
+        }
+
+        $this->attributes['action_url'] = $trimmed;
+    }
+
     /**
      * Convenience factory for common notification types.
      */

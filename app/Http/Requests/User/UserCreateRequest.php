@@ -39,6 +39,7 @@ class UserCreateRequest extends FormRequest
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|confirmed',
             'role' => 'required|in:student,school,company,super_admin',
+            'type' => 'nullable|in:school,university',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
 

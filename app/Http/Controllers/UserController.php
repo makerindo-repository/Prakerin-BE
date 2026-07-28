@@ -428,6 +428,7 @@ class UserController extends Controller
                 $student->is_verified = true;
             } else {
                 $student->school_id = $data['school_id'];
+                $student->is_verified = true;
             }
             $student->user_id = $user->id;
             $student->class = $data['class'] ?? null;
@@ -444,7 +445,8 @@ class UserController extends Controller
             $school->name = $data['name'];
             $school->address = $data['address'];
             $school->user_id = $user->id;
-            $school->type = $data['type'];
+            $school->type = $data['type'] ?? 'school';
+            $school->is_verified = true;
             $school->save();
             $user->syncSpatieRole($school->type);
         } else if ($user->role === "company") {
@@ -452,6 +454,7 @@ class UserController extends Controller
             $company->name = $data['name'];
             $company->address = $data['address'];
             $company->user_id = $user->id;
+            $company->is_verified = true;
             $company->save();
             $user->syncSpatieRole();
         }

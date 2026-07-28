@@ -31,13 +31,28 @@ class InboxNotificationMail extends Mailable
         $appLogoUrl = \App\Models\Setting::getVal('app_logo');
         $appName    = \App\Models\Setting::getVal('app_name', 'Prakerin Platform');
 
+        $rawActionUrl = $this->inboxItem->action_url;
+        $actionUrl    = null;
+        if ($rawActionUrl) {
+            $frontendUrl = rtrim(config('app.frontend_url', 'http://localhost:3000'), '/');
+            if (!str_starts_with($rawActionUrl, 'http://') && !str_starts_with($rawActionUrl, 'https://')) {
+                $actionUrl = $frontendUrl . '/' . ltrim($rawActionUrl, '/');
+            } elseif (str_contains($rawActionUrl, 'localhost') || str_contains($rawActionUrl, '127.0.0.1')) {
+                $parsed = parse_url($rawActionUrl);
+                $path   = ($parsed['path'] ?? '') . (isset($parsed['query']) ? '?' . $parsed['query'] : '') . (isset($parsed['fragment']) ? '#' . $parsed['fragment'] : '');
+                $actionUrl = $frontendUrl . '/' . ltrim($path, '/');
+            } else {
+                $actionUrl = $rawActionUrl;
+            }
+        }
+
         return $this->subject($this->inboxItem->title . ' — ' . $appName)
                     ->view('emails.inbox-notification')
                     ->with([
                         'title'      => $this->inboxItem->title,
                         'content'    => $this->inboxItem->content,
                         'type'       => $typeLabel,
-                        'actionUrl'  => $this->inboxItem->action_url,
+                        'actionUrl'  => $actionUrl,
                         'userName'   => $this->inboxItem->user->username ?? 'Pengguna',
                         'appLogoUrl' => $appLogoUrl,
                         'appName'    => $appName,
