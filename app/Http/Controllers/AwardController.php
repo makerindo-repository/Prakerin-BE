@@ -133,14 +133,7 @@ class AwardController extends Controller
             return response()->json(['errors' => ['student_id' => ['User is not a student.']]], 422);
         }
 
-        // Check if already assigned
-        $exists = StudentAward::where('student_id', $studentId)
-            ->where('award_id', $awardId)
-            ->exists();
-
-        if ($exists) {
-            return response()->json(['errors' => ['award_id' => ['This award is already assigned to the student.']]], 422);
-        }
+        // Allow student to be assigned the same award multiple times
 
         $studentAward = StudentAward::create([
             'student_id' => $studentId,

@@ -34,7 +34,6 @@ return new class extends Migration {
             $table->foreign('student_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('award_id')->references('id')->on('awards')->onDelete('cascade');
             $table->foreign('awarded_by_id')->references('id')->on('users')->onDelete('cascade');
-            $table->unique(['student_id', 'award_id']);
         });
     }
 
