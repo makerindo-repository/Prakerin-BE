@@ -55,6 +55,18 @@ class AppServiceProvider extends ServiceProvider
                 ]);
             }
 
+            // Dynamic Subscription Packages Price Overrides
+            if (isset($settings['pro_monthly_price']) && is_numeric($settings['pro_monthly_price'])) {
+                config([
+                    'subscription.packages.monthly.amount' => (float) $settings['pro_monthly_price'],
+                ]);
+            }
+            if (isset($settings['pro_yearly_price']) && is_numeric($settings['pro_yearly_price'])) {
+                config([
+                    'subscription.packages.yearly.amount' => (float) $settings['pro_yearly_price'],
+                ]);
+            }
+
             // Dynamic Xendit (Payment Gateway) config overrides
             if (isset($settings['xendit_secret_key']) && !empty($settings['xendit_secret_key'])) {
                 config([

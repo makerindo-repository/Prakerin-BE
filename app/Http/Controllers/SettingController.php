@@ -95,7 +95,7 @@ class SettingController extends Controller
      */
     public function publicSettings()
     {
-        $whitelist = ['pre_internship_class_url', 'platform_name', 'support_email', 'support_phone'];
+        $whitelist = ['pre_internship_class_url', 'platform_name', 'support_email', 'support_phone', 'pro_monthly_price', 'pro_yearly_price'];
 
         $settings = Setting::whereIn('key', $whitelist)
             ->get()

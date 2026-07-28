@@ -140,9 +140,52 @@ class SettingSeeder extends Seeder
                 'value' => 'noreply@prakerin.com',
                 'type' => 'string',
             ],
+            // Pro Tier Access Settings
             [
-                'key' => 'smtp_from_name',
-                'value' => 'Prakerin Support',
+                'key' => 'pro_access_ai_cv_generator',
+                'value' => 'true',
+                'type' => 'boolean',
+            ],
+            [
+                'key' => 'pro_access_ai_analytics',
+                'value' => 'true',
+                'type' => 'boolean',
+            ],
+            [
+                'key' => 'pro_access_ai_report',
+                'value' => 'true',
+                'type' => 'boolean',
+            ],
+
+            // Subscription Pricing & Company Bank Settings
+            [
+                'key' => 'pro_monthly_price',
+                'value' => '99000',
+                'type' => 'number',
+            ],
+            [
+                'key' => 'pro_yearly_price',
+                'value' => '999000',
+                'type' => 'number',
+            ],
+            [
+                'key' => 'company_bank_name',
+                'value' => 'Bank Central Asia (BCA)',
+                'type' => 'string',
+            ],
+            [
+                'key' => 'company_bank_account_number',
+                'value' => '',
+                'type' => 'string',
+            ],
+            [
+                'key' => 'company_bank_account_name',
+                'value' => '',
+                'type' => 'string',
+            ],
+            [
+                'key' => 'company_bank_address',
+                'value' => '',
                 'type' => 'string',
             ],
         ];
