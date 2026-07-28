@@ -7,6 +7,9 @@ use App\Models\ScheduledReport;
 use App\Models\Internship;
 use App\Models\Student;
 use App\Models\Company;
+use App\Models\School;
+use App\Models\JobOpening;
+use App\Models\Mou;
 use App\Models\PreInternshipEnrollment;
 use App\Models\Feedback;
 use App\Models\Field;
@@ -595,7 +598,7 @@ class ReportController extends Controller
                 $tasksText .= "- {$task->title} (Status: {$statusLabel}): {$task->description}\n";
             }
 
-            $school = $student->school ?? \App\Models\School::find($student->school_id);
+            $school = $student->school ?? School::find($student->school_id);
             $schoolTemplateInstruction = "";
             $summaryStructureDesc = "Ringkasan laporan magang eksekutif yang formal dalam 2-3 paragraf, merangkum apa saja yang dikerjakan siswa, kontribusinya kepada perusahaan, serta evaluasi performa umum";
 
@@ -630,8 +633,92 @@ Hasilkan laporan evaluasi hasil magang dalam format JSON dengan struktur berikut
   \"insights\": [\"(Wawasan/Keahlian baru yang diperoleh selama magang)\", \"(Poin pembelajaran/hasil dari tugas-tugas yang diselesaikan)\", \"(Evaluasi pencapaian kerja)\"],
   \"recommendations\": [\"(Rekomendasi area pengembangan diri untuk siswa ke depannya)\", \"(Saran penambahan skill yang perlu dikembangkan)\"]
 }";
+        } else if ($user && ($user->role === 'school' || ($user->school && $user->school()->exists()))) {
+            $school = $user->school;
+            if (!$school) {
+                return response()->json(['message' => 'Data sekolah tidak ditemukan.'], 404);
+            }
+
+            $students = Student::where('school_id', $school->id)->get();
+            $totalStudents = $students->count();
+            $studentIds = $students->pluck('id');
+
+            $internships = Internship::whereIn('student_id', $studentIds)->with(['student', 'company', 'tasks', 'jobPosition'])->get();
+            $activeInternships = $internships->where('status', 'active')->count();
+            $completedInternships = $internships->where('status', 'completed')->count();
+
+            $mouCount = Mou::where('school_id', $school->id)->where('status', 'accepted')->count();
+
+            $internDataText = "";
+            foreach ($internships->take(35) as $internship) {
+                $studentName = $internship->student?->name ?? 'Siswa';
+                $companyName = $internship->company?->name ?? 'Perusahaan';
+                $taskCount = $internship->tasks->count();
+                $completedTaskCount = $internship->tasks->where('status', 'completed')->count();
+                $internDataText .= "- {$studentName} at {$companyName} ({$internship->jobPosition?->name}): {$completedTaskCount}/{$taskCount} tugas selesai, status: {$internship->status}\n";
+            }
+
+            $prompt = "Anda adalah analis pendidikan dan pembimbing prakerin di {$school->name}.
+Tugas Anda adalah menganalisis data perkembangan magang siswa dan kemitraan industri sekolah dalam bahasa Indonesia yang formal, komprehensif, dan konstruktif.
+
+Ringkasan Data Sekolah:
+- Nama Sekolah: {$school->name}
+- Total Siswa Terdaftar: {$totalStudents}
+- Magang Aktif: {$activeInternships} siswa
+- Magang Selesai: {$completedInternships} siswa
+- Jumlah Kemitraan MOU Aktif: {$mouCount} perusahaan
+
+Detail Magang Siswa & Progres Tugas:
+" . ($internDataText ?: "Belum ada data magang siswa.") . "
+
+Hasilkan laporan evaluasi monitoring magang sekolah dalam format JSON dengan struktur berikut:
+{
+  \"summary\": \"(Ringkasan analisis progres magang siswa dan hubungan kemitraan sekolah dalam 2-3 paragraf)\",
+  \"insights\": [\"(Wawasan 1: Progres & keaktifan siswa magang)\", \"(Wawasan 2: Evaluasi kemitraan perusahaan)\", \"(Wawasan 3: Capaian tugas siswa)\"],
+  \"recommendations\": [\"(Rekomendasi 1: Langkah pembimbingan siswa)\", \"(Rekomendasi 2: Strategi perluasan kerja sama industri)\"]
+}";
+        } else if ($user && ($user->role === 'company' || ($user->company && $user->company()->exists()))) {
+            $company = $user->company;
+            if (!$company) {
+                return response()->json(['message' => 'Data perusahaan tidak ditemukan.'], 404);
+            }
+
+            $internships = Internship::where('company_id', $company->id)->with(['student', 'tasks', 'jobPosition'])->get();
+            $totalInterns = $internships->count();
+            $activeInterns = $internships->where('status', 'active')->count();
+
+            $jobOpenings = JobOpening::where('company_id', $company->id)->withCount('applications')->get();
+            $totalJobOpenings = $jobOpenings->count();
+
+            $internDetailText = "";
+            foreach ($internships->take(35) as $internship) {
+                $studentName = $internship->student?->name ?? 'Peserta Magang';
+                $jobTitle = $internship->jobPosition?->name ?? 'Posisi';
+                $taskCount = $internship->tasks->count();
+                $completedTaskCount = $internship->tasks->where('status', 'completed')->count();
+                $internDetailText .= "- {$studentName} ({$jobTitle}): {$completedTaskCount} dari {$taskCount} tugas selesai (Status: {$internship->status})\n";
+            }
+
+            $prompt = "Anda adalah Manajer SDM / Supervisor Magang di {$company->name}.
+Tugas Anda adalah membuat laporan evaluasi kinerja peserta magang dan analisis keterlibatan perusahaan (engagement) dalam bahasa Indonesia yang profesional dan objektif.
+
+Ringkasan Data Perusahaan:
+- Nama Perusahaan: {$company->name}
+- Total Peserta Magang Diterima: {$totalInterns}
+- Peserta Magang Aktif Saat Ini: {$activeInterns}
+- Total Lowongan Magang Dibuka: {$totalJobOpenings}
+
+Detail Kinerja Peserta Magang & Milestone Tugas:
+" . ($internDetailText ?: "Belum ada peserta magang aktif.") . "
+
+Hasilkan laporan evaluasi performa magang & engagement perusahaan dalam format JSON dengan struktur berikut:
+{
+  \"summary\": \"(Ringkasan evaluasi produktivitas peserta magang dan pencapaian target proyek perusahaan dalam 2-3 paragraf)\",
+  \"insights\": [\"(Wawasan 1: Kinerja & milestone pencapaian tugas peserta magang)\", \"(Wawasan 2: Tingkat efektivitas pendampingan/mentoring perusahaan)\"],
+  \"recommendations\": [\"(Rekomendasi 1: Peningkatan program mentoring atau alokasi tugas)\", \"(Rekomendasi 2: Potensi rekrutmen/penyerapan talenta terbaik)\"]
+}";
         } else {
-            // Fetch recent activity logs (e.g., last 30 days)
+            // Fetch recent activity logs (for admin/super_admin)
             $logs = \App\Models\ActivityLog::orderBy('created_at', 'desc')->limit(150)->get();
 
             if ($logs->isEmpty()) {

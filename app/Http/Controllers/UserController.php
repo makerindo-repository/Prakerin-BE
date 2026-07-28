@@ -1102,7 +1102,15 @@ class UserController extends Controller
             $user->email_verified_at = null;
         }
 
-        if ($request->file('photo_profile')) {
+        if ($request->boolean('reset_photo') || $request->input('reset_photo') === 'true' || $request->input('reset_photo') === '1' || $request->input('reset_photo') === true) {
+            if ($user->photo_profile && Storage::disk('public')->exists("photo-profile/{$user->photo_profile}")) {
+                Storage::disk('public')->delete("photo-profile/{$user->photo_profile}");
+            }
+            $user->photo_profile = null;
+        } elseif ($request->file('photo_profile')) {
+            if ($user->photo_profile && Storage::disk('public')->exists("photo-profile/{$user->photo_profile}")) {
+                Storage::disk('public')->delete("photo-profile/{$user->photo_profile}");
+            }
             $filename = now()->format('Ymd_His') . '.' . $request->file('photo_profile')->getClientOriginalExtension();
             $user->photo_profile = $filename;
             $request->file('photo_profile')->storeAs('photo-profile', $filename, 'public');

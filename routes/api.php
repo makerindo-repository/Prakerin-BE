@@ -610,7 +610,7 @@ Route::prefix('v1')->group(function () {
 
         // P2 Reports
         Route::prefix('reports')->controller(ReportController::class)->group(function () {
-            Route::middleware('ability:admin-access,student-access,school-access')->group(function () {
+            Route::middleware('ability:admin-access,student-access,school-access,company-access')->group(function () {
                 Route::post('/ai-summary', 'generateAiSummary');
             });
             Route::middleware('ability:admin-access,school-access,company-access')->group(function () {

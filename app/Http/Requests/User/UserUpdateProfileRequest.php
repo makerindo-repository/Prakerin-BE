@@ -25,6 +25,33 @@ class UserUpdateProfileRequest extends FormRequest
                 'is_verified' => filter_var($this->is_verified, FILTER_VALIDATE_BOOLEAN),
             ]);
         }
+
+        if ($this->has('reset_photo')) {
+            $this->merge([
+                'reset_photo' => filter_var($this->reset_photo, FILTER_VALIDATE_BOOLEAN),
+            ]);
+        }
+
+        if (!$this->hasFile('photo_profile')) {
+            $this->request->remove('photo_profile');
+            unset($this['photo_profile']);
+        }
+
+        if ($this->has('password') && empty($this->password)) {
+            $this->request->remove('password');
+            $this->request->remove('password_confirmation');
+            unset($this['password']);
+            unset($this['password_confirmation']);
+        }
+
+        // Convert empty string fields to null for date/urls
+        $nullableFields = ['date_of_birth', 'portofolio_link', 'social_media_link', 'website', 'email', 'username'];
+        foreach ($nullableFields as $field) {
+            if ($this->has($field) && $this->input($field) === '') {
+                $this->request->remove($field);
+                unset($this[$field]);
+            }
+        }
     }
 
     /**
@@ -50,6 +77,7 @@ class UserUpdateProfileRequest extends FormRequest
             ],
             'password' => 'nullable|string|min:6|confirmed',
             'photo_profile' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'reset_photo' => 'nullable|boolean',
         ];
 
         // Admin and school can update is_verified field 
