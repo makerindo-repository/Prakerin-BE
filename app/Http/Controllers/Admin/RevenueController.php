@@ -8,10 +8,38 @@ use App\Models\Student;
 use App\Services\XenditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class RevenueController extends Controller
 {
     public function __construct(protected XenditService $xendit) {}
+
+    /**
+     * Sapu record pending yang sudah lewat batas waktu bayar, dijalankan
+     * on-demand tiap kali endpoint Revenue Dashboard diakses.
+     *
+     * Ini alternatif dari `subscription:expire-pending-payments` yang
+     * dijadwalkan lewat cron — kalau cron/scheduler Laravel di server belum
+     * di-setup (butuh akses server, sering diurus tim infra terpisah),
+     * approach ini tetap membuat status ke-update otomatis, cukup dengan
+     * admin membuka/refresh halaman Revenue Dashboard. Di-throttle maksimal
+     * sekali per menit (lewat cache) supaya tidak membombardir API Xendit
+     * kalau halaman ini di-refresh berkali-kali dalam waktu singkat.
+     */
+    private function sweepIfDue(): void
+    {
+        try {
+            Cache::remember('revenue_expiry_sweep_lock', 60, function () {
+                $result = $this->xendit->sweepExpiredPending();
+                Log::info('[RevenueController] On-demand sweep triggered by dashboard load', $result);
+                return true;
+            });
+        } catch (\Throwable $e) {
+            // Jangan sampai dashboard gagal load gara-gara sweep-nya error.
+            Log::warning('[RevenueController] sweepIfDue failed: ' . $e->getMessage());
+        }
+    }
 
     // ── GET /api/v1/admin/revenue/dashboard ───────────────────────────────
 
@@ -20,6 +48,8 @@ class RevenueController extends Controller
      */
     public function dashboard(): JsonResponse
     {
+        $this->sweepIfDue();
+
         $totalRevenue = Revenue::where('payment_status', 'paid')->sum('amount');
 
         $activePremium = Student::where('status_subscription', 'premium')->count();
@@ -56,6 +86,8 @@ class RevenueController extends Controller
      */
     public function accounts(Request $request): JsonResponse
     {
+        $this->sweepIfDue();
+
         $limit     = $request->integer('limit', 15);
         $status    = $request->input('status');    // all | paid | pending | failed
         $userType  = $request->input('user_type'); // all | siswa | mahasiswa

@@ -327,6 +327,51 @@ class XenditService
     }
 
     /**
+     * Cari semua pembayaran 'pending' yang sudah lewat batas waktu, cek
+     * ulang ke Xendit, lalu konfirmasi (kalau ternyata sudah dibayar) atau
+     * expire-kan (kalau memang belum). Dipakai oleh:
+     *  - Command `subscription:expire-pending-payments` (lewat cron/scheduler)
+     *  - RevenueController (dipicu on-demand tiap admin buka/refresh
+     *    Revenue Dashboard) — supaya tetap ke-update WALAUPUN cron/scheduler
+     *    Laravel di server belum di-setup.
+     */
+    public function sweepExpiredPending(): array
+    {
+        $bufferSeconds = 30;
+        $expirySeconds = config('subscription.payment_expiry_seconds', 300);
+        $cutoff        = now()->subSeconds($expirySeconds + $bufferSeconds);
+
+        $pending = Revenue::where('payment_status', 'pending')
+            ->whereNotNull('xendit_invoice_id')
+            ->where('created_at', '<=', $cutoff)
+            ->get();
+
+        $expired = 0;
+        $saved   = 0;
+
+        foreach ($pending as $revenue) {
+            try {
+                $status = $this->getInvoiceStatus($revenue->xendit_invoice_id);
+
+                if ($status['paid']) {
+                    $this->confirmPayment($revenue->xendit_invoice_id, $revenue->external_id);
+                    $saved++;
+                    continue;
+                }
+            } catch (\Throwable $e) {
+                Log::warning("[XenditService] sweepExpiredPending: failed to check invoice for revenue #{$revenue->id}: " . $e->getMessage());
+                // Gagal cek ke Xendit — tetap expire-kan berdasarkan waktu
+                // lokal, supaya siswa gak nyangkut "pending" selamanya.
+            }
+
+            $this->markExpired($revenue->xendit_invoice_id, $revenue->external_id);
+            $expired++;
+        }
+
+        return ['checked' => $pending->count(), 'expired' => $expired, 'saved' => $saved];
+    }
+
+    /**
      * Verify Xendit webhook token from request header.
      */
     public function verifyWebhookToken(string $token): bool
