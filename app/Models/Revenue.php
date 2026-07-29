@@ -20,10 +20,14 @@ class Revenue extends Model
         'period_end',
         'xendit_invoice_id',
         'external_id',
+        'invoice_url',
+        'qr_code_url',
+        'expiry_date',
         'notes',
     ];
 
     protected $casts = [
+        'expiry_date' => 'datetime',
         'payment_date' => 'datetime',
         'period_start' => 'datetime',
         'period_end'   => 'datetime',

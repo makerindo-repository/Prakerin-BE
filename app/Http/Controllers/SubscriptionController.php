@@ -38,6 +38,15 @@ class SubscriptionController extends Controller
 
         $subscription = $student->subscription;
 
+        // Invoice pending & belum expired (kalau ada) — dipakai frontend
+        // supaya tombol "Upgrade" langsung nampilin QR pembayaran yang sudah
+        // ada, bukan nyuruh pilih paket dari awal lagi.
+        $pendingRevenue = Revenue::where('user_id', $student->id)
+            ->where('payment_status', 'pending')
+            ->where('expiry_date', '>', now())
+            ->latest()
+            ->first();
+
         return response()->json([
             'student_id'              => $student->id,
             'status_subscription'     => $student->status_subscription ?? 'free',
@@ -53,7 +62,29 @@ class SubscriptionController extends Controller
                 'is_expired'            => $subscription->isExpired(),
                 'is_renewal_due'        => $subscription->isRenewalDue(),
             ] : null,
+            'pending_payment' => $pendingRevenue ? [
+                'invoice_id'  => $pendingRevenue->xendit_invoice_id,
+                'invoice_url' => $pendingRevenue->invoice_url,
+                'qr_code_url' => $pendingRevenue->qr_code_url,
+                'amount'      => $pendingRevenue->amount,
+                'package'     => $this->resolvePackageKeyFromAmount($pendingRevenue->amount),
+                'expiry_date' => $pendingRevenue->expiry_date,
+            ] : null,
         ]);
+    }
+
+    /**
+     * Cocokkan nominal Revenue ke key paket (monthly/yearly) di config, buat
+     * ditampilkan sebagai label di frontend saat resume pending payment.
+     */
+    private function resolvePackageKeyFromAmount(mixed $amount): ?string
+    {
+        foreach (config('subscription.packages', []) as $key => $pkg) {
+            if ((float) $pkg['amount'] === (float) $amount) {
+                return $key;
+            }
+        }
+        return null;
     }
 
     // ── POST /api/v1/subscriptions/create-payment ──────────────────────────
@@ -81,6 +112,37 @@ class SubscriptionController extends Controller
         $student  = Student::with('school')->findOrFail($validated['student_id']);
         $packages = config('subscription.packages');
         $package  = $packages[$validated['package']];
+
+        // Kalau masih ada invoice PENDING & belum expired untuk paket yang
+        // SAMA, pakai ulang itu — jangan bikin invoice Xendit baru. Ini yang
+        // bikin klik "X" (sengaja/tidak sengaja) lalu klik "beli paket" lagi
+        // langsung nampilin pembayaran yang sama, bukan mulai dari nol.
+        $existing = Revenue::where('user_id', $student->id)
+            ->where('payment_status', 'pending')
+            ->where('amount', $package['amount'])
+            ->where('expiry_date', '>', now())
+            ->latest()
+            ->first();
+
+        if ($existing) {
+            return response()->json([
+                'message'     => 'Melanjutkan invoice pembayaran yang sudah ada.',
+                'invoice_id'  => $existing->xendit_invoice_id,
+                'invoice_url' => $existing->invoice_url,
+                'qr_code_url' => $existing->qr_code_url,
+                'amount'      => $existing->amount,
+                'package'     => $validated['package'],
+                'expiry_date' => $existing->expiry_date,
+                'resumed'     => true,
+            ], 200);
+        }
+
+        // Ada pending invoice tapi buat PAKET LAIN (mis. sebelumnya pilih
+        // Monthly, sekarang klik Yearly) — tandai yang lama sebagai gugur,
+        // baru lanjut bikin invoice fresh untuk paket yang baru dipilih.
+        Revenue::where('user_id', $student->id)
+            ->where('payment_status', 'pending')
+            ->update(['payment_status' => 'failed']);
 
         // Upsert subscription record
         $now          = now();
@@ -143,8 +205,15 @@ class SubscriptionController extends Controller
             ], 500);
         }
 
-        // Store invoice ID on revenue + subscription
-        $revenue->update(['xendit_invoice_id' => $invoice['id']]);
+        // Store invoice details on revenue + subscription. invoice_url/qr_code_url
+        // WAJIB disimpan (bukan cuma dikirim di response sekali ini) supaya bisa
+        // di-resume nanti kalau user tutup modal sebelum bayar.
+        $revenue->update([
+            'xendit_invoice_id' => $invoice['id'],
+            'invoice_url'       => $invoice['invoice_url'],
+            'qr_code_url'       => $invoice['qr_code_url'],
+            'expiry_date'       => $invoice['expiry_date'] ?? null,
+        ]);
         $subscription->update(['xendit_invoice_id' => $invoice['id']]);
 
         return response()->json([
@@ -155,6 +224,7 @@ class SubscriptionController extends Controller
             'amount'      => $package['amount'],
             'package'     => $validated['package'],
             'expiry_date' => $invoice['expiry_date'] ?? null,
+            'resumed'     => false,
         ], 201);
     }
 
