@@ -187,11 +187,14 @@ class SubscriptionController extends Controller
         }
 
         // Fallback kalau webhook Xendit belum/gagal nyampe: begitu polling
-        // ini lihat status-nya sudah PAID/SETTLED, langsung jalankan proses
-        // upgrade yang sama seperti yang dilakukan webhook. Idempotent, jadi
-        // aman kalau ternyata webhook-nya nyampe duluan atau menyusul.
+        // ini lihat status-nya sudah final (PAID/SETTLED atau
+        // EXPIRED/FAILED), langsung jalankan proses yang sama seperti yang
+        // dilakukan webhook. Idempotent, jadi aman kalau ternyata webhook-nya
+        // nyampe duluan atau menyusul.
         if ($status['paid']) {
             $this->xendit->confirmPayment($invoiceId);
+        } elseif (in_array($status['status'], ['EXPIRED', 'FAILED'])) {
+            $this->xendit->markExpired($invoiceId);
         }
 
         return response()->json([

@@ -25,6 +25,17 @@ Schedule::command('subscription:expire-unpaid')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/laravel.log'));
 
+// Subscription: safety net for pending QRIS payments that passed their
+// payment window (see config('subscription.payment_expiry_seconds'),
+// default 5 minutes) without anyone polling and without a webhook arriving
+// (e.g. the payer closed the modal). Runs every minute so unpaid invoices
+// resolve to 'expired' quickly instead of staying 'pending' forever.
+Schedule::command('subscription:expire-pending-payments')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/laravel.log'));
+
 // Workaround for VPS environments without supervisor/terminal access:
 // Spawn the queue worker every minute to process database queue jobs and exit.
 Schedule::command('queue:work --stop-when-empty')

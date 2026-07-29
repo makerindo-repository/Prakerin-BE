@@ -39,6 +39,12 @@ return [
     'payment_polling_interval' => 5000,   // 5 seconds
     'payment_polling_timeout'  => 1800000, // 30 minutes
 
+    // Berapa lama (detik) invoice QRIS berlaku sebelum otomatis expired.
+    // Xendit sendiri yang menandai invoice EXPIRED begitu durasi ini lewat
+    // (dikirim sebagai `invoice_duration` saat createInvoice). Default 5
+    // menit — sesuaikan lewat XENDIT_INVOICE_DURATION_SECONDS di .env.
+    'payment_expiry_seconds' => (int) env('XENDIT_INVOICE_DURATION_SECONDS', 300),
+
     /*
     |--------------------------------------------------------------------------
     | Xendit Credentials

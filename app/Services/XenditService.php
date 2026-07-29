@@ -51,6 +51,11 @@ class XenditService
                 'phone_number' => $student->phone_number ? (string) $student->phone_number : null,
             ], fn ($value) => $value !== null && $value !== ''),
             'currency'        => 'IDR',
+            // Batas waktu bayar (detik) — begitu lewat, Xendit otomatis
+            // menandai invoice ini EXPIRED, dan itu yang dideteksi oleh
+            // polling/webhook untuk menandai pembayaran gagal/kedaluwarsa
+            // di sistem kita (lihat markExpired()).
+            'invoice_duration' => config('subscription.payment_expiry_seconds', 300),
             'success_redirect_url' => config('app.frontend_url') . '/dashboard?payment=success',
             'failure_redirect_url' => config('app.frontend_url') . '/dashboard?payment=failed',
         ];
@@ -125,11 +130,19 @@ class XenditService
         $externalId = $payload['external_id'] ?? null;
         $status     = $payload['status']      ?? null;
 
-        if ((!$invoiceId && !$externalId) || !in_array($status, ['PAID', 'SETTLED'])) {
+        if (!$invoiceId && !$externalId) {
             return false;
         }
 
-        return $this->confirmPayment($invoiceId, $externalId);
+        if (in_array($status, ['PAID', 'SETTLED'])) {
+            return $this->confirmPayment($invoiceId, $externalId);
+        }
+
+        if (in_array($status, ['EXPIRED', 'FAILED'])) {
+            return $this->markExpired($invoiceId, $externalId);
+        }
+
+        return false;
     }
 
     /**
@@ -236,6 +249,78 @@ class XenditService
             }
         } catch (\Throwable $e) {
             Log::warning('[XenditService] Failed to send payment confirmation notification: ' . $e->getMessage());
+        }
+
+        return true;
+    }
+
+    /**
+     * Tandai invoice sebagai gagal/kedaluwarsa (dipanggil saat Xendit
+     * melaporkan status EXPIRED atau FAILED — baik lewat webhook maupun
+     * fallback polling/scheduled command).
+     *
+     * Idempotent & aman dari race condition: kalau ternyata revenue-nya
+     * SUDAH 'paid' (mis. webhook paid & polling expired datang hampir
+     * bersamaan), status paid yang menang — TIDAK ditimpa jadi expired.
+     */
+    public function markExpired(?string $invoiceId, ?string $externalId = null): bool
+    {
+        if (!$invoiceId && !$externalId) {
+            return false;
+        }
+
+        $revenue = Revenue::where(function ($q) use ($invoiceId, $externalId) {
+            if ($invoiceId) {
+                $q->where('xendit_invoice_id', $invoiceId);
+            }
+            if ($externalId) {
+                $q->orWhere('external_id', $externalId);
+            }
+        })->first();
+
+        if (!$revenue) {
+            Log::warning("[XenditService] markExpired: unknown invoice={$invoiceId} external_id={$externalId}");
+            return false;
+        }
+
+        if ($revenue->payment_status !== 'pending') {
+            // Sudah 'paid' atau sudah pernah di-expire-kan sebelumnya —
+            // idempotent, jangan ditimpa.
+            return true;
+        }
+
+        // Pakai 'failed' (bukan 'expired') supaya gak perlu migration ubah
+        // enum kolom payment_status — 'failed' sudah valid di semua driver
+        // DB (MySQL produksi & SQLite lokal). Alasan spesifiknya (expired
+        // vs gagal lainnya) dicatat di kolom `notes` yang sudah ada.
+        $revenue->update([
+            'payment_status' => 'failed',
+            'notes' => 'Invoice kedaluwarsa — tidak dibayar dalam batas waktu (' . now()->toDateTimeString() . ').',
+        ]);
+
+        $subscription = $revenue->subscription;
+        if ($subscription && $subscription->status === 'pending_payment') {
+            $subscription->update(['status' => 'expired']);
+        }
+
+        Log::info("[XenditService] Payment expired for invoice={$invoiceId}, revenue={$revenue->id}");
+
+        // Beri tahu siswa supaya gak nunggu-nunggu tanpa kejelasan.
+        try {
+            $student = $subscription ? Student::find($subscription->user_id) : null;
+            if ($student && $student->user_id) {
+                app(\App\Services\NotificationService::class)->notify(
+                    $student->user_id,
+                    '⏰ Waktu Pembayaran Habis',
+                    'Invoice pembayaran premium kamu sudah kedaluwarsa. Silakan buat pembayaran baru untuk melanjutkan upgrade.',
+                    'subscription_payment_expired',
+                    config('app.frontend_url') . '/dashboard/profile',
+                    'Subscription',
+                    $subscription->id,
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[XenditService] Failed to send payment expired notification: ' . $e->getMessage());
         }
 
         return true;
