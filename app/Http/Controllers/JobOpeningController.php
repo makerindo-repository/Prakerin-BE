@@ -55,7 +55,7 @@ class JobOpeningController extends Controller
 
         // If user is a company, show only their job openings
         if ($user?->company) {
-            $jobOpenings = JobOpening::with([
+            $query = JobOpening::with([
                 'company.user',
                 'company.cityRegency.province',
                 'field',
@@ -73,41 +73,10 @@ class JobOpeningController extends Controller
                 })
                 ->when($duration_id, function ($query) use ($duration_id) {
                     return $query->whereIn('duration_id', Arr::wrap($duration_id));
-                })
-                ->limit(999)
-                ->get();
-
-            $jobOpenings = $jobOpenings->map(function ($item) {
-                return [
-                    "id" => $item->id,
-                    "company_id" => $item->company_id,
-                    "field_id" => $item->field_id,
-                    "duration_id" => $item->duration_id,
-                    "title" => $item->title,
-                    "description" => $item->description,
-                    "poster" => $item->poster,
-                    "grade" => $item->grade,
-                    "type" => $item->type,
-                    "location" => $item->location,
-                    "qouta" => $item->qouta,
-                    "is_paid" => $item->is_paid,
-                    "is_available" => $item->is_available,
-                    "start_date" => $item->start_date,
-                    "closing_date" => $item->closing_date,
-                    "created_at" => $item->created_at,
-                    "updated_at" => $item->updated_at,
-                    "company" => $item->company->makeHidden(['user', 'cityRegency']),
-                    "city_regency" => $item->company->cityRegency?->makeHidden(['province']),
-                    "province" => $item->company->cityRegency?->province,
-                    'user' => $item->company->user,
-                    'field' => $item->field,
-                    'duration' => $item->duration,
-                    'test' => $item->test,
-                ];
-            });
+                });
         } else {
             // If user is a student, show available job openings with filters
-            $jobOpenings = JobOpening::with([
+            $query = JobOpening::with([
                 'company.user',
                 'company.cityRegency.province',
                 'saveJobOpening' => function ($query) use ($user) {
@@ -144,42 +113,41 @@ class JobOpeningController extends Controller
                     $query->whereHas('saveJobOpening', function ($q) use ($user) {
                         $q->where('student_id', $user?->student?->id);
                     });
-                })
-                ->limit(999)
-                ->get();
-
-            $jobOpenings = $jobOpenings->map(function ($item) {
-                return [
-                    "id" => $item->id,
-                    "company_id" => $item->company_id,
-                    "field_id" => $item->field_id,
-                    "duration_id" => $item->duration_id,
-                    "title" => $item->title,
-                    "description" => $item->description,
-                    "poster" => $item->poster,
-                    "grade" => $item->grade,
-                    "type" => $item->type,
-                    "location" => $item->location,
-                    "qouta" => $item->qouta,
-                    "is_paid" => $item->is_paid,
-                    "is_available" => $item->is_available,
-                    "start_date" => $item->start_date,
-                    "closing_date" => $item->closing_date,
-                    "created_at" => $item->created_at,
-                    "updated_at" => $item->updated_at,
-                    "company" => $item->company->makeHidden(['user', 'cityRegency']),
-                    'user' => $item->company->user,
-                    'save_job_opening' => $item->saveJobOpening->isNotEmpty() ? true : false,
-                    'city_regency' => $item->company->cityRegency?->makeHidden(['province']),
-                    'province' => $item->company->cityRegency?->province,
-                    'field' => $item->field,
-                    'duration' => $item->duration,
-                    'test' => $item->test,
-                ];
-            });
+                });
         }
 
-        return response()->json(['data' => $jobOpenings]);
+        $paginated = $query->paginate($limit);
+        $paginated->getCollection()->transform(function ($item) {
+            return [
+                "id" => $item->id,
+                "company_id" => $item->company_id,
+                "field_id" => $item->field_id,
+                "duration_id" => $item->duration_id,
+                "title" => $item->title,
+                "description" => $item->description,
+                "poster" => $item->poster,
+                "grade" => $item->grade,
+                "type" => $item->type,
+                "location" => $item->location,
+                "qouta" => $item->qouta,
+                "is_paid" => $item->is_paid,
+                "is_available" => $item->is_available,
+                "start_date" => $item->start_date,
+                "closing_date" => $item->closing_date,
+                "created_at" => $item->created_at,
+                "updated_at" => $item->updated_at,
+                "company" => $item->company?->makeHidden(['user', 'cityRegency']),
+                'user' => $item->company?->user,
+                'save_job_opening' => $item->relationLoaded('saveJobOpening') && $item->saveJobOpening->isNotEmpty() ? true : false,
+                'city_regency' => $item->company?->cityRegency?->makeHidden(['province']),
+                'province' => $item->company?->cityRegency?->province,
+                'field' => $item->field,
+                'duration' => $item->duration,
+                'test' => $item->test,
+            ];
+        });
+
+        return response()->json($paginated);
     }
 
     /**

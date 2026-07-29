@@ -45,7 +45,10 @@ class ProcessCvAnalysis implements ShouldQueue
             $user = $analytic->user;
             
             // Build the prompt and schema
-            $jobOpenings = JobOpening::where('is_available', true)->with('company')->get();
+            $jobOpenings = JobOpening::where('is_available', true)
+                ->where('closing_date', '>=', now()->toDateString())
+                ->with('company')
+                ->get();
             $jobsText = "";
             if ($jobOpenings->isEmpty()) {
                 $jobsText = "Saat ini belum ada lowongan magang aktif yang tersedia di sistem.\n";

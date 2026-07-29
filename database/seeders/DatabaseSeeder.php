@@ -555,6 +555,8 @@ class DatabaseSeeder extends Seeder
             $jobOpenings[$jData['title']] = $job;
         }
 
+        $this->call(JobOpeningSeeder::class);
+
         // 10. Seed Internship Applications
         $applicationsData = [
             // Student Budi (SMK)

@@ -296,6 +296,8 @@ class UserController extends Controller
                             'id' => $item->student?->id,
                             'name' => $item->student?->name,
                             'class' => $item->student?->class,
+                            'status_magang' => $item->student?->status_magang ?? 'not_started',
+                            'status_subscription' => $item->student?->status_subscription ?? 'free',
                             'company' => $item->student?->curriculumVitae
                                 ?->flatMap->internshipApplications
                                 ?->map->jobOpening
@@ -315,7 +317,9 @@ class UserController extends Controller
                         'major' => [
                             'name' => $item->student?->major?->name
                         ],
-                        'status' => $item->student?->status,
+                        'status' => $item->student?->status_magang ?? 'not_started',
+                        'status_magang' => $item->student?->status_magang ?? 'not_started',
+                        'status_subscription' => $item->student?->status_subscription ?? 'free',
                     ];
                 } else if (($user?->tokenCan('school-access') || $user?->tokenCan('student-access')) && ($role === 'company')) {
                     return [
