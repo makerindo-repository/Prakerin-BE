@@ -651,7 +651,8 @@ Route::prefix('v1')->group(function () {
                 Route::post('/', 'update');
                 Route::post('/test-smtp', 'testSmtp');
                 Route::post('/test-ai', 'testAiKey');
-                Route::post('/test-xendit', 'testXendit');
+                Route::post('/test-xendit', 'testXendit'); // legacy, jaga-jaga rollback
+                Route::post('/test-midtrans', 'testMidtrans');
             });
         });
 

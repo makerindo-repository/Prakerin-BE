@@ -67,7 +67,30 @@ class AppServiceProvider extends ServiceProvider
                 ]);
             }
 
-            // Dynamic Xendit (Payment Gateway) config overrides
+            // Dynamic Midtrans (Payment Gateway) config overrides
+            if (isset($settings['midtrans_server_key']) && !empty($settings['midtrans_server_key'])) {
+                config([
+                    'subscription.midtrans.server_key' => $settings['midtrans_server_key'],
+                ]);
+            }
+            if (isset($settings['midtrans_client_key']) && !empty($settings['midtrans_client_key'])) {
+                config([
+                    'subscription.midtrans.client_key' => $settings['midtrans_client_key'],
+                ]);
+            }
+            if (isset($settings['midtrans_is_production'])) {
+                $isProduction = filter_var($settings['midtrans_is_production'], FILTER_VALIDATE_BOOLEAN);
+                config([
+                    'subscription.midtrans.is_production' => $isProduction,
+                    'subscription.midtrans.base_url' => $isProduction
+                        ? 'https://api.midtrans.com'
+                        : 'https://api.sandbox.midtrans.com',
+                ]);
+            }
+
+            // Dynamic Xendit (Payment Gateway) config overrides — LEGACY,
+            // gak dipakai lagi sejak migrasi ke Midtrans. Dibiarkan (bukan
+            // dihapus) buat jaga-jaga rollback cepat.
             if (isset($settings['xendit_secret_key']) && !empty($settings['xendit_secret_key'])) {
                 config([
                     'subscription.xendit.secret_key' => $settings['xendit_secret_key'],

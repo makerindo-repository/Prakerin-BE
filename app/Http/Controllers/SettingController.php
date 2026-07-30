@@ -391,7 +391,72 @@ class SettingController extends Controller
     }
 
     /**
-     * Test the connection to the Xendit API (Payment Gateway).
+     * Test the connection to the Midtrans API (Payment Gateway).
+     *
+     * Midtrans Core API gak punya endpoint "balance"/ping yang ringan kayak
+     * Xendit, jadi triknya: panggil endpoint status transaksi dengan
+     * order_id yang SENGAJA gak ada. Kalau Server Key valid, Midtrans balas
+     * 404 "Transaction doesn't exist" (artinya auth-nya lolos, cuma
+     * datanya emang gak ada — itu tandanya key BENAR). Kalau key salah,
+     * Midtrans balas 401 Unauthorized. Gak ada transaksi/invoice apapun
+     * yang dibuat, aman dipanggil berkali-kali.
+     *
+     * POST /api/v1/settings/test-midtrans
+     */
+    public function testMidtrans()
+    {
+        $serverKey = config('subscription.midtrans.server_key');
+        $baseUrl   = config('subscription.midtrans.base_url');
+        $isProd    = config('subscription.midtrans.is_production');
+
+        if (empty($serverKey)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Midtrans Server Key masih kosong.',
+            ], 400);
+        }
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::withBasicAuth($serverKey, '')
+                ->timeout(15)
+                ->get("{$baseUrl}/v2/CONNECTION-TEST-ORDER-ID-INI-SENGAJA-GA-ADA/status");
+
+            // 404 = auth lolos, cuma order_id-nya emang gak ada — ini yang
+            // kita HARAPKAN, artinya Server Key valid.
+            if ($response->status() === 404) {
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => 'Berhasil terhubung ke Midtrans API! Mode: ' . ($isProd ? 'Live/Production' : 'Sandbox'),
+                ]);
+            }
+
+            if ($response->status() === 401) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Server Key ditolak Midtrans (401 Unauthorized). Cek ulang key & mode sandbox/production-nya.',
+                ], 400);
+            }
+
+            $body = $response->json();
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gagal terhubung ke Midtrans: ' . ($body['status_message'] ?? $response->body()),
+            ], 400);
+        } catch (\Exception $e) {
+            Log::error('Settings Midtrans Connection Test Error: ' . $e->getMessage());
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gagal menghubungi Midtrans API: ' . $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Test the connection to the Xendit API (Payment Gateway). LEGACY —
+     * dibiarkan buat jaga-jaga rollback, gak dipakai lagi sejak migrasi ke
+     * Midtrans.
      * Pakai endpoint /balance — ringan, cuma butuh secret key valid, tidak
      * membuat invoice/transaksi apapun jadi aman dipanggil berkali-kali.
      * POST /api/v1/settings/test-xendit

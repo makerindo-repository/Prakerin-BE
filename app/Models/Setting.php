@@ -32,6 +32,12 @@ class Setting extends Model
             if ($key === 'ai_api_key' && config('gemini.api_key')) {
                 return (string) config('gemini.api_key');
             }
+            if ($key === 'midtrans_server_key' && config('subscription.midtrans.server_key')) {
+                return (string) config('subscription.midtrans.server_key');
+            }
+            if ($key === 'midtrans_client_key' && config('subscription.midtrans.client_key')) {
+                return (string) config('subscription.midtrans.client_key');
+            }
             if ($key === 'xendit_secret_key' && config('subscription.xendit.secret_key')) {
                 return (string) config('subscription.xendit.secret_key');
             }
