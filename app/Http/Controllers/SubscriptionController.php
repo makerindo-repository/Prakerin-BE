@@ -306,10 +306,10 @@ class SubscriptionController extends Controller
             'subscription_renewed_at' => null,
         ]);
 
-        // Cancel subscription record if exists
+        // Mark subscription record as expired if exists
         if ($student->subscription) {
             $student->subscription->update([
-                'status' => 'cancelled',
+                'status' => 'expired',
             ]);
         }
 
