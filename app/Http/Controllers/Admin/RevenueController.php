@@ -177,6 +177,13 @@ class RevenueController extends Controller
             ]);
         }
 
+        if (!empty($status['not_found'])) {
+            return response()->json([
+                'message' => 'Transaksi ini tidak ditemukan di Midtrans — kemungkinan ini record lama dari sebelum migrasi ke Midtrans (masih pakai ID Xendit), atau invoice-nya memang gagal dibuat. Tidak bisa disinkronkan otomatis.',
+                'data'    => $revenue,
+            ]);
+        }
+
         return response()->json([
             'message' => "Status di Midtrans masih \"{$status['status']}\" (belum dibayar), tidak ada yang diubah.",
             'data'    => $revenue,

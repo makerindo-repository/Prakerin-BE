@@ -21,8 +21,8 @@ use Illuminate\Support\Str;
  * idempotency, race-condition guard paid-vs-expired) TIDAK ditulis ulang,
  * cuma di-copy dari XenditService yang sudah teruji.
  *
- * Catatan teknis: kolom DB `revenue.xendit_invoice_id` &
- * `subscriptions.xendit_invoice_id` TETAP dipakai apa adanya (menyimpan
+ * Catatan teknis: kolom DB `revenue.payment_reference_id` &
+ * `subscriptions.payment_reference_id` TETAP dipakai apa adanya (menyimpan
  * Midtrans order_id di situ) — sengaja tidak di-rename supaya migrasi ini
  * tidak perlu ubah struktur database sama sekali. Boleh di-rename ke nama
  * yang lebih netral (mis. `payment_reference_id`) sebagai cleanup terpisah
@@ -179,9 +179,21 @@ class MidtransService
 
         // Midtrans balikin 404 kalau order_id belum pernah ada transaksi
         // sama sekali — perlakukan sebagai PENDING (belum ada apa-apa),
-        // bukan exception, supaya sweep/polling gak berhenti gara-gara ini.
-        if ($response->status() === 404) {
-            return ['id' => $invoiceId, 'status' => 'PENDING', 'paid' => false];
+        // bukan exception, supaya sweep/polling/sync gak berhenti gara-gara
+        // ini. PENTING: Midtrans TIDAK KONSISTEN soal kode HTTP-nya — kadang
+        // 404, kadang 400 — buat pesan yang SAMA ("Transaction doesn't
+        // exist"). Jadi jangan cuma cek status()===404, cek juga ISI PESAN
+        // responnya. Ini juga yang bikin sync gagal buat record LAMA dari
+        // era Xendit (payment_reference_id-nya ID Xendit, emang gak akan
+        // pernah ketemu di Midtrans — itu wajar, bukan bug).
+        $body          = $response->json();
+        $statusMessage = strtolower($body['status_message'] ?? '');
+        $notFound      = $response->status() === 404
+            || str_contains($statusMessage, "doesn't exist")
+            || str_contains($statusMessage, 'not found');
+
+        if ($notFound) {
+            return ['id' => $invoiceId, 'status' => 'PENDING', 'paid' => false, 'not_found' => true];
         }
 
         if ($response->failed()) {
@@ -253,7 +265,7 @@ class MidtransService
 
         $revenue = Revenue::where(function ($q) use ($invoiceId, $externalId) {
             if ($invoiceId) {
-                $q->where('xendit_invoice_id', $invoiceId);
+                $q->where('payment_reference_id', $invoiceId);
             }
             if ($externalId) {
                 $q->orWhere('external_id', $externalId);
@@ -265,8 +277,8 @@ class MidtransService
             return false;
         }
 
-        if ($invoiceId && !$revenue->xendit_invoice_id) {
-            $revenue->xendit_invoice_id = $invoiceId;
+        if ($invoiceId && !$revenue->payment_reference_id) {
+            $revenue->payment_reference_id = $invoiceId;
             $revenue->save();
         }
 
@@ -333,7 +345,7 @@ class MidtransService
 
         $revenue = Revenue::where(function ($q) use ($invoiceId, $externalId) {
             if ($invoiceId) {
-                $q->where('xendit_invoice_id', $invoiceId);
+                $q->where('payment_reference_id', $invoiceId);
             }
             if ($externalId) {
                 $q->orWhere('external_id', $externalId);
@@ -391,7 +403,7 @@ class MidtransService
         $cutoff        = now()->subSeconds($expirySeconds + $bufferSeconds);
 
         $pending = Revenue::where('payment_status', 'pending')
-            ->whereNotNull('xendit_invoice_id')
+            ->whereNotNull('payment_reference_id')
             ->where('created_at', '<=', $cutoff)
             ->get();
 
@@ -400,10 +412,10 @@ class MidtransService
 
         foreach ($pending as $revenue) {
             try {
-                $status = $this->getInvoiceStatus($revenue->xendit_invoice_id);
+                $status = $this->getInvoiceStatus($revenue->payment_reference_id);
 
                 if ($status['paid']) {
-                    $this->confirmPayment($revenue->xendit_invoice_id, $revenue->external_id);
+                    $this->confirmPayment($revenue->payment_reference_id, $revenue->external_id);
                     $saved++;
                     continue;
                 }
@@ -411,7 +423,7 @@ class MidtransService
                 Log::warning("[MidtransService] sweepExpiredPending: failed to check invoice for revenue #{$revenue->id}: " . $e->getMessage());
             }
 
-            $this->markExpired($revenue->xendit_invoice_id, $revenue->external_id);
+            $this->markExpired($revenue->payment_reference_id, $revenue->external_id);
             $expired++;
         }
 
