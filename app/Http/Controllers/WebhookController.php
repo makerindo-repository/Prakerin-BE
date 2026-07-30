@@ -86,7 +86,64 @@ class WebhookController extends Controller
         };
     }
 
-    // ─── Xendit Webhook ────────────────────────────────────────────────────
+    // ─── Midtrans Webhook (HTTP Notification) ─────────────────────────────
+
+    /**
+     * POST /api/webhooks/midtrans
+     *
+     * Public endpoint — Midtrans calls this after a QRIS payment event.
+     * Beda dari Xendit: TIDAK ada token statis di header. Setiap notifikasi
+     * punya `signature_key` (SHA512) di dalam body-nya sendiri, dihitung
+     * dari order_id + status_code + gross_amount + ServerKey — diverifikasi
+     * lewat MidtransService::verifyWebhookSignature().
+     *
+     * Midtrans mengirim JSON dengan minimal: order_id, transaction_status,
+     * status_code, gross_amount, signature_key.
+     */
+    public function handleMidtransWebhook(Request $request): \Illuminate\Http\Response
+    {
+        $payload = $request->json()->all();
+
+        $midtrans = app(\App\Services\MidtransService::class);
+
+        if (!$midtrans->verifyWebhookSignature($payload)) {
+            Log::warning('[Webhook/Midtrans] Invalid signature', [
+                'order_id' => $payload['order_id'] ?? null,
+            ]);
+            return response('Unauthorized', 403);
+        }
+
+        $orderId = $payload['order_id'] ?? null;
+
+        // Akun Midtrans ini dipakai bareng sama satu web lain — kalau
+        // order_id-nya bukan format punya kita (prefix "PRAKERIN-"), berarti
+        // ini notifikasi punya web satunya yang somehow ke-hit endpoint
+        // kita (mis. webhook URL sempat salah di-set ke sini). Abaikan
+        // dengan aman, JANGAN diproses — tetap balas 200 supaya Midtrans
+        // gak nganggep gagal & terus retry.
+        if (!\App\Services\MidtransService::belongsToThisApp($orderId)) {
+            Log::info('[Webhook/Midtrans] Ignoring notification — order_id bukan milik Prakerin', [
+                'order_id' => $orderId,
+            ]);
+            return response('OK', 200);
+        }
+
+        Log::info('[Webhook/Midtrans] Received payload', [
+            'order_id'           => $orderId,
+            'transaction_status' => $payload['transaction_status'] ?? null,
+        ]);
+
+        try {
+            $midtrans->handleWebhook($payload);
+        } catch (\Throwable $e) {
+            Log::error('[Webhook/Midtrans] handleWebhook exception: ' . $e->getMessage());
+            // Tetap balikin 200 supaya Midtrans gak retry terus-terusan.
+        }
+
+        return response('OK', 200);
+    }
+
+    // ─── Xendit Webhook (LEGACY — dibiarkan untuk jaga-jaga rollback) ─────
 
     /**
      * POST /api/webhooks/xendit
@@ -102,7 +159,7 @@ class WebhookController extends Controller
             ?? $request->header('xendit-webhook-token')
             ?? '';
 
-        $xendit = app(XenditService::class);
+        $xendit = app(\App\Services\XenditService::class);
 
         if (!$xendit->verifyWebhookToken($token)) {
             Log::warning('[Webhook/Xendit] Invalid webhook token');

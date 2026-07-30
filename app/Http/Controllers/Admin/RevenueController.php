@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Revenue;
 use App\Models\Student;
-use App\Services\XenditService;
+use App\Services\MidtransService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
 
 class RevenueController extends Controller
 {
-    public function __construct(protected XenditService $xendit) {}
+    public function __construct(protected MidtransService $paymentGateway) {}
 
     /**
      * Sapu record pending yang sudah lewat batas waktu bayar, dijalankan
@@ -24,14 +24,14 @@ class RevenueController extends Controller
      * di-setup (butuh akses server, sering diurus tim infra terpisah),
      * approach ini tetap membuat status ke-update otomatis, cukup dengan
      * admin membuka/refresh halaman Revenue Dashboard. Di-throttle maksimal
-     * sekali per menit (lewat cache) supaya tidak membombardir API Xendit
+     * sekali per menit (lewat cache) supaya tidak membombardir API Midtrans
      * kalau halaman ini di-refresh berkali-kali dalam waktu singkat.
      */
     private function sweepIfDue(): void
     {
         try {
             Cache::remember('revenue_expiry_sweep_lock', 60, function () {
-                $result = $this->xendit->sweepExpiredPending();
+                $result = $this->paymentGateway->sweepExpiredPending();
                 Log::info('[RevenueController] On-demand sweep triggered by dashboard load', $result);
                 return true;
             });
@@ -116,7 +116,7 @@ class RevenueController extends Controller
                 'payment_date'    => $r->payment_date,
                 'period_start'    => $r->period_start,
                 'period_end'      => $r->period_end,
-                'xendit_invoice_id' => $r->xendit_invoice_id,
+                'payment_reference_id' => $r->payment_reference_id,
             ];
         });
 
@@ -134,9 +134,9 @@ class RevenueController extends Controller
     // ── POST /api/v1/admin/revenue/{id}/sync ──────────────────────────────
 
     /**
-     * Cek ulang status invoice ini LANGSUNG ke Xendit, dan perbaiki record
+     * Cek ulang status invoice ini LANGSUNG ke Midtrans, dan perbaiki record
      * yang statusnya nyangkut "pending" di DB kita padahal sudah lunas di
-     * Xendit (mis. webhook belum di-setup / gagal nyampe, atau admin cuma
+     * Midtrans (mis. webhook belum di-setup / gagal nyampe, atau admin cuma
      * nutup modal QRIS sebelum polling sempat mendeteksi status "paid").
      *
      * Idempotent & aman dipanggil berkali-kali — kalau sudah paid ya
@@ -153,23 +153,23 @@ class RevenueController extends Controller
             ]);
         }
 
-        if (!$revenue->xendit_invoice_id) {
+        if (!$revenue->payment_reference_id) {
             return response()->json([
-                'errors' => 'Record ini belum punya xendit_invoice_id (invoice mungkin gagal dibuat), tidak bisa disinkronkan.',
+                'errors' => 'Record ini belum punya ID transaksi payment gateway (invoice mungkin gagal dibuat), tidak bisa disinkronkan.',
             ], 422);
         }
 
         try {
-            $status = $this->xendit->getInvoiceStatus($revenue->xendit_invoice_id);
+            $status = $this->paymentGateway->getInvoiceStatus($revenue->payment_reference_id);
         } catch (\Throwable $e) {
             return response()->json([
-                'errors' => 'Gagal menghubungi Xendit.',
+                'errors' => 'Gagal menghubungi Midtrans.',
                 'debug'  => $e->getMessage(),
             ], 502);
         }
 
         if ($status['paid']) {
-            $this->xendit->confirmPayment($revenue->xendit_invoice_id, $revenue->external_id);
+            $this->paymentGateway->confirmPayment($revenue->payment_reference_id, $revenue->external_id);
 
             return response()->json([
                 'message' => 'Status berhasil disinkronkan — pembayaran dikonfirmasi lunas.',
@@ -178,7 +178,7 @@ class RevenueController extends Controller
         }
 
         return response()->json([
-            'message' => "Status di Xendit masih \"{$status['status']}\" (belum dibayar), tidak ada yang diubah.",
+            'message' => "Status di Midtrans masih \"{$status['status']}\" (belum dibayar), tidak ada yang diubah.",
             'data'    => $revenue,
         ]);
     }

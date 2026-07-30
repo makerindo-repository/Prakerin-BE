@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Revenue;
 use App\Models\Student;
 use App\Models\Subscription;
-use App\Services\XenditService;
+use App\Services\MidtransService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 
 class SubscriptionController extends Controller
 {
-    public function __construct(protected XenditService $xendit) {}
+    public function __construct(protected MidtransService $paymentGateway) {}
 
     // ── GET /api/v1/subscriptions/user/{userId} ────────────────────────────
 
@@ -63,7 +63,7 @@ class SubscriptionController extends Controller
                 'is_renewal_due'        => $subscription->isRenewalDue(),
             ] : null,
             'pending_payment' => $pendingRevenue ? [
-                'invoice_id'  => $pendingRevenue->xendit_invoice_id,
+                'invoice_id'  => $pendingRevenue->payment_reference_id,
                 'invoice_url' => $pendingRevenue->invoice_url,
                 'qr_code_url' => $pendingRevenue->qr_code_url,
                 'amount'      => $pendingRevenue->amount,
@@ -127,7 +127,7 @@ class SubscriptionController extends Controller
         if ($existing) {
             return response()->json([
                 'message'     => 'Melanjutkan invoice pembayaran yang sudah ada.',
-                'invoice_id'  => $existing->xendit_invoice_id,
+                'invoice_id'  => $existing->payment_reference_id,
                 'invoice_url' => $existing->invoice_url,
                 'qr_code_url' => $existing->qr_code_url,
                 'amount'      => $existing->amount,
@@ -159,7 +159,7 @@ class SubscriptionController extends Controller
                 'subscription_start_date' => $now,
                 'subscription_end_date'   => $endDate,
                 'renewal_date'            => $renewalDate,
-                'payment_method'          => 'QRCODE',
+                'payment_method'          => 'QRIS',
             ]
         );
 
@@ -185,7 +185,7 @@ class SubscriptionController extends Controller
 
         // Create Xendit invoice
         try {
-            $invoice = $this->xendit->createInvoice(
+            $invoice = $this->paymentGateway->createInvoice(
                 $package['amount'],
                 $student,
                 $referenceId,
@@ -209,12 +209,12 @@ class SubscriptionController extends Controller
         // WAJIB disimpan (bukan cuma dikirim di response sekali ini) supaya bisa
         // di-resume nanti kalau user tutup modal sebelum bayar.
         $revenue->update([
-            'xendit_invoice_id' => $invoice['id'],
+            'payment_reference_id' => $invoice['id'],
             'invoice_url'       => $invoice['invoice_url'],
             'qr_code_url'       => $invoice['qr_code_url'],
             'expiry_date'       => $invoice['expiry_date'] ?? null,
         ]);
-        $subscription->update(['xendit_invoice_id' => $invoice['id']]);
+        $subscription->update(['payment_reference_id' => $invoice['id']]);
 
         return response()->json([
             'message'     => 'Invoice berhasil dibuat.',
@@ -240,7 +240,7 @@ class SubscriptionController extends Controller
         $isAdmin  = $authUser?->role === 'super_admin';
 
         if (!$isAdmin) {
-            $revenue = Revenue::where('xendit_invoice_id', $invoiceId)->first();
+            $revenue = Revenue::where('payment_reference_id', $invoiceId)->first();
             $isOwner = $revenue && $authUser?->student?->id === $revenue->user_id;
 
             if (!$isOwner) {
@@ -251,7 +251,7 @@ class SubscriptionController extends Controller
         }
 
         try {
-            $status = $this->xendit->getInvoiceStatus($invoiceId);
+            $status = $this->paymentGateway->getInvoiceStatus($invoiceId);
         } catch (\Throwable $e) {
             return response()->json(['errors' => 'Gagal memeriksa status pembayaran.'], 502);
         }
@@ -262,9 +262,9 @@ class SubscriptionController extends Controller
         // dilakukan webhook. Idempotent, jadi aman kalau ternyata webhook-nya
         // nyampe duluan atau menyusul.
         if ($status['paid']) {
-            $this->xendit->confirmPayment($invoiceId);
+            $this->paymentGateway->confirmPayment($invoiceId);
         } elseif (in_array($status['status'], ['EXPIRED', 'FAILED'])) {
-            $this->xendit->markExpired($invoiceId);
+            $this->paymentGateway->markExpired($invoiceId);
         }
 
         return response()->json([

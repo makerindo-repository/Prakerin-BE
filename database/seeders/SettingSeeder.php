@@ -94,6 +94,23 @@ class SettingSeeder extends Seeder
                 'type' => 'string',
             ],
             [
+                'key' => 'midtrans_server_key',
+                'value' => env('MIDTRANS_SERVER_KEY', ''),
+                'type' => 'string',
+            ],
+            [
+                'key' => 'midtrans_client_key',
+                'value' => env('MIDTRANS_CLIENT_KEY', ''),
+                'type' => 'string',
+            ],
+            [
+                'key' => 'midtrans_is_production',
+                'value' => env('MIDTRANS_IS_PRODUCTION', 'false'),
+                'type' => 'boolean',
+            ],
+            // Xendit — LEGACY, tidak dipakai lagi sejak migrasi ke Midtrans.
+            // Dibiarkan (bukan dihapus) buat jaga-jaga rollback cepat.
+            [
                 'key' => 'xendit_secret_key',
                 'value' => env('XENDIT_SECRET_KEY', ''),
                 'type' => 'string',
