@@ -40,14 +40,38 @@ return [
     'payment_polling_timeout'  => 1800000, // 30 minutes
 
     // Berapa lama (detik) invoice QRIS berlaku sebelum otomatis expired.
-    // Xendit sendiri yang menandai invoice EXPIRED begitu durasi ini lewat
-    // (dikirim sebagai `invoice_duration` saat createInvoice). Default 5
-    // menit — sesuaikan lewat XENDIT_INVOICE_DURATION_SECONDS di .env.
-    'payment_expiry_seconds' => (int) env('XENDIT_INVOICE_DURATION_SECONDS', 300),
+    // Midtrans sendiri yang menandai transaksi 'expire' begitu durasi ini
+    // lewat (dikirim sebagai `custom_expiry` saat createInvoice). Default 5
+    // menit — sesuaikan lewat PAYMENT_EXPIRY_SECONDS di .env.
+    'payment_expiry_seconds' => (int) env('PAYMENT_EXPIRY_SECONDS', env('XENDIT_INVOICE_DURATION_SECONDS', 300)),
 
     /*
     |--------------------------------------------------------------------------
-    | Xendit Credentials
+    | Midtrans Credentials (Core API — QRIS)
+    |--------------------------------------------------------------------------
+    |
+    | Server Key dipakai buat Basic Auth ke API Midtrans DAN buat verifikasi
+    | signature webhook (SHA512). Base URL beda antara sandbox & production —
+    | jangan salah pasang keys sandbox tapi is_production=true (atau
+    | sebaliknya), nanti selalu dapat 401.
+    |
+    */
+
+    'midtrans' => [
+        'server_key'    => env('MIDTRANS_SERVER_KEY', ''),
+        'client_key'    => env('MIDTRANS_CLIENT_KEY', ''), // gak dipakai server-side (Core API), disimpan buat referensi/kalau nanti butuh Snap.js
+        'is_production' => (bool) env('MIDTRANS_IS_PRODUCTION', false),
+        'base_url'      => (bool) env('MIDTRANS_IS_PRODUCTION', false)
+            ? 'https://api.midtrans.com'
+            : 'https://api.sandbox.midtrans.com',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Xendit Credentials — LEGACY, tidak dipakai lagi setelah migrasi ke
+    | Midtrans. Dibiarkan di sini (bukan dihapus) buat jaga-jaga rollback
+    | cepat kalau ada masalah pas migrasi. Aman dihapus total kalau migrasi
+    | Midtrans sudah stabil beberapa minggu.
     |--------------------------------------------------------------------------
     */
 
@@ -55,14 +79,6 @@ return [
         'secret_key'     => env('XENDIT_SECRET_KEY'),
         'webhook_token'  => env('XENDIT_WEBHOOK_TOKEN'),
         'base_url'       => 'https://api.xendit.co',
-
-        // Kosongkan (default) supaya Xendit menampilkan metode pembayaran
-        // apapun yang SUDAH AKTIF di akun kamu (Virtual Account, e-wallet
-        // test, dll — semua ini langsung bisa dipakai tanpa approval).
-        // Isi dengan "QRCODE" (pisahkan koma kalau lebih dari satu, mis.
-        // "QRCODE,EWALLET") HANYA setelah QRIS approved di akun Xendit kamu
-        // (Settings > Payment Channels > aktivasi QRIS — butuh ~5 hari kerja
-        // atau hubungi Account Manager/Customer Success Xendit).
         'payment_methods' => array_values(array_filter(explode(',', (string) env('XENDIT_PAYMENT_METHODS', '')))),
     ],
 

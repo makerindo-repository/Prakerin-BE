@@ -727,5 +727,6 @@ Route::prefix('v1')->group(function () {
 // ─── Public Webhooks (outside v1 prefix, no auth — provider calls these) ───
 Route::prefix('webhooks')->group(function () {
     Route::post('/whatsapp/status', [WebhookController::class, 'whatsappStatus']);
-    Route::post('/xendit', [WebhookController::class, 'handleXenditWebhook']);
+    Route::post('/midtrans', [WebhookController::class, 'handleMidtransWebhook']);
+    Route::post('/xendit', [WebhookController::class, 'handleXenditWebhook']); // legacy, jaga-jaga rollback
 });
