@@ -421,27 +421,34 @@ class SettingController extends Controller
                 ->timeout(15)
                 ->get("{$baseUrl}/v2/CONNECTION-TEST-ORDER-ID-INI-SENGAJA-GA-ADA/status");
 
-            // 404 = auth lolos, cuma order_id-nya emang gak ada — ini yang
-            // kita HARAPKAN, artinya Server Key valid.
-            if ($response->status() === 404) {
+            $body = $response->json();
+            $statusMessage = $body['status_message'] ?? $response->body();
+
+            // "Transaction doesn't exist" ARTINYA AUTH-NYA LOLOS — cuma
+            // order_id-nya emang sengaja gak ada (itu yang kita mau).
+            // Midtrans kadang balikin ini lewat HTTP 404, kadang 400 —
+            // makanya dicek dari ISI PESANNYA, bukan cuma kode HTTP-nya.
+            $keyIsValid = $response->status() === 404
+                || str_contains(strtolower($statusMessage), "doesn't exist")
+                || str_contains(strtolower($statusMessage), 'not found');
+
+            if ($keyIsValid) {
                 return response()->json([
                     'status'  => 'success',
                     'message' => 'Berhasil terhubung ke Midtrans API! Mode: ' . ($isProd ? 'Live/Production' : 'Sandbox'),
                 ]);
             }
 
-            if ($response->status() === 401) {
+            if ($response->status() === 401 || str_contains(strtolower($statusMessage), 'access denied')) {
                 return response()->json([
                     'status'  => 'error',
                     'message' => 'Server Key ditolak Midtrans (401 Unauthorized). Cek ulang key & mode sandbox/production-nya.',
                 ], 400);
             }
 
-            $body = $response->json();
-
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Gagal terhubung ke Midtrans: ' . ($body['status_message'] ?? $response->body()),
+                'message' => 'Gagal terhubung ke Midtrans: ' . $statusMessage,
             ], 400);
         } catch (\Exception $e) {
             Log::error('Settings Midtrans Connection Test Error: ' . $e->getMessage());
