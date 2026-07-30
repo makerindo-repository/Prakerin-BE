@@ -90,7 +90,22 @@ class SettingSeeder extends Seeder
             ],
             [
                 'key' => 'ai_api_key',
-                'value' => '',
+                'value' => env('GEMINI_API_KEY', ''),
+                'type' => 'string',
+            ],
+            [
+                'key' => 'xendit_secret_key',
+                'value' => env('XENDIT_SECRET_KEY', ''),
+                'type' => 'string',
+            ],
+            [
+                'key' => 'xendit_webhook_token',
+                'value' => env('XENDIT_WEBHOOK_TOKEN', ''),
+                'type' => 'string',
+            ],
+            [
+                'key' => 'xendit_payment_methods',
+                'value' => env('XENDIT_PAYMENT_METHODS', ''),
                 'type' => 'string',
             ],
             [
@@ -191,7 +206,7 @@ class SettingSeeder extends Seeder
         ];
 
         foreach ($settings as $setting) {
-            Setting::updateOrCreate(
+            Setting::firstOrCreate(
                 ['key' => $setting['key']],
                 [
                     'value' => $setting['value'],

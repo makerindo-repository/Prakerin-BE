@@ -27,6 +27,19 @@ class Setting extends Model
 
         $value = $setting->value;
 
+        // Environmental fallbacks if DB value is empty
+        if (empty($value)) {
+            if ($key === 'ai_api_key' && config('gemini.api_key')) {
+                return (string) config('gemini.api_key');
+            }
+            if ($key === 'xendit_secret_key' && config('subscription.xendit.secret_key')) {
+                return (string) config('subscription.xendit.secret_key');
+            }
+            if ($key === 'xendit_webhook_token' && config('subscription.xendit.webhook_token')) {
+                return (string) config('subscription.xendit.webhook_token');
+            }
+        }
+
         // Force string type for IDs, phone numbers, keys, and tokens
         if (str_contains($key, 'id') || str_contains($key, 'number') || str_contains($key, 'key') || str_contains($key, 'token') || str_starts_with($key, 'whatsapp_')) {
             return (string) $value;

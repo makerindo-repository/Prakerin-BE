@@ -9,7 +9,9 @@ return new class extends Migration {
     {
         Schema::table('student_awards', function (Blueprint $table) {
             $table->index('student_id', 'student_awards_student_id_index');
-            $table->dropUnique('student_awards_student_id_award_id_unique');
+            if (\Illuminate\Support\Facades\DB::getDriverName() !== 'sqlite') {
+                $table->dropUnique('student_awards_student_id_award_id_unique');
+            }
         });
     }
 

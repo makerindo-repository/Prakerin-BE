@@ -233,7 +233,7 @@ class AdminDashboardController extends Controller
                 'time_ago'      => $log->created_at->diffForHumans(),
             ]);
 
-        // ── AI Matching Score (dynamic) ──────────────────────────────────
+        // ── AI Matching Score (dynamic based on real data) ───────────────
         $activeJobOpenings = JobOpening::where('is_available', true)->with('field')->get();
         $totalActiveJobs = $activeJobOpenings->count();
 
@@ -256,7 +256,7 @@ class AdminDashboardController extends Controller
         ];
 
         // Color and icon mappings for frontend UI
-        $uiProps = [
+        $uiPropsKnown = [
             'Rekayasa Perangkat Lunak' => ['icon' => 'Code2', 'color' => 'green', 'label' => 'RPL'],
             'Teknik Komputer dan Jaringan' => ['icon' => 'Network', 'color' => 'purple', 'label' => 'TKJ'],
             'Multimedia' => ['icon' => 'ImageIcon', 'color' => 'orange', 'label' => 'Multimedia'],
@@ -265,50 +265,122 @@ class AdminDashboardController extends Controller
             'Desain Komunikasi Visual' => ['icon' => 'Zap', 'color' => 'orange', 'label' => 'DKV'],
         ];
 
-        // PERF-01 fix: pre-load all placed student counts in a single query instead of N+1
+        // Pre-load all placed student counts in a single query
         $placedByMajor = Student::selectRaw('major_id, COUNT(*) as placed')
             ->whereIn('status_magang', ['ongoing', 'completed'])
+            ->whereNotNull('major_id')
             ->groupBy('major_id')
             ->pluck('placed', 'major_id');
+
+        // Pre-load application counts and accepted counts per major
+        $applicationStatsByMajor = InternshipApplication::join('curriculum_vitaes', 'internship_applications.curriculum_vitae_id', '=', 'curriculum_vitaes.id')
+            ->join('students', 'curriculum_vitaes.student_id', '=', 'students.id')
+            ->selectRaw('students.major_id, COUNT(internship_applications.id) as total_apps, SUM(CASE WHEN internship_applications.status = "accepted" THEN 1 ELSE 0 END) as accepted_apps')
+            ->whereNotNull('students.major_id')
+            ->groupBy('students.major_id')
+            ->get()
+            ->keyBy('major_id');
+
+        // Pre-load student counts by school type per major for fallback level detection
+        $schoolTypeByMajor = Student::join('schools', 'students.school_id', '=', 'schools.id')
+            ->selectRaw('students.major_id, schools.type, COUNT(*) as cnt')
+            ->whereNotNull('students.major_id')
+            ->groupBy('students.major_id', 'schools.type')
+            ->get()
+            ->groupBy('major_id');
 
         foreach ($allMajors as $major) {
             $suitableFields = $majorFieldMapping[$major->name] ?? [];
             
-            // Calculate demand: active jobs in suitable fields
-            $demandJobsCount = $activeJobOpenings->filter(function ($job) use ($suitableFields) {
-                return in_array($job->field?->name, $suitableFields);
+            // Calculate demand: active jobs matching suitable fields or major name keywords
+            $demandJobsCount = $activeJobOpenings->filter(function ($job) use ($suitableFields, $major) {
+                if (!empty($suitableFields) && in_array($job->field?->name, $suitableFields)) {
+                    return true;
+                }
+                $searchable = strtolower(($job->title ?? '') . ' ' . ($job->field?->name ?? ''));
+                $majorLower = strtolower($major->name);
+                return str_contains($searchable, $majorLower) || (!empty($job->field?->name) && str_contains($majorLower, strtolower($job->field->name)));
             })->count();
 
             $demandRate = $totalActiveJobs > 0 ? ($demandJobsCount / $totalActiveJobs) * 100 : 0;
 
             // Calculate student placement success rate for this major
             $totalStudents = $major->students_count;
-            $placedStudents = $placedByMajor[$major->id] ?? 0; // PERF-01: use pre-loaded map
-            
+            $placedStudents = $placedByMajor[$major->id] ?? 0;
             $placementRate = $totalStudents > 0 ? ($placedStudents / $totalStudents) * 100 : 0;
 
-            // Compute matching score: 70% based on demand rate, 30% based on placement success rate
-            $scoreValue = round(($demandRate * 0.7) + ($placementRate * 0.3));
+            // Calculate application acceptance rate for this major
+            $appStats = $applicationStatsByMajor[$major->id] ?? null;
+            $totalApps = $appStats ? (int) $appStats->total_apps : 0;
+            $acceptedApps = $appStats ? (int) $appStats->accepted_apps : 0;
+            $acceptanceRate = $totalApps > 0 ? ($acceptedApps / $totalApps) * 100 : 0;
 
-            // Smooth the value to keep it realistic (between 0% and 98%)
-            $scoreValue = max(0, min(98, $scoreValue));
+            if ($totalStudents > 0 || $totalApps > 0) {
+                // Real data formula combining placement, acceptance, and market demand
+                $rawScore = ($placementRate * 0.40) + ($acceptanceRate * 0.40) + ($demandRate * 0.20);
+                $scoreValue = round($rawScore > 0 ? $rawScore : (50 + ($demandRate * 0.4)));
+            } else {
+                // Baseline demand alignment score for newly added majors
+                $scoreValue = round(55 + ($demandRate * 0.4));
+            }
 
-            // Default fallback mappings if major name isn't explicitly mapped
-            $props = $uiProps[$major->name] ?? [
-                'icon' => 'Monitor',
-                'color' => 'blue',
-                'label' => $major->name
-            ];
+            // Smooth the value to keep it realistic (between 35% and 98%)
+            $scoreValue = max(35, min(98, (int) $scoreValue));
+
+            // Dynamic props (label, icon, color)
+            if (isset($uiPropsKnown[$major->name])) {
+                $props = $uiPropsKnown[$major->name];
+            } else {
+                $words = array_values(array_filter(explode(' ', trim($major->name))));
+                if (count($words) === 1) {
+                    $label = $words[0];
+                } else {
+                    $stopWords = ['dan', 'atau', 'ke', 'di', 'untuk', 'teknik', 'ilmu'];
+                    $initials = '';
+                    foreach ($words as $w) {
+                        if (!in_array(strtolower($w), $stopWords) && strlen($w) > 0) {
+                            $initials .= mb_strtoupper(mb_substr($w, 0, 1));
+                        }
+                    }
+                    $label = strlen($initials) >= 2 ? $initials : $words[0];
+                }
+
+                $lower = strtolower($major->name);
+                if (str_contains($lower, 'perangkat') || str_contains($lower, 'software') || str_contains($lower, 'web')) {
+                    $props = ['icon' => 'Code2', 'color' => 'green', 'label' => $label];
+                } elseif (str_contains($lower, 'jaringan') || str_contains($lower, 'network')) {
+                    $props = ['icon' => 'Network', 'color' => 'purple', 'label' => $label];
+                } elseif (str_contains($lower, 'desain') || str_contains($lower, 'multimedia') || str_contains($lower, 'visual')) {
+                    $props = ['icon' => 'Zap', 'color' => 'orange', 'label' => $label];
+                } elseif (str_contains($lower, 'informatika') || str_contains($lower, 'komputer')) {
+                    $props = ['icon' => 'Cpu', 'color' => 'blue', 'label' => $label];
+                } else {
+                    $props = ['icon' => 'Monitor', 'color' => 'blue', 'label' => $label];
+                }
+            }
 
             $item = [
                 'label' => $props['label'],
                 'full_name' => $major->name,
-                'value' => (int)$scoreValue,
+                'value' => (int) $scoreValue,
                 'color' => $props['color'],
                 'icon' => $props['icon'],
             ];
 
+            // Determine level classification (smk vs mahasiswa)
             if ($major->level === 'smk') {
+                $isSmk = true;
+            } elseif ($major->level === 'college') {
+                $isSmk = false;
+            } else {
+                // Fallback: check linked school types
+                $schoolTypes = $schoolTypeByMajor->get($major->id);
+                $univCount = $schoolTypes ? $schoolTypes->where('type', 'university')->sum('cnt') : 0;
+                $schoolCount = $schoolTypes ? $schoolTypes->where('type', 'school')->sum('cnt') : 0;
+                $isSmk = $schoolCount >= $univCount;
+            }
+
+            if ($isSmk) {
                 $matchingScores['smk'][] = $item;
             } else {
                 $matchingScores['mahasiswa'][] = $item;
