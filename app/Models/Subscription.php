@@ -16,7 +16,7 @@ class Subscription extends Model
         'subscription_end_date',
         'renewal_date',
         'payment_method',
-        'xendit_invoice_id',
+        'payment_reference_id',
         'external_id',
     ];
 

@@ -18,7 +18,7 @@ class Revenue extends Model
         'payment_date',
         'period_start',
         'period_end',
-        'xendit_invoice_id',
+        'payment_reference_id',
         'external_id',
         'invoice_url',
         'qr_code_url',

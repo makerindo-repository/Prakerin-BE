@@ -159,7 +159,7 @@ class XenditService
      * lunas di Xendit bisa selamanya gak ke-upgrade ke premium karena
      * satu-satunya jalur upgrade cuma nunggu webhook yang gak pernah datang.
      *
-     * @param  string|null  $externalId  Fallback matching kalau xendit_invoice_id
+     * @param  string|null  $externalId  Fallback matching kalau payment_reference_id
      *                                   belum sempat tersimpan (mis. response
      *                                   createInvoice() gagal balik ke server
      *                                   karena timeout/crash, padahal Xendit
@@ -175,10 +175,10 @@ class XenditService
             return false;
         }
 
-        // Cocokkan pakai xendit_invoice_id ATAU external_id (fallback).
+        // Cocokkan pakai payment_reference_id ATAU external_id (fallback).
         $revenue = Revenue::where(function ($q) use ($invoiceId, $externalId) {
             if ($invoiceId) {
-                $q->where('xendit_invoice_id', $invoiceId);
+                $q->where('payment_reference_id', $invoiceId);
             }
             if ($externalId) {
                 $q->orWhere('external_id', $externalId);
@@ -190,10 +190,10 @@ class XenditService
             return false;
         }
 
-        // Kalau ketemunya lewat external_id (xendit_invoice_id belum sempat
+        // Kalau ketemunya lewat external_id (payment_reference_id belum sempat
         // kesimpan), lengkapi sekarang juga supaya query berikutnya konsisten.
-        if ($invoiceId && !$revenue->xendit_invoice_id) {
-            $revenue->xendit_invoice_id = $invoiceId;
+        if ($invoiceId && !$revenue->payment_reference_id) {
+            $revenue->payment_reference_id = $invoiceId;
             $revenue->save();
         }
 
@@ -271,7 +271,7 @@ class XenditService
 
         $revenue = Revenue::where(function ($q) use ($invoiceId, $externalId) {
             if ($invoiceId) {
-                $q->where('xendit_invoice_id', $invoiceId);
+                $q->where('payment_reference_id', $invoiceId);
             }
             if ($externalId) {
                 $q->orWhere('external_id', $externalId);
@@ -342,7 +342,7 @@ class XenditService
         $cutoff        = now()->subSeconds($expirySeconds + $bufferSeconds);
 
         $pending = Revenue::where('payment_status', 'pending')
-            ->whereNotNull('xendit_invoice_id')
+            ->whereNotNull('payment_reference_id')
             ->where('created_at', '<=', $cutoff)
             ->get();
 
@@ -351,10 +351,10 @@ class XenditService
 
         foreach ($pending as $revenue) {
             try {
-                $status = $this->getInvoiceStatus($revenue->xendit_invoice_id);
+                $status = $this->getInvoiceStatus($revenue->payment_reference_id);
 
                 if ($status['paid']) {
-                    $this->confirmPayment($revenue->xendit_invoice_id, $revenue->external_id);
+                    $this->confirmPayment($revenue->payment_reference_id, $revenue->external_id);
                     $saved++;
                     continue;
                 }
@@ -364,7 +364,7 @@ class XenditService
                 // lokal, supaya siswa gak nyangkut "pending" selamanya.
             }
 
-            $this->markExpired($revenue->xendit_invoice_id, $revenue->external_id);
+            $this->markExpired($revenue->payment_reference_id, $revenue->external_id);
             $expired++;
         }
 

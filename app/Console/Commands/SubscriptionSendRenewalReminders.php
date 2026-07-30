@@ -6,7 +6,7 @@ use App\Models\Revenue;
 use App\Models\Student;
 use App\Models\Subscription;
 use App\Services\NotificationService;
-use App\Services\XenditService;
+use App\Services\MidtransService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -16,7 +16,7 @@ class SubscriptionSendRenewalReminders extends Command
     protected $signature = 'subscription:send-renewal-reminders';
     protected $description = 'Send renewal reminder notifications to students whose subscriptions are due within 3 days.';
 
-    public function handle(XenditService $xendit, NotificationService $notifications): int
+    public function handle(MidtransService $paymentGateway, NotificationService $notifications): int
     {
         $reminderDays = config('subscription.renewal_reminder_days', 3);
 
@@ -40,9 +40,9 @@ class SubscriptionSendRenewalReminders extends Command
             }
 
             try {
-                // Generate renewal invoice on Xendit
+                // Generate renewal invoice lewat payment gateway aktif (Midtrans)
                 $referenceId = 'RENEW-' . strtoupper(Str::random(10)) . '-' . $student->id;
-                $invoice = $xendit->createInvoice(
+                $invoice = $paymentGateway->createInvoice(
                     $subscription->amount,
                     $student,
                     $referenceId,
@@ -55,27 +55,39 @@ class SubscriptionSendRenewalReminders extends Command
                 );
 
                 Revenue::create([
-                    'subscription_id'   => $subscription->id,
-                    'user_id'           => $student->id,
-                    'user_type'         => $subscription->user_type,
-                    'amount'            => $subscription->amount,
-                    'currency'          => $subscription->currency,
-                    'payment_status'    => 'pending',
-                    'period_start'      => $subscription->renewal_date,
-                    'period_end'        => $nextPeriodEnd,
-                    'xendit_invoice_id' => $invoice['id'],
+                    'subscription_id'      => $subscription->id,
+                    'user_id'              => $student->id,
+                    'user_type'            => $subscription->user_type,
+                    'amount'               => $subscription->amount,
+                    'currency'             => $subscription->currency,
+                    'payment_status'       => 'pending',
+                    'period_start'         => $subscription->renewal_date,
+                    'period_end'           => $nextPeriodEnd,
+                    'external_id'          => $referenceId,
+                    'payment_reference_id' => $invoice['id'],
+                    'invoice_url'          => $invoice['invoice_url'] ?? null,
+                    'qr_code_url'          => $invoice['qr_code_url'] ?? null,
+                    'expiry_date'          => $invoice['expiry_date'] ?? null,
                 ]);
 
                 // Send in-app + email + WA notification
                 if ($student->user_id) {
+                    // Midtrans Core API (QRIS) tidak punya halaman invoice
+                    // ter-hosted kayak Xendit dulu (invoice_url selalu null),
+                    // jadi arahkan ke halaman profil — pending_payment yang
+                    // baru dibuat di atas otomatis kedeteksi di sana dan QR-nya
+                    // langsung tampil lagi (lihat SubscriptionController::getUserSubscription
+                    // & UpgradePremiumSection.tsx di frontend).
+                    $paymentLink = config('app.frontend_url') . '/dashboard/profile';
+
                     $notifications->notify(
                         $student->user_id,
                         '⏰ Langganan Premium Segera Berakhir',
                         "Langganan Premium kamu akan berakhir dalam {$reminderDays} hari. "
                         . "Bayar sekarang agar akses tidak terputus. "
-                        . "Link pembayaran: {$invoice['invoice_url']}",
+                        . "Buka halaman Profil untuk lihat QR pembayarannya.",
                         'subscription_renewal_reminder',
-                        $invoice['invoice_url'],
+                        $paymentLink,
                         'Subscription',
                         $subscription->id,
                     );
