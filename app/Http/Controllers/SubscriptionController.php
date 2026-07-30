@@ -276,4 +276,54 @@ class SubscriptionController extends Controller
                 : 'Menunggu pembayaran...',
         ]);
     }
+
+    // ── POST /api/v1/subscriptions/cancel ──────────────────────────
+
+    /**
+     * Cancel an active or pending subscription for a student.
+     */
+    public function cancelSubscription(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'student_id' => 'required|uuid|exists:students,id',
+        ]);
+
+        $authUser = $request->user();
+        $isOwner  = $authUser?->student?->id === $validated['student_id'];
+        $isAdmin  = $authUser?->role === 'super_admin';
+
+        if (!$isOwner && !$isAdmin) {
+            return response()->json([
+                'errors' => 'Anda tidak memiliki hak untuk membatalkan langganan siswa ini.',
+            ], 403);
+        }
+
+        $student = Student::with('subscription')->findOrFail($validated['student_id']);
+
+        // Update student status to free
+        $student->update([
+            'status_subscription'     => 'free',
+            'subscription_renewed_at' => null,
+        ]);
+
+        // Cancel subscription record if exists
+        if ($student->subscription) {
+            $student->subscription->update([
+                'status' => 'cancelled',
+            ]);
+        }
+
+        // Cancel any pending payment revenues
+        Revenue::where('user_id', $student->id)
+            ->where('payment_status', 'pending')
+            ->update(['payment_status' => 'failed']);
+
+        return response()->json([
+            'message' => 'Paket langganan Premium berhasil dibatalkan.',
+            'data'    => [
+                'student_id'          => $student->id,
+                'status_subscription' => 'free',
+            ]
+        ]);
+    }
 }

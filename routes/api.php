@@ -709,6 +709,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/user/{userId}', [SubscriptionController::class, 'getUserSubscription']);
             Route::post('/create-payment', [SubscriptionController::class, 'createPayment']);
             Route::get('/payment-status/{invoiceId}', [SubscriptionController::class, 'getPaymentStatus']);
+            Route::post('/cancel', [SubscriptionController::class, 'cancelSubscription']);
         });
 
     // ─── Admin: Subscription Tier Management ──────────────────────────────
