@@ -61,13 +61,24 @@ class RevenueController extends Controller
             ->whereYear('payment_date', now()->year)
             ->sum('amount');
 
+        $paidRevenues   = Revenue::where('payment_status', 'paid')->get();
+        $monthlyRevenue = 0.0;
+        $yearlyRevenue  = 0.0;
+
+        foreach ($paidRevenues as $r) {
+            $days = ($r->period_start && $r->period_end)
+                ? (int) round($r->period_start->diffInDays($r->period_end))
+                : 30;
+            if ($days <= 31) {
+                $monthlyRevenue += (float) $r->amount;
+            } else {
+                $yearlyRevenue  += (float) $r->amount;
+            }
+        }
+
         $revenueByTier = [
-            'monthly' => Revenue::where('payment_status', 'paid')
-                ->whereRaw('DATEDIFF(period_end, period_start) <= 31')
-                ->sum('amount'),
-            'yearly' => Revenue::where('payment_status', 'paid')
-                ->whereRaw('DATEDIFF(period_end, period_start) > 31')
-                ->sum('amount'),
+            'monthly' => $monthlyRevenue,
+            'yearly'  => $yearlyRevenue,
         ];
 
         return response()->json([

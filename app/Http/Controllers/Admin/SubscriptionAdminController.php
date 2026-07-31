@@ -88,8 +88,16 @@ class SubscriptionAdminController extends Controller
                 'status_subscription'     => 'premium',
                 'subscription_renewed_at' => $now,
             ]);
+
+            if ($student->user_id) {
+                \App\Models\User::where('id', $student->user_id)->update(['is_pro' => true]);
+            }
         } else {
             $student->update(['status_subscription' => 'free']);
+
+            if ($student->user_id) {
+                \App\Models\User::where('id', $student->user_id)->update(['is_pro' => false]);
+            }
 
             Subscription::where('user_id', $student->id)
                 ->where('status', 'active')

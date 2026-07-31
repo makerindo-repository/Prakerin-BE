@@ -211,31 +211,49 @@ class XenditService
 
         // Update subscription
         $subscription = $revenue->subscription;
-        $durationDays = (int) ceil($subscription->renewal_date->diffInDays($subscription->subscription_end_date));
-        if ($durationDays <= 0) {
-            $durationDays = 30; // fallback
+        $periodStart  = $revenue->period_start ?? now();
+        $periodEnd    = $revenue->period_end ?? now()->addDays(30);
+        $durationDays = (int) max(1, round($periodStart->diffInDays($periodEnd)));
+
+        // If subscription is new/pending_payment or already expired, set start & end from revenue period
+        if (!$subscription || $subscription->status !== 'active' || $subscription->isExpired()) {
+            $newStartDate   = $periodStart;
+            $newEndDate     = $periodEnd;
+            $newRenewalDate = $periodEnd;
+        } else {
+            // Subscription is currently active; extend from current end date
+            $newStartDate   = $subscription->subscription_start_date;
+            $newEndDate     = $subscription->subscription_end_date->copy()->addDays($durationDays);
+            $newRenewalDate = $newEndDate;
         }
 
-        $newEndDate     = $subscription->subscription_end_date->addDays($durationDays);
-        $newRenewalDate = $subscription->renewal_date->addDays($durationDays);
-
-        $subscription->update([
-            'status'                => 'active',
-            'subscription_end_date' => $newEndDate,
-            'renewal_date'          => $newRenewalDate,
-        ]);
+        if ($subscription) {
+            $subscription->update([
+                'status'                => 'active',
+                'subscription_start_date' => $newStartDate,
+                'subscription_end_date'   => $newEndDate,
+                'renewal_date'          => $newRenewalDate,
+            ]);
+        }
 
         // Upgrade student tier
-        Student::where('id', $subscription->user_id)->update([
-            'status_subscription'    => 'premium',
-            'subscription_renewed_at' => now(),
-        ]);
+        $userId = $subscription?->user_id ?? $revenue->user_id;
+        $student = Student::find($userId);
+        if ($student) {
+            $student->update([
+                'status_subscription'    => 'premium',
+                'subscription_renewed_at' => now(),
+            ]);
 
-        Log::info("[XenditService] Payment confirmed for invoice={$invoiceId}, student={$subscription->user_id}");
+            if ($student->user_id) {
+                \App\Models\User::where('id', $student->user_id)->update(['is_pro' => true]);
+            }
+        }
+
+        Log::info("[XenditService] Payment confirmed for invoice={$invoiceId}, student={$userId}");
 
         // Send in-app notification
         try {
-            $student = Student::find($subscription->user_id);
             if ($student && $student->user_id) {
                 app(\App\Services\NotificationService::class)->notify(
                     $student->user_id,
@@ -244,7 +262,7 @@ class XenditService
                     'subscription_payment_confirmed',
                     config('app.frontend_url') . '/dashboard',
                     'Subscription',
-                    $subscription->id,
+                    $subscription?->id,
                 );
             }
         } catch (\Throwable $e) {
@@ -303,11 +321,15 @@ class XenditService
             $subscription->update(['status' => 'expired']);
         }
 
+        $student = $subscription ? Student::find($subscription->user_id) : Student::find($revenue->user_id);
+        if ($student && $student->status_subscription !== 'premium' && $student->user_id) {
+            \App\Models\User::where('id', $student->user_id)->update(['is_pro' => false]);
+        }
+
         Log::info("[XenditService] Payment expired for invoice={$invoiceId}, revenue={$revenue->id}");
 
         // Beri tahu siswa supaya gak nunggu-nunggu tanpa kejelasan.
         try {
-            $student = $subscription ? Student::find($subscription->user_id) : null;
             if ($student && $student->user_id) {
                 app(\App\Services\NotificationService::class)->notify(
                     $student->user_id,
@@ -316,7 +338,7 @@ class XenditService
                     'subscription_payment_expired',
                     config('app.frontend_url') . '/dashboard/profile',
                     'Subscription',
-                    $subscription->id,
+                    $subscription?->id,
                 );
             }
         } catch (\Throwable $e) {
