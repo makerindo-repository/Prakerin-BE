@@ -149,12 +149,36 @@ class MidtransService
 
         $qrAction = collect($data['actions'] ?? [])->firstWhere('name', 'generate-qr-code');
 
+        // Midtrans kadang balikin HTTP 200/201 padahal transaksinya SEBENARNYA
+        // gagal (bukan approved) — bedanya cuma keliatan dari field
+        // status_code/status_message DI DALAM body respons, BUKAN dari kode
+        // status HTTP-nya. Contoh paling sering: channel QRIS belum diaktifkan
+        // di akun (khususnya akun PRODUCTION — SANDBOX defaultnya semua
+        // channel aktif). Kalau kejadian, $response->failed() di atas TIDAK
+        // akan pernah true, jadi kalau di sini qr_code_url ujung²nya kosong,
+        // treat sebagai error juga — supaya request ini gagal dengan jelas
+        // (dan Revenue-nya di-rollback oleh caller), bukan diam-diam balikin
+        // invoice "sukses" tanpa QR sama sekali.
+        if (empty($qrAction['url'] ?? null)) {
+            Log::error('[MidtransService] createInvoice: HTTP sukses tapi tidak ada QR code di respons (kemungkinan channel QRIS belum aktif di akun ini)', [
+                'status_code'    => $data['status_code'] ?? null,
+                'status_message' => $data['status_message'] ?? null,
+                'body'           => $response->body(),
+                'ref'            => $referenceId,
+            ]);
+            throw new \RuntimeException(
+                'Midtrans tidak mengembalikan kode QRIS (status: ' . ($data['status_code'] ?? '?') . ' — '
+                . ($data['status_message'] ?? 'pesan tidak diketahui')
+                . '). Kemungkinan besar channel QRIS belum diaktifkan di akun Midtrans ini.'
+            );
+        }
+
         return [
             'id'          => $data['order_id'] ?? $orderId,
             // Core API QRIS gak punya halaman checkout ter-hosted kayak
             // Xendit invoice_url — QR-nya ditampilkan langsung di modal kita.
             'invoice_url' => null,
-            'qr_code_url' => $qrAction['url'] ?? null,
+            'qr_code_url' => $qrAction['url'],
             // Midtrans gak selalu balikin field expiry eksplisit di response
             // charge — hitung sendiri dari custom_expiry yang kita minta,
             // supaya deterministic & konsisten sama yang dipakai di
