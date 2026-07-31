@@ -317,6 +317,10 @@ class SubscriptionController extends Controller
             'subscription_renewed_at' => null,
         ]);
 
+        if ($student->user_id) {
+            \App\Models\User::where('id', $student->user_id)->update(['is_pro' => false]);
+        }
+
         // Mark subscription record as expired if exists
         if ($student->subscription) {
             $student->subscription->update([

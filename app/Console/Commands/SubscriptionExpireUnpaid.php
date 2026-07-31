@@ -42,6 +42,10 @@ class SubscriptionExpireUnpaid extends Command
                         'status_subscription' => 'free',
                     ]);
 
+                    if ($student->user_id) {
+                        \App\Models\User::where('id', $student->user_id)->update(['is_pro' => false]);
+                    }
+
                     // Send expiry notification
                     if ($student->user_id) {
                         $notifications->notify(
