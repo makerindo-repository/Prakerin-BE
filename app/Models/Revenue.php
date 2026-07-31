@@ -19,6 +19,7 @@ class Revenue extends Model
         'period_start',
         'period_end',
         'payment_reference_id',
+        'qr_payment_reference_id',
         'external_id',
         'invoice_url',
         'qr_code_url',

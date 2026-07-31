@@ -41,11 +41,17 @@ class MidtransService
 
     protected string $serverKey;
     protected string $baseUrl;
+    protected string $snapBaseUrl;
 
     public function __construct()
     {
         $this->serverKey = config('subscription.midtrans.server_key', '');
         $this->baseUrl   = config('subscription.midtrans.base_url', 'https://api.sandbox.midtrans.com');
+        // Snap API pakai domain BEDA dari Core API ("app." bukan "api."),
+        // walau server key & mode production/sandbox-nya sama persis.
+        $this->snapBaseUrl = str_contains($this->baseUrl, 'sandbox')
+            ? 'https://app.sandbox.midtrans.com'
+            : 'https://app.midtrans.com';
     }
 
     /**
@@ -78,6 +84,7 @@ class MidtransService
     public function createInvoice(float $amount, Student $student, string $referenceId, string $description = 'Prakerin Premium Subscription'): array
     {
         $user = $student->user;
+        $expirySeconds = config('subscription.payment_expiry_seconds', 300);
 
         // order_id Midtrans: maksimal 50 karakter, cuma boleh alfanumerik +
         // dash/underscore. referenceId kita ('SUB-' + random + UUID siswa)
@@ -97,34 +104,75 @@ class MidtransService
         //     BUKAN dari order_id kita (lihat WebhookController).
         $orderId = self::ORDER_ID_PREFIX . now()->format('ymdHis') . strtoupper(Str::random(6));
 
-        $expirySeconds = config('subscription.payment_expiry_seconds', 300);
+        $customerDetails = array_filter([
+            'first_name' => $student->name,
+            'email'      => $user?->email,
+            'phone'      => $student->phone_number ? (string) $student->phone_number : null,
+        ], fn ($value) => $value !== null && $value !== '');
 
+        $itemDetails = [[
+            'id'       => 'subscription',
+            'price'    => (int) round($amount),
+            'quantity' => 1,
+            'name'     => substr($description, 0, 50),
+        ]];
+
+        // 1) QRIS langsung lewat Core API — BEST EFFORT. Kalau channel-nya
+        //    belum aktif di akun (lihat error 402 kemarin) atau gagal karena
+        //    sebab lain, JANGAN gagalkan seluruh proses — cukup log & lanjut
+        //    tanpa QR. order_id-nya dikasih suffix "-QR" supaya beda dari
+        //    order_id Snap di bawah (Midtrans wajib unique order_id).
+        $qrOrderId = null;
+        $qrCodeUrl = null;
+
+        try {
+            $qrResult = $this->chargeQris($orderId . '-QR', $amount, $customerDetails, $itemDetails, $expirySeconds);
+            $qrOrderId = $qrResult['order_id'];
+            $qrCodeUrl = $qrResult['qr_code_url'];
+        } catch (\Throwable $e) {
+            Log::warning('[MidtransService] createInvoice: QRIS langsung gagal (lanjut pakai Snap saja) — ' . $e->getMessage(), [
+                'ref' => $referenceId,
+            ]);
+        }
+
+        // 2) Snap — WAJIB berhasil. Ini yang jadi link "bayar dengan metode
+        //    lain" (Bank Transfer/VA, e-wallet, Indomaret/Alfamart, kartu
+        //    kredit, dst — apapun yang aktif di akun). Kalau QRIS di akun
+        //    ini SUDAH aktif, Snap juga otomatis nampilin QRIS sebagai salah
+        //    satu pilihan di halamannya — jadi begitu QRIS di-approve
+        //    Midtrans nanti, otomatis muncul di sini juga tanpa ubah kode.
+        $snapResult = $this->createSnapTransaction($orderId, $amount, $customerDetails, $itemDetails, $expirySeconds);
+
+        return [
+            'id'          => $orderId,           // order_id Snap — dipakai sebagai payment_reference_id utama
+            'qr_order_id' => $qrOrderId,          // order_id QR terpisah (null kalau QRIS gagal/belum aktif)
+            'invoice_url' => $snapResult['redirect_url'],
+            'qr_code_url' => $qrCodeUrl,
+            'expiry_date' => now()->addSeconds($expirySeconds)->toIso8601String(),
+            'amount'      => $amount,
+        ];
+    }
+
+    /**
+     * Charge QRIS langsung lewat Core API (best-effort — lihat createInvoice()).
+     * Dipisah jadi method sendiri supaya gampang di-try/catch dari caller
+     * tanpa bikin seluruh createInvoice() ikut gagal.
+     *
+     * @return array{order_id: string, qr_code_url: string}
+     */
+    private function chargeQris(string $orderId, float $amount, array $customerDetails, array $itemDetails, int $expirySeconds): array
+    {
         $payload = [
             'payment_type' => 'qris',
             'transaction_details' => [
                 'order_id'     => $orderId,
                 'gross_amount' => (int) round($amount),
             ],
-            'item_details' => [[
-                'id'       => 'subscription',
-                'price'    => (int) round($amount),
-                'quantity' => 1,
-                'name'     => substr($description, 0, 50),
-            ]],
-            // array_filter buang field kosong — Midtrans juga rewel soal
-            // field opsional yang dikirim null/kosong (sama kayak Xendit).
-            'customer_details' => array_filter([
-                'first_name' => $student->name,
-                'email'      => $user?->email,
-                'phone'      => $student->phone_number ? (string) $student->phone_number : null,
-            ], fn ($value) => $value !== null && $value !== ''),
+            'item_details'      => $itemDetails,
+            'customer_details'  => $customerDetails,
             'qris' => [
                 'acquirer' => 'gopay',
             ],
-            // Batas waktu bayar — begitu lewat, Midtrans otomatis menandai
-            // transaksi ini 'expire', dan itu yang dideteksi oleh
-            // polling/webhook untuk menandai pembayaran gagal/kedaluwarsa
-            // di sistem kita (lihat markExpired()).
             'custom_expiry' => [
                 'expiry_duration' => $expirySeconds,
                 'unit'            => 'second',
@@ -137,16 +185,15 @@ class MidtransService
             ->post("{$this->baseUrl}/v2/charge", $payload);
 
         if ($response->failed()) {
-            Log::error('[MidtransService] createInvoice failed', [
+            Log::error('[MidtransService] chargeQris failed', [
                 'status' => $response->status(),
                 'body'   => $response->body(),
-                'ref'    => $referenceId,
+                'ref'    => $orderId,
             ]);
             throw new \RuntimeException('Failed to create Midtrans QRIS transaction: ' . $response->body());
         }
 
         $data = $response->json();
-
         $qrAction = collect($data['actions'] ?? [])->firstWhere('name', 'generate-qr-code');
 
         // Midtrans kadang balikin HTTP 200/201 padahal transaksinya SEBENARNYA
@@ -154,38 +201,103 @@ class MidtransService
         // status_code/status_message DI DALAM body respons, BUKAN dari kode
         // status HTTP-nya. Contoh paling sering: channel QRIS belum diaktifkan
         // di akun (khususnya akun PRODUCTION — SANDBOX defaultnya semua
-        // channel aktif). Kalau kejadian, $response->failed() di atas TIDAK
-        // akan pernah true, jadi kalau di sini qr_code_url ujung²nya kosong,
-        // treat sebagai error juga — supaya request ini gagal dengan jelas
-        // (dan Revenue-nya di-rollback oleh caller), bukan diam-diam balikin
-        // invoice "sukses" tanpa QR sama sekali.
+        // channel aktif).
         if (empty($qrAction['url'] ?? null)) {
-            Log::error('[MidtransService] createInvoice: HTTP sukses tapi tidak ada QR code di respons (kemungkinan channel QRIS belum aktif di akun ini)', [
+            Log::warning('[MidtransService] chargeQris: HTTP sukses tapi tidak ada QR code di respons (kemungkinan channel QRIS belum aktif di akun ini)', [
                 'status_code'    => $data['status_code'] ?? null,
                 'status_message' => $data['status_message'] ?? null,
                 'body'           => $response->body(),
-                'ref'            => $referenceId,
+                'ref'            => $orderId,
             ]);
             throw new \RuntimeException(
                 'Midtrans tidak mengembalikan kode QRIS (status: ' . ($data['status_code'] ?? '?') . ' — '
-                . ($data['status_message'] ?? 'pesan tidak diketahui')
-                . '). Kemungkinan besar channel QRIS belum diaktifkan di akun Midtrans ini.'
+                . ($data['status_message'] ?? 'pesan tidak diketahui') . ').'
             );
         }
 
         return [
-            'id'          => $data['order_id'] ?? $orderId,
-            // Core API QRIS gak punya halaman checkout ter-hosted kayak
-            // Xendit invoice_url — QR-nya ditampilkan langsung di modal kita.
-            'invoice_url' => null,
+            'order_id'    => $data['order_id'] ?? $orderId,
             'qr_code_url' => $qrAction['url'],
-            // Midtrans gak selalu balikin field expiry eksplisit di response
-            // charge — hitung sendiri dari custom_expiry yang kita minta,
-            // supaya deterministic & konsisten sama yang dipakai di
-            // sweepExpiredPending()/getPaymentStatus().
-            'expiry_date' => now()->addSeconds($expirySeconds)->toIso8601String(),
-            'amount'      => (float) ($data['gross_amount'] ?? $amount),
         ];
+    }
+
+    /**
+     * Bikin transaksi Snap — halaman hosted Midtrans yang nampilin SEMUA
+     * metode pembayaran yang aktif di akun (Bank Transfer/VA, e-wallet,
+     * retail/Indomaret-Alfamart, kartu kredit, dst). Ini yang jadi
+     * `invoice_url` / link "bayar dengan metode lain" di frontend.
+     *
+     * @return array{token: string, redirect_url: string}
+     */
+    private function createSnapTransaction(string $orderId, float $amount, array $customerDetails, array $itemDetails, int $expirySeconds): array
+    {
+        $payload = [
+            'transaction_details' => [
+                'order_id'     => $orderId,
+                'gross_amount' => (int) round($amount),
+            ],
+            'item_details'     => $itemDetails,
+            'customer_details' => $customerDetails,
+            'expiry' => [
+                'duration' => $expirySeconds,
+                'unit'     => 'second',
+            ],
+        ];
+
+        $response = Http::withBasicAuth($this->serverKey, '')
+            ->withHeaders(['Accept' => 'application/json'])
+            ->timeout(30)
+            ->post("{$this->snapBaseUrl}/snap/v1/transactions", $payload);
+
+        if ($response->failed()) {
+            Log::error('[MidtransService] createSnapTransaction failed', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+                'ref'    => $orderId,
+            ]);
+            throw new \RuntimeException('Failed to create Midtrans Snap transaction: ' . $response->body());
+        }
+
+        $data = $response->json();
+
+        if (empty($data['redirect_url'] ?? null)) {
+            Log::error('[MidtransService] createSnapTransaction: tidak ada redirect_url di respons', [
+                'body' => $response->body(),
+                'ref'  => $orderId,
+            ]);
+            throw new \RuntimeException('Midtrans Snap tidak mengembalikan redirect_url: ' . $response->body());
+        }
+
+        return [
+            'token'        => $data['token'] ?? '',
+            'redirect_url' => $data['redirect_url'],
+        ];
+    }
+
+    /**
+     * Cek status gabungan QR + Snap untuk satu Revenue — dipakai endpoint
+     * polling (`SubscriptionController::getPaymentStatus`). Siswa bisa bayar
+     * lewat SALAH SATU (QR langsung ATAU link Snap "metode lain"), jadi kalau
+     * salah satunya PAID, invoice ini dianggap lunas.
+     */
+    public function getCombinedStatus(Revenue $revenue): array
+    {
+        if ($revenue->payment_status === 'paid') {
+            return ['id' => $revenue->payment_reference_id, 'status' => 'PAID', 'paid' => true];
+        }
+
+        if ($revenue->qr_payment_reference_id) {
+            try {
+                $qrStatus = $this->getInvoiceStatus($revenue->qr_payment_reference_id);
+                if ($qrStatus['paid']) {
+                    return $qrStatus;
+                }
+            } catch (\Throwable $e) {
+                Log::warning('[MidtransService] getCombinedStatus: gagal cek status QR — ' . $e->getMessage());
+            }
+        }
+
+        return $this->getInvoiceStatus($revenue->payment_reference_id);
     }
 
     /**
@@ -289,7 +401,8 @@ class MidtransService
 
         $revenue = Revenue::where(function ($q) use ($invoiceId, $externalId) {
             if ($invoiceId) {
-                $q->where('payment_reference_id', $invoiceId);
+                $q->where('payment_reference_id', $invoiceId)
+                  ->orWhere('qr_payment_reference_id', $invoiceId);
             }
             if ($externalId) {
                 $q->orWhere('external_id', $externalId);
@@ -369,7 +482,8 @@ class MidtransService
 
         $revenue = Revenue::where(function ($q) use ($invoiceId, $externalId) {
             if ($invoiceId) {
-                $q->where('payment_reference_id', $invoiceId);
+                $q->where('payment_reference_id', $invoiceId)
+                  ->orWhere('qr_payment_reference_id', $invoiceId);
             }
             if ($externalId) {
                 $q->orWhere('external_id', $externalId);
@@ -382,6 +496,23 @@ class MidtransService
         }
 
         if ($revenue->payment_status !== 'pending') {
+            return true;
+        }
+
+        // Yang expired cuma transaksi QR-nya (bukan Snap/order_id utama) —
+        // JANGAN gugurkan seluruh invoice, karena siswa masih bisa
+        // menyelesaikan pembayaran lewat link Snap ("metode lain"). Cukup
+        // hapus opsi QR-nya dari tampilan.
+        $isOnlyQrExpiring = $invoiceId
+            && $revenue->qr_payment_reference_id === $invoiceId
+            && $revenue->payment_reference_id !== $invoiceId;
+
+        if ($isOnlyQrExpiring) {
+            $revenue->update([
+                'qr_payment_reference_id' => null,
+                'qr_code_url'             => null,
+            ]);
+            Log::info("[MidtransService] QR-only expired for revenue={$revenue->id}, Snap masih berlaku.");
             return true;
         }
 
@@ -436,6 +567,17 @@ class MidtransService
 
         foreach ($pending as $revenue) {
             try {
+                // Cek transaksi QR dulu (kalau ada) — siswa mungkin bayar
+                // lewat QR langsung, bukan lewat link Snap.
+                if ($revenue->qr_payment_reference_id) {
+                    $qrStatus = $this->getInvoiceStatus($revenue->qr_payment_reference_id);
+                    if ($qrStatus['paid']) {
+                        $this->confirmPayment($revenue->qr_payment_reference_id, $revenue->external_id);
+                        $saved++;
+                        continue;
+                    }
+                }
+
                 $status = $this->getInvoiceStatus($revenue->payment_reference_id);
 
                 if ($status['paid']) {
@@ -447,6 +589,12 @@ class MidtransService
                 Log::warning("[MidtransService] sweepExpiredPending: failed to check invoice for revenue #{$revenue->id}: " . $e->getMessage());
             }
 
+            // Bersihin opsi QR dulu (kalau ada) sebelum menggugurkan invoice
+            // utamanya — markExpired() otomatis tahu bedain "cuma QR yang
+            // expired" vs "invoice utama yang expired" lewat parameter ini.
+            if ($revenue->qr_payment_reference_id) {
+                $this->markExpired($revenue->qr_payment_reference_id, null);
+            }
             $this->markExpired($revenue->payment_reference_id, $revenue->external_id);
             $expired++;
         }

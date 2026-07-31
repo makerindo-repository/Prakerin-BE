@@ -160,7 +160,7 @@ class RevenueController extends Controller
         }
 
         try {
-            $status = $this->paymentGateway->getInvoiceStatus($revenue->payment_reference_id);
+            $status = $this->paymentGateway->getCombinedStatus($revenue);
         } catch (\Throwable $e) {
             return response()->json([
                 'errors' => 'Gagal menghubungi Midtrans.',
@@ -169,7 +169,7 @@ class RevenueController extends Controller
         }
 
         if ($status['paid']) {
-            $this->paymentGateway->confirmPayment($revenue->payment_reference_id, $revenue->external_id);
+            $this->paymentGateway->confirmPayment($status['id'] ?? $revenue->payment_reference_id, $revenue->external_id);
 
             return response()->json([
                 'message' => 'Status berhasil disinkronkan — pembayaran dikonfirmasi lunas.',

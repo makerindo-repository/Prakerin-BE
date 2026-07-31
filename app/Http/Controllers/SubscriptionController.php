@@ -209,10 +209,11 @@ class SubscriptionController extends Controller
         // WAJIB disimpan (bukan cuma dikirim di response sekali ini) supaya bisa
         // di-resume nanti kalau user tutup modal sebelum bayar.
         $revenue->update([
-            'payment_reference_id' => $invoice['id'],
-            'invoice_url'       => $invoice['invoice_url'],
-            'qr_code_url'       => $invoice['qr_code_url'],
-            'expiry_date'       => $invoice['expiry_date'] ?? null,
+            'payment_reference_id'    => $invoice['id'],
+            'qr_payment_reference_id' => $invoice['qr_order_id'] ?? null,
+            'invoice_url'             => $invoice['invoice_url'],
+            'qr_code_url'             => $invoice['qr_code_url'],
+            'expiry_date'             => $invoice['expiry_date'] ?? null,
         ]);
         $subscription->update(['payment_reference_id' => $invoice['id']]);
 
@@ -239,8 +240,11 @@ class SubscriptionController extends Controller
         $authUser = $request->user();
         $isAdmin  = $authUser?->role === 'super_admin';
 
+        $revenue = Revenue::where('payment_reference_id', $invoiceId)
+            ->orWhere('qr_payment_reference_id', $invoiceId)
+            ->first();
+
         if (!$isAdmin) {
-            $revenue = Revenue::where('payment_reference_id', $invoiceId)->first();
             $isOwner = $revenue && $authUser?->student?->id === $revenue->user_id;
 
             if (!$isOwner) {
@@ -250,19 +254,26 @@ class SubscriptionController extends Controller
             }
         }
 
+        if (!$revenue) {
+            return response()->json(['errors' => 'Invoice tidak ditemukan.'], 404);
+        }
+
         try {
-            $status = $this->paymentGateway->getInvoiceStatus($invoiceId);
+            // Cek KEDUA transaksi (QR + Snap) sekaligus — siswa bisa bayar
+            // lewat salah satu, bukan cuma yang order_id-nya persis dikirim
+            // di URL ini.
+            $status = $this->paymentGateway->getCombinedStatus($revenue);
         } catch (\Throwable $e) {
             return response()->json(['errors' => 'Gagal memeriksa status pembayaran.'], 502);
         }
 
-        // Fallback kalau webhook Xendit belum/gagal nyampe: begitu polling
+        // Fallback kalau webhook Midtrans belum/gagal nyampe: begitu polling
         // ini lihat status-nya sudah final (PAID/SETTLED atau
         // EXPIRED/FAILED), langsung jalankan proses yang sama seperti yang
         // dilakukan webhook. Idempotent, jadi aman kalau ternyata webhook-nya
         // nyampe duluan atau menyusul.
         if ($status['paid']) {
-            $this->paymentGateway->confirmPayment($invoiceId);
+            $this->paymentGateway->confirmPayment($status['id'] ?? $invoiceId, $revenue->external_id);
         } elseif (in_array($status['status'], ['EXPIRED', 'FAILED'])) {
             $this->paymentGateway->markExpired($invoiceId);
         }
