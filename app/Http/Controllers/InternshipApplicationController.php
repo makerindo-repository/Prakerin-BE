@@ -280,14 +280,29 @@ class InternshipApplicationController extends Controller
     public function updateTestPassed($idInternshipApplication, $idTest)
     {
         $internshipApplication = InternshipApplication::find($idInternshipApplication);
-        $testIsPassed = $internshipApplication->test()->where('test_id', $idTest)->first()->pivot->is_passed;
+        if (!$internshipApplication) {
+            throw new HttpResponseException(response()->json([
+                'errors' => 'Internship application not found.'
+            ], 404));
+        }
 
-        $internshipApplication->test()->updateExistingPivot($idTest, ['is_passed' => !$testIsPassed]);
+        $testItem = $internshipApplication->test()->where('test_id', $idTest)->first();
+        if (!$testItem) {
+            throw new HttpResponseException(response()->json([
+                'errors' => 'Test not found for this application.'
+            ], 404));
+        }
+
+        $testIsPassed = request()->has('is_passed')
+            ? request()->boolean('is_passed')
+            : !$testItem->pivot->is_passed;
+
+        $internshipApplication->test()->updateExistingPivot($idTest, ['is_passed' => $testIsPassed]);
         Log::info($internshipApplication->test);
 
         return response()->json([
             'data' => true
-        ], 201);
+        ], 200);
     }
 
 

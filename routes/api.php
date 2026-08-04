@@ -350,7 +350,8 @@ Route::prefix('v1')->group(function () {
             });
 
             Route::middleware('abilities:company-access')->group(function () {
-                Route::patch('/{idInternshipApplication}/{idTest}', 'updateTestPassed');
+                Route::patch('/{idInternshipApplication}/tests/{idTest}', 'updateTestPassed');
+                Route::patch('/{idInternshipApplication}/test/{idTest}', 'updateTestPassed');
                 Route::get('/{id}', 'show');
                 Route::patch('/{id}', 'update');
                 Route::delete('/{id}', 'destroy');
