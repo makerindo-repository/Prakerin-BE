@@ -190,7 +190,7 @@ class UserController extends Controller
                     $q->where('name', 'like', "%$search%");
                 });
             })
-            ->when($user?->tokenCan('admin-access'), function ($query) use ($role, $request, $search) {
+            ->when($user?->tokenCan('admin-access'), function ($query) use ($role, $request, $search, $isSchool) {
                 $schoolId = $request->query('school_id');
                 $schoolType = $request->query('school_type'); // 'school' or 'university'
                 $isVerified = $request->has('is_verified')
@@ -198,9 +198,15 @@ class UserController extends Controller
                     : null;
 
                 $query->with(['student.major', 'school', 'company']);
-                $query->when($role, function ($query, $role) {
+                $query->when($role, function ($query, $role) use ($isSchool) {
                     return $query->where('role', $role)
-                        ->when($role === 'school', fn($q) => $q->whereHas('school'))
+                        ->when($role === 'school', function($q) use ($isSchool) {
+                            $q->whereHas('school', function ($sq) use ($isSchool) {
+                                if ($isSchool !== null) {
+                                    $sq->where('type', $isSchool ? 'school' : 'university');
+                                }
+                            });
+                        })
                         ->when($role === 'company', fn($q) => $q->whereHas('company'))
                         ->when($role === 'student', fn($q) => $q->whereHas('student'));
                 });
