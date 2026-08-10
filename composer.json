@@ -20,6 +20,7 @@
         "laravel/tinker": "^2.10.1",
         "laravolt/indonesia": "^0.38.0",
         "mallardduck/blade-lucide-icons": "^1.23",
+        "phpoffice/phpspreadsheet": "^5.9",
         "simplesoftwareio/simple-qrcode": "^4.2",
         "spatie/laravel-permission": "^8.3"
     },

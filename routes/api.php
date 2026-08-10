@@ -46,6 +46,7 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\Admin\SubscriptionAdminController;
 use App\Http\Controllers\Admin\RevenueController;
+use App\Http\Controllers\Admin\SchoolImportController;
 use Illuminate\Support\Facades\Route;
 
 // Route::get('/docs', function () {
@@ -724,6 +725,8 @@ Route::prefix('v1')->group(function () {
             Route::get('/revenue/dashboard', [RevenueController::class, 'dashboard']);
             Route::get('/revenue/accounts', [RevenueController::class, 'accounts']);
             Route::post('/revenue/{id}/sync', [RevenueController::class, 'syncStatus']);
+
+            Route::post('/schools/import', [SchoolImportController::class, 'import']);
         });
 });
 
