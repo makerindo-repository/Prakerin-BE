@@ -26,6 +26,9 @@ class SchoolImportController extends Controller
         // Dipakai HANYA sebagai fallback kalau kolom address di atas kosong/gak ada.
         'wilayah' => ['kode lldikti', 'wilayah'],
         'provinsi' => ['provinsi (cakupan wilayah)', 'provinsi'],
+        // WAJIB — baris yang statusnya bukan persis "Kode LLDikti resmi" di-skip,
+        // tidak ikut diimpor sama sekali (lihat filter di bawah).
+        'sumber' => ['sumber data provinsi', 'status', 'sumber'],
     ];
 
     // POST /api/v1/admin/schools/import
@@ -66,9 +69,16 @@ class SchoolImportController extends Controller
             ], 422);
         }
 
+        if (!isset($columnMap['sumber'])) {
+            return response()->json([
+                'message' => 'Kolom status sumber data (mis. "Sumber Data Provinsi") tidak ditemukan di file. Kolom ini WAJIB ada — cuma baris berstatus "Kode LLDikti resmi" yang boleh diimpor.',
+            ], 422);
+        }
+
         $created = 0;
         $skippedExisting = 0;
         $skippedInvalid = 0;
+        $skippedNotVerified = 0;
         $failed = 0;
         $failedDetails = [];
 
@@ -76,6 +86,17 @@ class SchoolImportController extends Controller
             $name = trim((string) ($row[$columnMap['name']] ?? ''));
             if ($name === '') {
                 $skippedInvalid++;
+                continue;
+            }
+
+            // FILTER WAJIB: cuma baris dengan status persis "Kode LLDikti
+            // resmi" yang boleh diimpor jadi data master — baris
+            // "Perkiraan dari nama kampus" atau "Tidak diketahui" DILEWATI,
+            // supaya data master cuma isi institusi yang sudah terverifikasi
+            // official, bukan hasil tebakan.
+            $sumber = mb_strtolower(trim((string) ($row[$columnMap['sumber']] ?? '')));
+            if ($sumber !== 'kode lldikti resmi') {
+                $skippedNotVerified++;
                 continue;
             }
 
@@ -129,6 +150,14 @@ class SchoolImportController extends Controller
                     $school->user_id = $user->id;
                     $school->type = $type;
                     $school->is_verified = false; // placeholder, belum diklaim institusi aslinya
+                    // Simpan Kode LLDikti (mis. "Wilayah 4") sebagai jejak audit —
+                    // inilah bukti kenapa baris ini lolos filter "resmi" saat
+                    // diimpor. Bukan NPSN asli (itu istilah utk sekolah/SMK),
+                    // tapi kolom ini yang paling dekat kegunaannya untuk
+                    // universitas.
+                    $school->npsn = isset($columnMap['wilayah'])
+                        ? trim((string) ($row[$columnMap['wilayah']] ?? '')) ?: null
+                        : null;
                     $school->save();
 
                     $user->syncSpatieRole($type === 'university' ? 'university' : 'school');
@@ -145,13 +174,14 @@ class SchoolImportController extends Controller
         }
 
         return response()->json([
-            'message' => "Import selesai. Dibuat: {$created}, dilewati (sudah ada): {$skippedExisting}, dilewati (data tidak valid): {$skippedInvalid}, gagal: {$failed}.",
+            'message' => "Import selesai. Dibuat: {$created}, dilewati (sudah ada): {$skippedExisting}, dilewati (bukan Kode LLDikti resmi): {$skippedNotVerified}, dilewati (data tidak valid): {$skippedInvalid}, gagal: {$failed}.",
             'summary' => [
-                'total_rows'        => count($rows),
-                'created'           => $created,
-                'skipped_existing'  => $skippedExisting,
-                'skipped_invalid'   => $skippedInvalid,
-                'failed'            => $failed,
+                'total_rows'          => count($rows),
+                'created'             => $created,
+                'skipped_existing'    => $skippedExisting,
+                'skipped_not_verified'=> $skippedNotVerified,
+                'skipped_invalid'     => $skippedInvalid,
+                'failed'              => $failed,
             ],
             'failed_details' => $failedDetails,
         ]);
