@@ -147,12 +147,6 @@ class SchoolImportController extends Controller
             ], 422);
         }
 
-        if (!isset($columnMap['sumber'])) {
-            return response()->json([
-                'message' => 'Kolom "Sumber Data Provinsi" tidak ditemukan. Kolom ini wajib ada.',
-            ], 422);
-        }
-
         /*
          * Statistik.
          */
@@ -189,25 +183,6 @@ class SchoolImportController extends Controller
                 continue;
             }
 
-            /*
-             * HANYA DATA RESMI.
-             *
-             * Excel kita menggunakan:
-             *
-             * Kode LLDikti resmi
-             */
-            $sumber = mb_strtolower(
-                trim(
-                    (string) (
-                        $row[$columnMap['sumber']] ?? ''
-                    )
-                )
-            );
-
-            if ($sumber !== 'kode lldikti resmi') {
-                $skippedNotVerified++;
-                continue;
-            }
 
             /*
              * Email.
