@@ -34,35 +34,35 @@ class SchoolImportController extends Controller
         'name' => [
             'nama perguruan tinggi',
             'nama sekolah',
-            'Nama',
+            'nama',
         ],
 
         'email' => [
-            'Email',
+            'email',
         ],
 
         'password' => [
-            'Password',
+            'password',
         ],
 
         'address' => [
             'alamat_diperbaiki',
             'alamat diperbaiki',
-            'Alamat',
+            'alamat',
         ],
 
         'wilayah' => [
-            'Kode LLDikti',
+            'kode lldikti',
             'wilayah',
         ],
 
         'provinsi' => [
-            'Provinsi (cakupan wilayah)',
-            'Provinsi',
+            'provinsi (cakupan wilayah)',
+            'provinsi',
         ],
 
         'photo' => [
-            'Foto',
+            'foto',
             'photo',
             'foto profil',
             'photo profile',
@@ -70,7 +70,7 @@ class SchoolImportController extends Controller
         ],
 
         'photo_search_url' => [
-            'Foto Search URL',
+            'foto_search_url',
             'foto search url',
             'photo search url',
         ],
