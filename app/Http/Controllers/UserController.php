@@ -1570,12 +1570,12 @@ class UserController extends Controller
             ], 400);
         }
 
-        // Grab next 5 universities with no logo
+        // Grab next university with no logo
         $pending = User::where('role', 'school')
             ->whereNull('photo_profile')
             ->whereHas('school', fn ($q) => $q->where('type', 'university'))
             ->with('school')
-            ->limit(5)
+            ->limit(1)
             ->get();
 
         if ($pending->isEmpty()) {
