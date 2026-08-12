@@ -282,6 +282,12 @@ Route::prefix('v1')->group(function () {
                     Route::post('/student/import', 'importStudent');
                 });
 
+                // AI University Logo Fetcher — admin only, temporary feature
+                Route::middleware('abilities:admin-access')->group(function () {
+                    Route::post('/ai-fetch-logos', 'aiFetchLogos');
+                    Route::get('/ai-fetch-logos/status', 'aiFetchLogosStatus');
+                });
+
                 Route::middleware('ability:admin-access,school-access')->group(function () {
                     Route::post('/', 'store');
                 });

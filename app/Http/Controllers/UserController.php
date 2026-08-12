@@ -7,6 +7,7 @@ use App\Http\Requests\User\UserLoginRequest;
 use App\Http\Requests\User\UserRegisterRequest;
 use App\Http\Requests\User\UserUpdateProfileRequest;
 use App\Http\Requests\User\UserUpdateRequest;
+use App\Jobs\FetchUniversityLogo;
 use App\Models\Company;
 use App\Models\Mou;
 use App\Models\School;
@@ -1548,6 +1549,90 @@ class UserController extends Controller
                 'whatsapp_number'                => $user->whatsapp_number,
                 'profile_phone_number'           => $profilePhone,
             ],
+        ]);
+    }
+
+    // ── AI Logo Fetcher ───────────────────────────────────────────────────────
+
+    /**
+     * Queue up to 40 logo-fetch jobs for universities missing a photo_profile.
+     * Admin-only. Each click dispatches one batch of 40 with a 2-second stagger
+     * to stay within Gemini rate limits.
+     *
+     * POST /api/v1/users/ai-fetch-logos
+     */
+    public function aiFetchLogos()
+    {
+        if (!config('gemini.api_key')) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gemini API Key belum dikonfigurasi. Atur dulu di menu Pengaturan.'
+            ], 400);
+        }
+
+        // Find universities with no logo yet
+        $pending = User::where('role', 'school')
+            ->whereNull('photo_profile')
+            ->whereHas('school', fn ($q) => $q->where('type', 'university'))
+            ->with('school')
+            ->limit(40)
+            ->get();
+
+        if ($pending->isEmpty()) {
+            return response()->json([
+                'status'  => 'done',
+                'message' => 'Semua universitas sudah memiliki logo! Tidak ada yang perlu diproses.',
+                'queued'  => 0,
+                'remaining' => 0,
+            ]);
+        }
+
+        $total = User::where('role', 'school')
+            ->whereNull('photo_profile')
+            ->whereHas('school', fn ($q) => $q->where('type', 'university'))
+            ->count();
+
+        $queued = 0;
+        foreach ($pending as $i => $user) {
+            $universityName = $user->school->name ?? $user->username;
+            FetchUniversityLogo::dispatch($user->id, $universityName)
+                ->delay(now()->addSeconds($i * 2));
+            $queued++;
+        }
+
+        $remaining = max(0, $total - $queued);
+
+        return response()->json([
+            'status'    => 'queued',
+            'message'   => "Berhasil mengantrekan {$queued} job AI logo. Sisa {$remaining} universitas belum diproses. Klik lagi setelah batch ini selesai.",
+            'queued'    => $queued,
+            'remaining' => $remaining,
+        ]);
+    }
+
+    /**
+     * Return current logo-fetch progress counts.
+     * No migration needed — tracked directly from the users table.
+     *
+     * GET /api/v1/users/ai-fetch-logos/status
+     */
+    public function aiFetchLogosStatus()
+    {
+        $totalUniversities = User::where('role', 'school')
+            ->whereHas('school', fn ($q) => $q->where('type', 'university'))
+            ->count();
+
+        $pending = User::where('role', 'school')
+            ->whereNull('photo_profile')
+            ->whereHas('school', fn ($q) => $q->where('type', 'university'))
+            ->count();
+
+        $done = $totalUniversities - $pending;
+
+        return response()->json([
+            'total'   => $totalUniversities,
+            'done'    => $done,
+            'pending' => $pending,
         ]);
     }
 }
