@@ -1555,9 +1555,9 @@ class UserController extends Controller
     // ── AI Logo Fetcher ───────────────────────────────────────────────────────
 
     /**
-     * Queue up to 40 logo-fetch jobs for universities missing a photo_profile.
-     * Admin-only. Each click dispatches one batch of 40 with a 2-second stagger
-     * to stay within Gemini rate limits.
+     * Inline logo-fetch for universities missing a photo_profile.
+     * Processes 5 per request (sync-safe, no queue needed).
+     * Each click: Gemini finds URL → download → save → mark verified.
      *
      * POST /api/v1/users/ai-fetch-logos
      */
@@ -1570,44 +1570,143 @@ class UserController extends Controller
             ], 400);
         }
 
-        // Find universities with no logo yet
+        // Grab next 5 universities with no logo
         $pending = User::where('role', 'school')
             ->whereNull('photo_profile')
             ->whereHas('school', fn ($q) => $q->where('type', 'university'))
             ->with('school')
-            ->limit(40)
+            ->limit(5)
             ->get();
 
         if ($pending->isEmpty()) {
             return response()->json([
-                'status'  => 'done',
-                'message' => 'Semua universitas sudah memiliki logo! Tidak ada yang perlu diproses.',
-                'queued'  => 0,
+                'status'    => 'done',
+                'message'   => 'Semua universitas sudah memiliki logo!',
+                'processed' => 0,
+                'succeeded' => 0,
                 'remaining' => 0,
+                'results'   => [],
             ]);
         }
 
-        $total = User::where('role', 'school')
+        $totalRemaining = User::where('role', 'school')
             ->whereNull('photo_profile')
             ->whereHas('school', fn ($q) => $q->where('type', 'university'))
             ->count();
 
-        $queued = 0;
-        foreach ($pending as $i => $user) {
-            $universityName = $user->school->name ?? $user->username;
-            FetchUniversityLogo::dispatch($user->id, $universityName)
-                ->delay(now()->addSeconds($i * 2));
-            $queued++;
+        $results   = [];
+        $succeeded = 0;
+
+        foreach ($pending as $user) {
+            $name   = $user->school->name ?? $user->username;
+            $result = $this->fetchAndSaveLogo($user, $name);
+            $results[] = $result;
+            if ($result['success']) {
+                $succeeded++;
+            }
         }
 
-        $remaining = max(0, $total - $queued);
+        $remainingAfter = max(0, $totalRemaining - count($pending));
 
         return response()->json([
-            'status'    => 'queued',
-            'message'   => "Berhasil mengantrekan {$queued} job AI logo. Sisa {$remaining} universitas belum diproses. Klik lagi setelah batch ini selesai.",
-            'queued'    => $queued,
-            'remaining' => $remaining,
+            'status'    => 'processed',
+            'message'   => "Diproses: " . count($pending) . ", Berhasil: {$succeeded}. Sisa: {$remainingAfter}. Klik lagi untuk batch berikutnya.",
+            'processed' => count($pending),
+            'succeeded' => $succeeded,
+            'remaining' => $remainingAfter,
+            'results'   => $results,
         ]);
+    }
+
+    /**
+     * Process one university: ask Gemini, download, save, update DB.
+     * Returns ['name', 'success', 'reason'].
+     */
+    private function fetchAndSaveLogo(User $user, string $name): array
+    {
+        try {
+            // 1. Ask Gemini
+            $prompt = <<<PROMPT
+Find the official logo image of "{$name}" (an Indonesian university/college).
+Return ONLY a direct image URL ending in .png, .jpg, .jpeg, .svg, or .webp.
+The URL must point directly to the image file, not a web page.
+If you are not confident or cannot find a reliable URL, return exactly: NONE
+No explanation. No extra text. Just the URL or NONE.
+PROMPT;
+
+            $result = \Gemini\Laravel\Facades\Gemini::generativeModel('gemini-3.1-flash-lite')
+                ->generateContent($prompt);
+
+            $raw = trim($result->text());
+
+            if (empty($raw) || strtoupper($raw) === 'NONE') {
+                return ['name' => $name, 'success' => false, 'reason' => 'Gemini returned NONE'];
+            }
+
+            if (!filter_var($raw, FILTER_VALIDATE_URL)) {
+                return ['name' => $name, 'success' => false, 'reason' => "Non-URL from Gemini: {$raw}"];
+            }
+
+            $lower = strtolower(parse_url($raw, PHP_URL_PATH) ?? '');
+            if (!preg_match('/\.(png|jpg|jpeg|svg|webp)/i', $lower)) {
+                return ['name' => $name, 'success' => false, 'reason' => "No image extension in URL: {$raw}"];
+            }
+
+            // 2. Download
+            $response = \Illuminate\Support\Facades\Http::timeout(10)
+                ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; PrakerinBot/1.0)'])
+                ->get($raw);
+
+            if (!$response->successful()) {
+                return ['name' => $name, 'success' => false, 'reason' => "Download failed HTTP {$response->status()}"];
+            }
+
+            $body        = $response->body();
+            $contentType = $response->header('Content-Type') ?? '';
+
+            if (strlen($body) < 1024) {
+                return ['name' => $name, 'success' => false, 'reason' => 'Image too small (<1KB)'];
+            }
+
+            if (!str_contains($contentType, 'image/')) {
+                return ['name' => $name, 'success' => false, 'reason' => "Non-image content-type: {$contentType}"];
+            }
+
+            // 3. Determine extension
+            $ext = null;
+            if (preg_match('/\.(png|jpg|jpeg|svg|webp)$/i', $lower, $m)) {
+                $ext = $m[1];
+            } else {
+                $mimeMap = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/svg+xml' => 'svg', 'image/webp' => 'webp'];
+                foreach ($mimeMap as $mime => $e) {
+                    if (str_contains($contentType, $mime)) { $ext = $e; break; }
+                }
+            }
+
+            if (!$ext) {
+                return ['name' => $name, 'success' => false, 'reason' => 'Cannot determine extension'];
+            }
+
+            // 4. Save
+            $filename = 'ai_logo_' . $user->id . '.' . $ext;
+            Storage::disk('public')->put('photo-profile/' . $filename, $body);
+
+            // 5. Update DB
+            $user->photo_profile = $filename;
+            $user->save();
+
+            if ($user->school) {
+                $user->school->is_verified = true;
+                $user->school->save();
+            }
+
+            \Log::info("[AiFetchLogos] ✅ {$name} → {$filename}");
+            return ['name' => $name, 'success' => true, 'reason' => $filename];
+
+        } catch (\Exception $e) {
+            \Log::error("[AiFetchLogos] ❌ {$name}: " . $e->getMessage());
+            return ['name' => $name, 'success' => false, 'reason' => $e->getMessage()];
+        }
     }
 
     /**
