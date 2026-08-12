@@ -1618,10 +1618,6 @@ class UserController extends Controller
         ]);
     }
 
-    /**
-     * Process one university: ask Gemini, download, save, update DB.
-     * Returns ['name', 'success', 'reason'].
-     */
     private function fetchAndSaveLogo(User $user, string $name): array
     {
         try {
@@ -1640,16 +1636,22 @@ PROMPT;
             $raw = trim($result->text());
 
             if (empty($raw) || strtoupper($raw) === 'NONE') {
-                return ['name' => $name, 'success' => false, 'reason' => 'Gemini returned NONE'];
+                $reason = 'Gemini returned NONE';
+                $this->saveFailedAttempt($user, $reason);
+                return ['name' => $name, 'success' => false, 'reason' => $reason];
             }
 
             if (!filter_var($raw, FILTER_VALIDATE_URL)) {
-                return ['name' => $name, 'success' => false, 'reason' => "Non-URL from Gemini: {$raw}"];
+                $reason = "Non-URL from Gemini: {$raw}";
+                $this->saveFailedAttempt($user, $reason);
+                return ['name' => $name, 'success' => false, 'reason' => $reason];
             }
 
             $lower = strtolower(parse_url($raw, PHP_URL_PATH) ?? '');
             if (!preg_match('/\.(png|jpg|jpeg|svg|webp)/i', $lower)) {
-                return ['name' => $name, 'success' => false, 'reason' => "No image extension in URL: {$raw}"];
+                $reason = "No image extension in URL: {$raw}";
+                $this->saveFailedAttempt($user, $reason);
+                return ['name' => $name, 'success' => false, 'reason' => $reason];
             }
 
             // 2. Download
@@ -1658,18 +1660,24 @@ PROMPT;
                 ->get($raw);
 
             if (!$response->successful()) {
-                return ['name' => $name, 'success' => false, 'reason' => "Download failed HTTP {$response->status()}"];
+                $reason = "Download failed HTTP {$response->status()}";
+                $this->saveFailedAttempt($user, $reason);
+                return ['name' => $name, 'success' => false, 'reason' => $reason];
             }
 
             $body        = $response->body();
             $contentType = $response->header('Content-Type') ?? '';
 
             if (strlen($body) < 1024) {
-                return ['name' => $name, 'success' => false, 'reason' => 'Image too small (<1KB)'];
+                $reason = 'Image too small (<1KB)';
+                $this->saveFailedAttempt($user, $reason);
+                return ['name' => $name, 'success' => false, 'reason' => $reason];
             }
 
             if (!str_contains($contentType, 'image/')) {
-                return ['name' => $name, 'success' => false, 'reason' => "Non-image content-type: {$contentType}"];
+                $reason = "Non-image content-type: {$contentType}";
+                $this->saveFailedAttempt($user, $reason);
+                return ['name' => $name, 'success' => false, 'reason' => $reason];
             }
 
             // 3. Determine extension
@@ -1684,7 +1692,9 @@ PROMPT;
             }
 
             if (!$ext) {
-                return ['name' => $name, 'success' => false, 'reason' => 'Cannot determine extension'];
+                $reason = 'Cannot determine extension';
+                $this->saveFailedAttempt($user, $reason);
+                return ['name' => $name, 'success' => false, 'reason' => $reason];
             }
 
             // 4. Save
@@ -1705,8 +1715,15 @@ PROMPT;
 
         } catch (\Exception $e) {
             \Log::error("[AiFetchLogos] ❌ {$name}: " . $e->getMessage());
+            $this->saveFailedAttempt($user, $e->getMessage());
             return ['name' => $name, 'success' => false, 'reason' => $e->getMessage()];
         }
+    }
+
+    private function saveFailedAttempt(User $user, string $reason): void
+    {
+        $user->photo_profile = \Illuminate\Support\Str::limit('ai_failed: ' . $reason, 250);
+        $user->save();
     }
 
     /**
@@ -1726,11 +1743,17 @@ PROMPT;
             ->whereHas('school', fn ($q) => $q->where('type', 'university'))
             ->count();
 
-        $done = $totalUniversities - $pending;
+        $failed = User::where('role', 'school')
+            ->where('photo_profile', 'like', 'ai_failed%')
+            ->whereHas('school', fn ($q) => $q->where('type', 'university'))
+            ->count();
+
+        $done = $totalUniversities - $pending - $failed;
 
         return response()->json([
             'total'   => $totalUniversities,
             'done'    => $done,
+            'failed'  => $failed,
             'pending' => $pending,
         ]);
     }
