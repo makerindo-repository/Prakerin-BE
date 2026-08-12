@@ -286,6 +286,7 @@ Route::prefix('v1')->group(function () {
                 Route::middleware('abilities:admin-access')->group(function () {
                     Route::post('/ai-fetch-logos', 'aiFetchLogos');
                     Route::get('/ai-fetch-logos/status', 'aiFetchLogosStatus');
+                    Route::post('/ai-fetch-logos/reset-failed', 'resetAiFetchLogosFailed');
                 });
 
                 Route::middleware('ability:admin-access,school-access')->group(function () {

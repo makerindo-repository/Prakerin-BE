@@ -1563,13 +1563,6 @@ class UserController extends Controller
      */
     public function aiFetchLogos()
     {
-        if (!config('gemini.api_key')) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Gemini API Key belum dikonfigurasi. Atur dulu di menu Pengaturan.'
-            ], 400);
-        }
-
         // Grab next university with no logo
         $pending = User::where('role', 'school')
             ->whereNull('photo_profile')
@@ -1581,7 +1574,7 @@ class UserController extends Controller
         if ($pending->isEmpty()) {
             return response()->json([
                 'status'    => 'done',
-                'message'   => 'Semua universitas sudah memiliki logo!',
+                'message'   => 'Semua universitas telah diproses!',
                 'processed' => 0,
                 'succeeded' => 0,
                 'remaining' => 0,
@@ -1610,7 +1603,7 @@ class UserController extends Controller
 
         return response()->json([
             'status'    => 'processed',
-            'message'   => "Diproses: " . count($pending) . ", Berhasil: {$succeeded}. Sisa: {$remainingAfter}. Klik lagi untuk batch berikutnya.",
+            'message'   => "Diproses: " . count($pending) . ", Berhasil: {$succeeded}. Sisa: {$remainingAfter}.",
             'processed' => count($pending),
             'succeeded' => $succeeded,
             'remaining' => $remainingAfter,
@@ -1618,100 +1611,54 @@ class UserController extends Controller
         ]);
     }
 
+    public function resetAiFetchLogosFailed()
+    {
+        $count = User::where('role', 'school')
+            ->where('photo_profile', 'like', 'ai_failed%')
+            ->whereHas('school', fn ($q) => $q->where('type', 'university'))
+            ->update(['photo_profile' => null]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => "Berhasil mereset {$count} data yang gagal. Siap diproses ulang!",
+            'reset'   => $count
+        ]);
+    }
+
     private function fetchAndSaveLogo(User $user, string $name): array
     {
         try {
-            // 1. Ask Gemini
-            $prompt = <<<PROMPT
-Find the official logo image of "{$name}" (an Indonesian university/college).
-Return ONLY a direct image URL ending in .png, .jpg, .jpeg, .svg, or .webp.
-The URL must point directly to the image file, not a web page.
-If you are not confident or cannot find a reliable URL, return exactly: NONE
-No explanation. No extra text. Just the URL or NONE.
-PROMPT;
+            // Strategy 1: Wikipedia PageImage API
+            $candidateUrl = $this->findLogoViaWikipedia($name);
 
-            $result = \Gemini\Laravel\Facades\Gemini::generativeModel('gemini-3.1-flash-lite')
-                ->generateContent($prompt);
+            // Strategy 2: Wikimedia Commons API
+            if (!$candidateUrl) {
+                $candidateUrl = $this->findLogoViaWikimedia($name);
+            }
 
-            $raw = trim($result->text());
+            // Strategy 3: Domain Clearbit / Favicon
+            if (!$candidateUrl) {
+                $candidateUrl = $this->findLogoViaDomain($user);
+            }
 
-            if (empty($raw) || strtoupper($raw) === 'NONE') {
-                $reason = 'Gemini returned NONE';
+            // Strategy 4: DuckDuckGo Search
+            if (!$candidateUrl) {
+                $candidateUrl = $this->findLogoViaDuckDuckGo($name);
+            }
+
+            // Strategy 5: Gemini AI (if key is set)
+            if (!$candidateUrl && config('gemini.api_key')) {
+                $candidateUrl = $this->findLogoViaGemini($name);
+            }
+
+            if (!$candidateUrl) {
+                $reason = 'Tidak ditemukan URL logo yang valid';
                 $this->saveFailedAttempt($user, $reason);
                 return ['name' => $name, 'success' => false, 'reason' => $reason];
             }
 
-            if (!filter_var($raw, FILTER_VALIDATE_URL)) {
-                $reason = "Non-URL from Gemini: {$raw}";
-                $this->saveFailedAttempt($user, $reason);
-                return ['name' => $name, 'success' => false, 'reason' => $reason];
-            }
-
-            $lower = strtolower(parse_url($raw, PHP_URL_PATH) ?? '');
-            if (!preg_match('/\.(png|jpg|jpeg|svg|webp)/i', $lower)) {
-                $reason = "No image extension in URL: {$raw}";
-                $this->saveFailedAttempt($user, $reason);
-                return ['name' => $name, 'success' => false, 'reason' => $reason];
-            }
-
-            // 2. Download
-            $response = \Illuminate\Support\Facades\Http::timeout(10)
-                ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; PrakerinBot/1.0)'])
-                ->get($raw);
-
-            if (!$response->successful()) {
-                $reason = "Download failed HTTP {$response->status()}";
-                $this->saveFailedAttempt($user, $reason);
-                return ['name' => $name, 'success' => false, 'reason' => $reason];
-            }
-
-            $body        = $response->body();
-            $contentType = $response->header('Content-Type') ?? '';
-
-            if (strlen($body) < 1024) {
-                $reason = 'Image too small (<1KB)';
-                $this->saveFailedAttempt($user, $reason);
-                return ['name' => $name, 'success' => false, 'reason' => $reason];
-            }
-
-            if (!str_contains($contentType, 'image/')) {
-                $reason = "Non-image content-type: {$contentType}";
-                $this->saveFailedAttempt($user, $reason);
-                return ['name' => $name, 'success' => false, 'reason' => $reason];
-            }
-
-            // 3. Determine extension
-            $ext = null;
-            if (preg_match('/\.(png|jpg|jpeg|svg|webp)$/i', $lower, $m)) {
-                $ext = $m[1];
-            } else {
-                $mimeMap = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/svg+xml' => 'svg', 'image/webp' => 'webp'];
-                foreach ($mimeMap as $mime => $e) {
-                    if (str_contains($contentType, $mime)) { $ext = $e; break; }
-                }
-            }
-
-            if (!$ext) {
-                $reason = 'Cannot determine extension';
-                $this->saveFailedAttempt($user, $reason);
-                return ['name' => $name, 'success' => false, 'reason' => $reason];
-            }
-
-            // 4. Save
-            $filename = 'ai_logo_' . $user->id . '.' . $ext;
-            Storage::disk('public')->put('photo-profile/' . $filename, $body);
-
-            // 5. Update DB
-            $user->photo_profile = $filename;
-            $user->save();
-
-            if ($user->school) {
-                $user->school->is_verified = true;
-                $user->school->save();
-            }
-
-            \Log::info("[AiFetchLogos] ✅ {$name} → {$filename}");
-            return ['name' => $name, 'success' => true, 'reason' => $filename];
+            // Try downloading and saving candidate URL
+            return $this->tryDownloadAndSave($user, $name, $candidateUrl);
 
         } catch (\Exception $e) {
             \Log::error("[AiFetchLogos] ❌ {$name}: " . $e->getMessage());
@@ -1720,18 +1667,204 @@ PROMPT;
         }
     }
 
+    private function findLogoViaWikipedia(string $name): ?string
+    {
+        try {
+            $query = urlencode($name);
+            $url   = "https://id.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch={$query}&gsrlimit=3&prop=pageimages&pithumbsize=500&format=json";
+            $res   = \Illuminate\Support\Facades\Http::timeout(6)
+                ->withHeaders(['User-Agent' => 'PrakerinBot/1.0'])
+                ->get($url);
+
+            if ($res->successful()) {
+                $pages = $res->json()['query']['pages'] ?? [];
+                foreach ($pages as $p) {
+                    if (isset($p['thumbnail']['source'])) {
+                        $src = $p['thumbnail']['source'];
+                        $path = strtolower(parse_url($src, PHP_URL_PATH) ?? '');
+                        if (preg_match('/\.(png|jpg|jpeg|svg|webp)/i', $path)) {
+                            return $src;
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {}
+        return null;
+    }
+
+    private function findLogoViaWikimedia(string $name): ?string
+    {
+        try {
+            $query = urlencode($name . " logo");
+            $url   = "https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch={$query}&srnamespace=6&format=json&srlimit=5";
+            $res   = \Illuminate\Support\Facades\Http::timeout(6)
+                ->withHeaders(['User-Agent' => 'PrakerinBot/1.0'])
+                ->get($url);
+
+            if ($res->successful()) {
+                $results = $res->json()['query']['search'] ?? [];
+                foreach ($results as $item) {
+                    $title = $item['title'] ?? '';
+                    if (preg_match('/\.(png|jpg|jpeg|svg|webp)$/i', $title)) {
+                        $fileTitle = urlencode($title);
+                        $infoUrl   = "https://commons.wikimedia.org/w/api.php?action=query&titles={$fileTitle}&prop=imageinfo&iiprop=url&format=json";
+                        $infoRes   = \Illuminate\Support\Facades\Http::timeout(6)
+                            ->withHeaders(['User-Agent' => 'PrakerinBot/1.0'])
+                            ->get($infoUrl);
+
+                        if ($infoRes->successful()) {
+                            $pages = $infoRes->json()['query']['pages'] ?? [];
+                            foreach ($pages as $p) {
+                                if (isset($p['imageinfo'][0]['url'])) {
+                                    return $p['imageinfo'][0]['url'];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {}
+        return null;
+    }
+
+    private function findLogoViaDomain(User $user): ?string
+    {
+        try {
+            $email = strtolower($user->email ?? '');
+            $website = strtolower($user->school->website ?? '');
+            $domain = null;
+
+            if ($website) {
+                $host = parse_url($website, PHP_URL_HOST) ?? $website;
+                $domain = preg_replace('/^www\./', '', $host);
+            } elseif (str_contains($email, '@')) {
+                $parts = explode('@', $email);
+                $d = end($parts);
+                if (!in_array($d, ['gmail.com', 'yahoo.com', 'yahoo.co.id', 'hotmail.com', 'outlook.com'])) {
+                    $domain = $d;
+                }
+            }
+
+            if ($domain) {
+                $clearbitUrl = "https://logo.clearbit.com/{$domain}";
+                $res = \Illuminate\Support\Facades\Http::timeout(4)->get($clearbitUrl);
+                if ($res->successful() && strlen($res->body()) > 1024) {
+                    return $clearbitUrl;
+                }
+            }
+        } catch (\Exception $e) {}
+        return null;
+    }
+
+    private function findLogoViaDuckDuckGo(string $name): ?string
+    {
+        try {
+            $q = $name . " logo filetype:png";
+            $url = "https://html.duckduckgo.com/html/?q=" . urlencode($q);
+            $res = \Illuminate\Support\Facades\Http::timeout(6)
+                ->withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                ])
+                ->get($url);
+
+            if ($res->successful()) {
+                if (preg_match_all('/uddg=(https%3A%2F%2F[^"&]+\.(?:png|jpg|jpeg|svg|webp))/i', $res->body(), $matches)) {
+                    foreach ($matches[1] as $encodedUrl) {
+                        $decoded = urldecode($encodedUrl);
+                        if (!str_contains($decoded, 'duckduckgo.com') && !str_contains($decoded, 'wikimedia.org')) {
+                            return $decoded;
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {}
+        return null;
+    }
+
+    private function findLogoViaGemini(string $name): ?string
+    {
+        try {
+            $prompt = <<<PROMPT
+Find the official logo image of "{$name}" (an Indonesian university/college).
+Return ONLY a direct image URL ending in .png, .jpg, .jpeg, .svg, or .webp.
+If you cannot find a reliable URL, return: NONE
+No extra text.
+PROMPT;
+
+            $result = \Gemini\Laravel\Facades\Gemini::generativeModel('gemini-1.5-flash')
+                ->generateContent($prompt);
+
+            $raw = trim($result->text());
+            if (!empty($raw) && strtoupper($raw) !== 'NONE' && filter_var($raw, FILTER_VALIDATE_URL)) {
+                return $raw;
+            }
+        } catch (\Exception $e) {}
+        return null;
+    }
+
+    private function tryDownloadAndSave(User $user, string $name, string $rawUrl): array
+    {
+        $response = \Illuminate\Support\Facades\Http::timeout(10)
+            ->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'])
+            ->get($rawUrl);
+
+        if (!$response->successful()) {
+            $reason = "Download failed HTTP {$response->status()}";
+            $this->saveFailedAttempt($user, $reason);
+            return ['name' => $name, 'success' => false, 'reason' => $reason];
+        }
+
+        $body        = $response->body();
+        $contentType = $response->header('Content-Type') ?? '';
+
+        if (strlen($body) < 1024) {
+            $reason = 'Image too small (<1KB)';
+            $this->saveFailedAttempt($user, $reason);
+            return ['name' => $name, 'success' => false, 'reason' => $reason];
+        }
+
+        if (!str_contains($contentType, 'image/')) {
+            $reason = "Non-image content-type: {$contentType}";
+            $this->saveFailedAttempt($user, $reason);
+            return ['name' => $name, 'success' => false, 'reason' => $reason];
+        }
+
+        $lower = strtolower(parse_url($rawUrl, PHP_URL_PATH) ?? '');
+        $ext = null;
+        if (preg_match('/\.(png|jpg|jpeg|svg|webp)$/i', $lower, $m)) {
+            $ext = $m[1];
+        } else {
+            $mimeMap = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/svg+xml' => 'svg', 'image/webp' => 'webp'];
+            foreach ($mimeMap as $mime => $e) {
+                if (str_contains($contentType, $mime)) { $ext = $e; break; }
+            }
+        }
+
+        if (!$ext) {
+            $ext = 'png';
+        }
+
+        $filename = 'ai_logo_' . $user->id . '.' . $ext;
+        Storage::disk('public')->put('photo-profile/' . $filename, $body);
+
+        $user->photo_profile = $filename;
+        $user->save();
+
+        if ($user->school) {
+            $user->school->is_verified = true;
+            $user->school->save();
+        }
+
+        \Log::info("[AiFetchLogos] ✅ {$name} → {$filename}");
+        return ['name' => $name, 'success' => true, 'reason' => $filename];
+    }
+
     private function saveFailedAttempt(User $user, string $reason): void
     {
         $user->photo_profile = \Illuminate\Support\Str::limit('ai_failed: ' . $reason, 250);
         $user->save();
     }
 
-    /**
-     * Return current logo-fetch progress counts.
-     * No migration needed — tracked directly from the users table.
-     *
-     * GET /api/v1/users/ai-fetch-logos/status
-     */
     public function aiFetchLogosStatus()
     {
         $totalUniversities = User::where('role', 'school')
