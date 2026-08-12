@@ -12,312 +12,175 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing;
 
 class SchoolImportController extends Controller
 {
     /**
-     * Header Excel yang dikenali.
-     *
-     * Excel terbaru:
-     *
-     * No
-     * Nama
-     * Email
-     * Password
-     * Kode LLDikti
-     * Provinsi
-     * Alamat
-     * Foto
-     * Foto_Search_URL
-     */
-    private const COLUMN_ALIASES = [
-        'name' => [
-            'nama perguruan tinggi',
-            'nama sekolah',
-            'nama',
-        ],
-
-        'email' => [
-            'email',
-        ],
-
-        'password' => [
-            'password',
-        ],
-
-        'address' => [
-            'alamat_diperbaiki',
-            'alamat diperbaiki',
-            'alamat',
-        ],
-
-        'wilayah' => [
-            'kode lldikti',
-            'wilayah',
-        ],
-
-        'provinsi' => [
-            'provinsi (cakupan wilayah)',
-            'provinsi',
-        ],
-
-        'photo' => [
-            'foto',
-            'photo',
-            'foto profil',
-            'photo profile',
-            'logo',
-        ],
-
-        'photo_search_url' => [
-            'foto_search_url',
-            'foto search url',
-            'photo search url',
-        ],
-    ];
-
-    /**
      * POST /api/v1/admin/schools/import
      *
-     * Import sekolah/perguruan tinggi dari Excel.
+     * Excel final:
+     * No | Nama | Email | Password | Kode LLDikti | Provinsi | Alamat | Foto
      *
-     * Perilaku:
-     *
-     * - Data baru       -> CREATE
-     * - Email sama      -> UPDATE
-     * - Nama sama       -> UPDATE
-     * - Password lama   -> TIDAK ditimpa
-     * - Password baru   -> ambil dari Excel
-     * - Foto lama ada   -> pertahankan
-     * - Foto belum ada  -> gunakan foto dari Excel/default
-     * - Hanya "Kode LLDikti resmi" yang diimport
+     * Foto bukan nama file. Foto adalah gambar yang benar-benar
+     * tertanam sebagai Drawing pada worksheet.
      */
     public function import(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls|max:20480',
+            'file' => 'required|file|mimes:xlsx,xls|max:51200',
             'type' => 'nullable|in:university,school',
         ]);
 
-        $type = $request->input('type', 'university');
-
         set_time_limit(0);
+        ini_set('memory_limit', '1024M');
+
+        $type = $request->input('type', 'university');
 
         try {
             $spreadsheet = IOFactory::load(
                 $request->file('file')->getRealPath()
             );
-
-            $sheet = $spreadsheet->getActiveSheet();
         } catch (\Throwable $e) {
-            Log::error(
-                '[SchoolImportController] Gagal membaca Excel: '
-                . $e->getMessage()
-            );
+            Log::error('[SchoolImport] Excel load failed', [
+                'error' => $e->getMessage(),
+            ]);
 
             return response()->json([
-                'message' => 'Gagal membaca file Excel. Pastikan file .xlsx/.xls valid dan tidak corrupt.',
+                'message' => 'Gagal membaca Excel.',
                 'debug' => $e->getMessage(),
             ], 422);
         }
 
-        $rows = $sheet->toArray(
-            null,
-            true,
-            true,
-            true
-        );
+        $sheet = $spreadsheet->getSheetByName('IMPORT_WEB')
+            ?? $spreadsheet->getActiveSheet();
+
+        $rows = $sheet->toArray(null, true, true, true);
 
         if (count($rows) < 2) {
             return response()->json([
-                'message' => 'File Excel kosong atau hanya berisi header.',
+                'message' => 'Excel kosong atau hanya memiliki header.',
             ], 422);
         }
 
-        $headerRow = array_shift($rows);
+        $headers = array_shift($rows);
+        $columns = $this->mapColumns($headers);
 
-        $columnMap = $this->mapColumns($headerRow);
-
-        /*
-         * Validasi kolom wajib.
-         */
-        if (!isset($columnMap['name'])) {
+        if (!isset($columns['name'])) {
             return response()->json([
-                'message' => 'Kolom "Nama" tidak ditemukan di Excel.',
+                'message' => 'Kolom "Nama" tidak ditemukan.',
+                'headers_terbaca' => $headers,
             ], 422);
         }
 
         /*
-         * Statistik.
+         * Ambil semua gambar tertanam satu kali.
+         *
+         * Key = nomor baris Excel.
+         *
+         * Contoh:
+         * H2 -> row 2
+         * H3 -> row 3
          */
+        $drawingsByRow = $this->extractDrawingsByRow($sheet);
+
         $created = 0;
         $updated = 0;
-        $unchanged = 0;
-
-        $skippedNotVerified = 0;
-        $skippedInvalid = 0;
+        $photosSaved = 0;
+        $defaultPhotos = 0;
+        $skipped = 0;
         $failed = 0;
 
         $failedDetails = [];
 
-        /*
-         * Untuk mencegah dua baris Excel yang sama-sama
-         * menunjuk ke record yang sama dalam satu import.
-         */
         $processedEmails = [];
         $processedNames = [];
 
-        foreach ($rows as $excelRowNumber => $row) {
-
+        foreach ($rows as $index => $row) {
             /*
-             * Ambil nama.
+             * Karena header dihapus, data pertama memiliki index 2
+             * pada array hasil toArray(). Tetap gunakan:
+             *
+             * $excelRow = $index
+             *
+             * karena PhpSpreadsheet array masih mempertahankan key
+             * baris Excel.
              */
-            $name = trim(
-                (string) (
-                    $row[$columnMap['name']] ?? ''
-                )
+            $excelRow = (int) $index;
+
+            $name = $this->value(
+                $row,
+                $columns['name'] ?? null
             );
 
             if ($name === '') {
-                $skippedInvalid++;
+                $skipped++;
                 continue;
             }
 
-
-            /*
-             * Email.
-             */
-            $email = '';
-
-            if (isset($columnMap['email'])) {
-                $email = trim(
-                    (string) (
-                        $row[$columnMap['email']] ?? ''
-                    )
-                );
-            }
-
-            /*
-             * Normalisasi email.
-             */
-            if ($email !== '') {
-                $email = mb_strtolower($email);
-            }
-
-            /*
-             * Password dari Excel.
-             */
-            $password = '';
-
-            if (isset($columnMap['password'])) {
-                $password = trim(
-                    (string) (
-                        $row[$columnMap['password']] ?? ''
-                    )
-                );
-            }
-
-            /*
-             * LLDikti.
-             */
-            $lldikti = '';
-
-            if (isset($columnMap['wilayah'])) {
-                $lldikti = trim(
-                    (string) (
-                        $row[$columnMap['wilayah']] ?? ''
-                    )
-                );
-            }
-
-            /*
-             * Provinsi.
-             */
-            $provinsi = '';
-
-            if (isset($columnMap['provinsi'])) {
-                $provinsi = trim(
-                    (string) (
-                        $row[$columnMap['provinsi']] ?? ''
-                    )
-                );
-            }
-
-            /*
-             * Foto.
-             */
-            $photo = '';
-
-            if (isset($columnMap['photo'])) {
-                $photo = trim(
-                    (string) (
-                        $row[$columnMap['photo']] ?? ''
-                    )
-                );
-            }
-
-            /*
-             * URL pencarian foto.
-             *
-             * Belum digunakan sebagai photo_profile karena
-             * URL Google Search bukan URL file gambar.
-             */
-            $photoSearchUrl = '';
-
-            if (isset($columnMap['photo_search_url'])) {
-                $photoSearchUrl = trim(
-                    (string) (
-                        $row[$columnMap['photo_search_url']] ?? ''
-                    )
-                );
-            }
-
-            /*
-             * Cegah duplicate di dalam file Excel.
-             */
-            $normalizedName = mb_strtolower(
-                preg_replace('/\s+/', ' ', $name)
+            $email = mb_strtolower(
+                $this->value(
+                    $row,
+                    $columns['email'] ?? null
+                )
             );
 
-            if (
-                isset($processedNames[$normalizedName]) &&
-                $processedNames[$normalizedName] === true
-            ) {
-                $skippedInvalid++;
-                continue;
-            }
+            $password = $this->value(
+                $row,
+                $columns['password'] ?? null
+            );
 
-            if (
-                $email !== '' &&
-                isset($processedEmails[$email]) &&
-                $processedEmails[$email] === true
-            ) {
-                $skippedInvalid++;
+            $lldikti = $this->value(
+                $row,
+                $columns['lldikti'] ?? null
+            );
+
+            $provinsi = $this->value(
+                $row,
+                $columns['provinsi'] ?? null
+            );
+
+            $address = $this->value(
+                $row,
+                $columns['address'] ?? null
+            );
+
+            $normalizedName = $this->normalize($name);
+
+            /*
+             * Jangan proses baris duplicate dua kali.
+             */
+            if (isset($processedNames[$normalizedName])) {
+                $skipped++;
                 continue;
             }
 
             $processedNames[$normalizedName] = true;
 
             if ($email !== '') {
+                if (isset($processedEmails[$email])) {
+                    $skipped++;
+                    continue;
+                }
+
                 $processedEmails[$email] = true;
             }
 
             try {
-
                 $result = DB::transaction(function () use (
                     $name,
                     $email,
                     $password,
                     $lldikti,
                     $provinsi,
-                    $photo,
-                    $photoSearchUrl,
-                    $type
+                    $address,
+                    $type,
+                    $drawingsByRow,
+                    $excelRow
                 ) {
-
                     /*
                      * =====================================================
-                     * 1. CARI USER LAMA BERDASARKAN EMAIL
+                     * USER
                      * =====================================================
                      */
                     $user = null;
@@ -330,192 +193,126 @@ class SchoolImportController extends Controller
                     }
 
                     /*
-                     * =====================================================
-                     * 2. CARI SCHOOL LAMA BERDASARKAN NAMA
-                     * =====================================================
+                     * Jika email tidak menemukan user,
+                     * cari school berdasarkan nama.
                      */
                     $school = School::whereRaw(
                         'LOWER(name) = ?',
                         [$name]
                     )->first();
 
-                    /*
-                     * Kalau school sudah ada tetapi email Excel
-                     * berbeda, gunakan user milik school tersebut.
-                     */
-                    if (!$user && $school) {
+                    if (
+                        !$user &&
+                        $school &&
+                        $school->user
+                    ) {
                         $user = $school->user;
                     }
 
                     $isNewUser = !$user;
                     $isNewSchool = !$school;
 
-                    /*
-                     * =====================================================
-                     * 3. BUAT USER BARU JIKA BELUM ADA
-                     * =====================================================
-                     */
                     if (!$user) {
-
                         $slug = Str::slug($name);
 
                         if ($slug === '') {
-                            $slug = 'kampus-' . Str::random(8);
+                            $slug = 'kampus-' . Str::lower(Str::random(8));
                         }
 
-                        /*
-                         * Maks username mengikuti struktur
-                         * yang sudah ada.
-                         */
-                        $username = $this->uniqueValue(
-                            Str::limit($slug, 40, ''),
-                            fn ($candidate) =>
-                                User::where('username', $candidate)->exists()
-                        );
+                        $username = $this->uniqueUsername($slug);
 
-                        /*
-                         * Kalau email Excel kosong,
-                         * generate email internal.
-                         */
                         $finalEmail = $email !== ''
                             ? $email
-                            : $this->uniqueValue(
-                                Str::limit($slug, 40, ''),
-                                fn ($candidate) =>
-                                    User::where('email', $candidate)->exists(),
-                                fn ($candidate) =>
-                                    "{$candidate}@kampus.prakerin.id"
-                            );
+                            : $this->uniqueEmail($slug);
 
-                        /*
-                         * Password Excel.
-                         *
-                         * Kalau kosong:
-                         * Kampus + 6 angka.
-                         */
                         $finalPassword = $password !== ''
                             ? $password
                             : 'Kampus' . random_int(100000, 999999);
 
                         $user = new User();
-
                         $user->username = $username;
                         $user->email = $finalEmail;
 
                         /*
-                         * Role legacy.
+                         * Struktur legacy aplikasi.
                          */
                         $user->role = 'school';
 
                         /*
-                         * User model memakai cast hashed.
-                         * Jadi tidak perlu Hash::make().
+                         * User model repository kamu memakai cast
+                         * password => hashed, jadi jangan Hash::make()
+                         * dua kali.
                          */
                         $user->password = $finalPassword;
-
-                        /*
-                         * User baru belum diverifikasi.
-                         */
-                        if (
-                            $user->is_verified === null
-                        ) {
-                            $user->is_verified = false;
-                        }
-
                         $user->save();
-
                     } else {
-
                         /*
-                         * =================================================
-                         * 4. USER LAMA
-                         * =================================================
-                         *
-                         * PENTING:
-                         *
-                         * PASSWORD TIDAK DIGANTI.
-                         *
-                         * Jadi user lama masih bisa login
-                         * menggunakan password sebelumnya.
+                         * USER LAMA:
+                         * password TIDAK DIUBAH.
                          */
-
-                        /*
-                         * Jika username kosong, buat username.
-                         */
-                        if (
-                            empty($user->username)
-                        ) {
-
-                            $slug = Str::slug($name);
-
-                            if ($slug === '') {
-                                $slug = 'kampus-' . Str::random(8);
-                            }
-
-                            $user->username = $this->uniqueValue(
-                                Str::limit($slug, 40, ''),
-                                fn ($candidate) =>
-                                    User::where('username', $candidate)
-                                        ->where('id', '!=', $user->id)
-                                        ->exists()
+                        if (empty($user->username)) {
+                            $user->username = $this->uniqueUsername(
+                                Str::slug($name),
+                                $user->id
                             );
                         }
 
                         /*
-                         * Jika email lama kosong dan Excel punya email,
-                         * baru kita update email.
+                         * Jangan mengganti email user lama.
+                         */
+                        $user->role = 'school';
+                        $user->save();
+                    }
+
+                    /*
+                     * =====================================================
+                     * FOTO DARI EXCEL
+                     * =====================================================
+                     */
+                    $photo = null;
+
+                    if (isset($drawingsByRow[$excelRow])) {
+                        $photo = $drawingsByRow[$excelRow];
+                    }
+
+                    if ($photo) {
+                        $photoName = $this->storePhoto(
+                            $photo['contents'],
+                            $photo['extension'],
+                            $name
+                        );
+
+                        /*
+                         * Karena Excel adalah sumber data foto,
+                         * foto dari Excel boleh memperbarui foto user.
+                         */
+                        $user->photo_profile = $photoName;
+                        $user->save();
+
+                        $photoSaved = true;
+                    } else {
+                        /*
+                         * Fallback.
                          *
-                         * Kalau email sudah berbeda, kita tidak
-                         * memaksa mengganti agar akun lama aman.
+                         * Pastikan default-school.png sudah ada di:
+                         * storage/app/public/photo-profile/default-school.png
                          */
                         if (
-                            empty($user->email) &&
-                            $email !== ''
-                        ) {
-
-                            $emailExists = User::whereRaw(
-                                'LOWER(email) = ?',
-                                [$email]
+                            empty($user->photo_profile) ||
+                            !Storage::disk('public')->exists(
+                                'photo-profile/' . $user->photo_profile
                             )
-                            ->where('id', '!=', $user->id)
-                            ->exists();
-
-                            if (!$emailExists) {
-                                $user->email = $email;
-                            }
+                        ) {
+                            $user->photo_profile = $this->ensureDefaultPhoto();
+                            $user->save();
                         }
 
-                        $user->role = 'school';
-
-                        $user->save();
+                        $photoSaved = false;
                     }
 
                     /*
                      * =====================================================
-                     * 5. FOTO
-                     * =====================================================
-                     *
-                     * Excel sekarang berisi default-school.png.
-                     *
-                     * Kalau user lama sudah punya foto,
-                     * jangan ditimpa.
-                     */
-                    $newPhoto = $this->resolvePhoto(
-                        $photo,
-                        $photoSearchUrl
-                    );
-
-                    if (
-                        empty($user->photo_profile) &&
-                        $newPhoto !== null
-                    ) {
-                        $user->photo_profile = $newPhoto;
-                        $user->save();
-                    }
-
-                    /*
-                     * =====================================================
-                     * 6. BUAT / UPDATE SCHOOL
+                     * SCHOOL
                      * =====================================================
                      */
                     if (!$school) {
@@ -524,49 +321,31 @@ class SchoolImportController extends Controller
 
                     $school->user_id = $user->id;
                     $school->name = $name;
-
-                    /*
-                     * Address.
-                     */
-                    $school->address = $this->buildAddress(
-                        $name,
-                        $lldikti,
-                        $provinsi
-                    );
-
                     $school->type = $type;
 
                     /*
-                     * Data berasal dari daftar resmi,
-                     * tetapi belum tentu sudah melakukan klaim akun.
+                     * Gunakan alamat Excel kalau tersedia.
+                     * Kalau kosong, buat fallback dari wilayah/provinsi.
                      */
-                    if ($school->is_verified === null) {
-                        $school->is_verified = false;
+                    if ($address !== '') {
+                        $school->address = $address;
+                    } elseif (empty($school->address)) {
+                        $school->address = $this->buildAddress(
+                            $lldikti,
+                            $provinsi
+                        );
                     }
 
                     /*
-                     * JANGAN masukkan LLDikti ke npsn.
-                     *
-                     * Kita hanya mengisinya jika memang
-                     * sudah ada NPSN sebelumnya.
+                     * PENTING:
+                     * Kode LLDikti BUKAN NPSN.
+                     * Jangan masukkan Wilayah 4/3/7/etc. ke npsn.
                      */
-                    /*
-                     * $school->npsn = ...
-                     *
-                     * sengaja tidak dilakukan.
-                     */
-
-                    /*
-                     * Website belum tersedia di Excel.
-                     * Jangan menghapus website lama.
-                     */
-
                     $school->save();
 
                     /*
-                     * =====================================================
-                     * 7. ROLE SPATIE
-                     * =====================================================
+                     * Sinkronisasi role sesuai helper User yang sudah
+                     * ada di repository.
                      */
                     $user->syncSpatieRole(
                         $type === 'university'
@@ -577,97 +356,327 @@ class SchoolImportController extends Controller
                     return [
                         'new_user' => $isNewUser,
                         'new_school' => $isNewSchool,
+                        'photo_saved' => $photoSaved,
                     ];
                 });
 
-                if ($result['new_user'] || $result['new_school']) {
+                if (
+                    $result['new_user'] ||
+                    $result['new_school']
+                ) {
                     $created++;
                 } else {
                     $updated++;
                 }
 
+                if ($result['photo_saved']) {
+                    $photosSaved++;
+                } else {
+                    $defaultPhotos++;
+                }
             } catch (\Throwable $e) {
-
                 $failed++;
 
-                if (count($failedDetails) < 50) {
+                if (count($failedDetails) < 100) {
                     $failedDetails[] = [
-                        'row' => $excelRowNumber + 1,
+                        'row' => $excelRow,
                         'name' => $name,
                         'email' => $email,
                         'error' => $e->getMessage(),
                     ];
                 }
 
-                Log::error(
-                    "[SchoolImportController] Gagal impor \"{$name}\": "
-                    . $e->getMessage(),
-                    [
-                        'email' => $email,
-                        'row' => $excelRowNumber + 1,
-                    ]
-                );
+                Log::error('[SchoolImport] Row failed', [
+                    'row' => $excelRow,
+                    'name' => $name,
+                    'email' => $email,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
 
-        /*
-         * =========================================================
-         * RESPONSE
-         * =========================================================
-         */
         return response()->json([
-            'message' =>
-                "Import selesai. " .
-                "Dibuat: {$created}, " .
-                "diperbarui: {$updated}, " .
-                "dilewati bukan resmi: {$skippedNotVerified}, " .
-                "dilewati tidak valid: {$skippedInvalid}, " .
-                "gagal: {$failed}.",
-
+            'message' => 'Import selesai.',
             'summary' => [
                 'total_rows' => count($rows),
                 'created' => $created,
                 'updated' => $updated,
-                'skipped_not_verified' => $skippedNotVerified,
-                'skipped_invalid' => $skippedInvalid,
+                'photos_saved_from_excel' => $photosSaved,
+                'fallback_default_photos' => $defaultPhotos,
+                'skipped' => $skipped,
                 'failed' => $failed,
             ],
-
             'failed_details' => $failedDetails,
         ]);
     }
 
     /**
-     * Mapping header Excel.
+     * Extract all embedded drawings and associate them with Excel row.
+     *
+     * PhpSpreadsheet officially exposes getDrawingCollection() for reading
+     * images from a worksheet. MemoryDrawing is rendered from its image
+     * resource; normal Drawing objects can be read from their path.
      */
-    private function mapColumns(array $headerRow): array
+    private function extractDrawingsByRow($sheet): array
     {
-        $map = [];
+        $result = [];
 
-        foreach ($headerRow as $column => $label) {
+        foreach ($sheet->getDrawingCollection() as $drawing) {
+            $coordinate = $drawing->getCoordinates();
 
-            $normalized = mb_strtolower(
-                trim((string) $label)
-            );
-
-            if ($normalized === '') {
+            if (!preg_match('/^([A-Z]+)(\d+)$/i', $coordinate, $m)) {
                 continue;
             }
 
-            foreach (self::COLUMN_ALIASES as $target => $aliases) {
+            $row = (int) $m[2];
 
-                if (isset($map[$target])) {
-                    continue;
+            try {
+                $imageContents = null;
+                $extension = 'png';
+
+                if ($drawing instanceof MemoryDrawing) {
+                    $resource = $drawing->getImageResource();
+                    $renderingFunction = $drawing->getRenderingFunction();
+
+                    if (
+                        is_resource($resource) &&
+                        is_callable($renderingFunction)
+                    ) {
+                        ob_start();
+                        call_user_func(
+                            $renderingFunction,
+                            $resource
+                        );
+                        $imageContents = ob_get_clean();
+                    }
+
+                    switch ($drawing->getMimeType()) {
+                        case MemoryDrawing::MIMETYPE_JPEG:
+                            $extension = 'jpg';
+                            break;
+
+                        case MemoryDrawing::MIMETYPE_GIF:
+                            $extension = 'gif';
+                            break;
+
+                        case MemoryDrawing::MIMETYPE_PNG:
+                        default:
+                            $extension = 'png';
+                            break;
+                    }
+                } else {
+                    $path = $drawing->getPath();
+
+                    if (!$path) {
+                        continue;
+                    }
+
+                    /*
+                     * Untuk XLSX embedded image, PhpSpreadsheet menyediakan
+                     * path yang dapat dibaca sebagai binary.
+                     */
+                    if ($drawing->getIsURL()) {
+                        $imageContents = @file_get_contents($path);
+                    } else {
+                        $imageContents = @file_get_contents($path);
+                    }
+
+                    $extension = strtolower(
+                        $drawing->getExtension() ?: 'png'
+                    );
+
+                    if ($extension === 'jpeg') {
+                        $extension = 'jpg';
+                    }
                 }
 
                 if (
-                    in_array(
-                        $normalized,
-                        $aliases,
-                        true
-                    )
+                    !is_string($imageContents) ||
+                    $imageContents === ''
                 ) {
-                    $map[$target] = $column;
+                    continue;
+                }
+
+                /*
+                 * Validasi bahwa binary memang gambar.
+                 */
+                $imageInfo = @getimagesizefromstring(
+                    $imageContents
+                );
+
+                if ($imageInfo === false) {
+                    continue;
+                }
+
+                $mime = $imageInfo['mime'] ?? '';
+
+                $mimeToExtension = [
+                    'image/jpeg' => 'jpg',
+                    'image/png' => 'png',
+                    'image/gif' => 'gif',
+                    'image/webp' => 'webp',
+                ];
+
+                if (isset($mimeToExtension[$mime])) {
+                    $extension = $mimeToExtension[$mime];
+                }
+
+                /*
+                 * Jika ada lebih dari satu drawing di baris yang sama,
+                 * ambil yang pertama.
+                 */
+                if (!isset($result[$row])) {
+                    $result[$row] = [
+                        'contents' => $imageContents,
+                        'extension' => $extension,
+                        'coordinate' => $coordinate,
+                    ];
+                }
+            } catch (\Throwable $e) {
+                Log::warning('[SchoolImport] Cannot extract drawing', [
+                    'coordinate' => $coordinate,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Simpan foto ke public disk.
+     */
+    private function storePhoto(
+        string $contents,
+        string $extension,
+        string $schoolName
+    ): string {
+        $extension = strtolower($extension);
+
+        if ($extension === 'jpeg') {
+            $extension = 'jpg';
+        }
+
+        if (!in_array(
+            $extension,
+            ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+            true
+        )) {
+            $extension = 'png';
+        }
+
+        $base = Str::slug($schoolName);
+
+        if ($base === '') {
+            $base = 'kampus';
+        }
+
+        /*
+         * Hash membuat nama file stabil untuk foto yang sama,
+         * sekaligus mencegah benturan nama.
+         */
+        $hash = substr(
+            hash('sha256', $contents),
+            0,
+            12
+        );
+
+        $filename =
+            $base .
+            '-' .
+            $hash .
+            '.' .
+            $extension;
+
+        Storage::disk('public')->put(
+            'photo-profile/' . $filename,
+            $contents
+        );
+
+        return $filename;
+    }
+
+    /**
+     * Pastikan fallback tersedia.
+     */
+    private function ensureDefaultPhoto(): string
+    {
+        $filename = 'default-school.png';
+
+        $path = 'photo-profile/' . $filename;
+
+        if (
+            !Storage::disk('public')->exists($path)
+        ) {
+            /*
+             * Jangan membuat binary gambar palsu.
+             * Sediakan file default-school.png di:
+             *
+             * storage/app/public/photo-profile/default-school.png
+             */
+            throw new \RuntimeException(
+                'File default-school.png belum ada di ' .
+                'storage/app/public/photo-profile/'
+            );
+        }
+
+        return $filename;
+    }
+
+    /**
+     * Map header Excel.
+     */
+    private function mapColumns(array $headers): array
+    {
+        $aliases = [
+            'name' => [
+                'nama',
+                'nama perguruan tinggi',
+                'nama sekolah',
+                'nama institusi',
+            ],
+            'email' => [
+                'email',
+                'e-mail',
+            ],
+            'password' => [
+                'password',
+                'pass',
+                'kata sandi',
+            ],
+            'lldikti' => [
+                'kode lldikti',
+                'lldikti',
+                'wilayah',
+                'wilayah lldikti',
+            ],
+            'provinsi' => [
+                'provinsi',
+                'provinsi cakupan wilayah',
+                'provinsi (cakupan wilayah)',
+            ],
+            'address' => [
+                'alamat',
+                'alamat diperbaiki',
+                'alamat_diperbaiki',
+                'address',
+            ],
+        ];
+
+        $map = [];
+
+        foreach ($headers as $column => $header) {
+            $normalizedHeader = $this->normalizeHeader($header);
+
+            foreach ($aliases as $key => $names) {
+                foreach ($names as $name) {
+                    if (
+                        $normalizedHeader ===
+                        $this->normalizeHeader($name)
+                    ) {
+                        $map[$key] = $column;
+                        break 2;
+                    }
                 }
             }
         }
@@ -675,18 +684,154 @@ class SchoolImportController extends Controller
         return $map;
     }
 
-    /**
-     * Membuat alamat berdasarkan Excel.
-     *
-     * Karena Excel belum mempunyai alamat jalan lengkap,
-     * kita tidak membuat alamat palsu.
-     */
+    private function normalizeHeader($value): string
+    {
+        $value = (string) $value;
+        $value = str_replace(
+            "\xC2\xA0",
+            ' ',
+            $value
+        );
+
+        $value = preg_replace(
+            '/^\xEF\xBB\xBF/',
+            '',
+            $value
+        );
+
+        $value = mb_strtolower(
+            trim($value)
+        );
+
+        $value = str_replace(
+            ['_', '-'],
+            ' ',
+            $value
+        );
+
+        $value = preg_replace(
+            '/\s+/u',
+            ' ',
+            $value
+        );
+
+        return trim($value);
+    }
+
+    private function value(
+        array $row,
+        ?string $column
+    ): string {
+        if ($column === null) {
+            return '';
+        }
+
+        return trim(
+            (string) (
+                $row[$column] ?? ''
+            )
+        );
+    }
+
+    private function normalize(string $value): string
+    {
+        $value = mb_strtolower(
+            trim($value)
+        );
+
+        return preg_replace(
+            '/\s+/u',
+            ' ',
+            $value
+        );
+    }
+
+    private function uniqueUsername(
+        string $base,
+        ?int $ignoreId = null
+    ): string {
+        $base = Str::slug($base);
+
+        if ($base === '') {
+            $base = 'kampus';
+        }
+
+        $base = Str::limit(
+            $base,
+            35,
+            ''
+        );
+
+        $candidate = $base;
+        $number = 1;
+
+        while (true) {
+            $query = User::where(
+                'username',
+                $candidate
+            );
+
+            if ($ignoreId !== null) {
+                $query->where(
+                    'id',
+                    '!=',
+                    $ignoreId
+                );
+            }
+
+            if (!$query->exists()) {
+                return $candidate;
+            }
+
+            $number++;
+
+            $candidate =
+                Str::limit(
+                    $base,
+                    30,
+                    ''
+                ) .
+                '-' .
+                $number;
+        }
+    }
+
+    private function uniqueEmail(
+        string $base
+    ): string {
+        $base = Str::slug($base);
+
+        if ($base === '') {
+            $base = 'kampus';
+        }
+
+        $candidate =
+            $base .
+            '@kampus.prakerin.id';
+
+        $number = 1;
+
+        while (
+            User::where(
+                'email',
+                $candidate
+            )->exists()
+        ) {
+            $number++;
+
+            $candidate =
+                $base .
+                $number .
+                '@kampus.prakerin.id';
+        }
+
+        return $candidate;
+    }
+
     private function buildAddress(
-        string $name,
         string $lldikti,
         string $provinsi
     ): string {
-
         $parts = [];
 
         if ($provinsi !== '') {
@@ -697,100 +842,8 @@ class SchoolImportController extends Controller
             $parts[] = $lldikti;
         }
 
-        if (empty($parts)) {
-            return 'Alamat belum tersedia';
-        }
-
-        return implode(' — ', $parts);
-    }
-
-    /**
-     * Tentukan foto yang digunakan.
-     *
-     * Excel:
-     *
-     * Foto = default-school.png
-     *
-     * Foto_Search_URL = Google Image Search.
-     *
-     * Google Search TIDAK disimpan sebagai photo_profile.
-     */
-    private function resolvePhoto(
-        string $photo,
-        string $photoSearchUrl = ''
-    ): ?string {
-
-        /*
-         * Jika kosong.
-         */
-        if ($photo === '') {
-            return 'default-school.png';
-        }
-
-        /*
-         * Kalau Excel berisi URL pencarian Google,
-         * jangan digunakan sebagai foto.
-         */
-        if (
-            str_contains(
-                mb_strtolower($photo),
-                'google.com/search'
-            )
-        ) {
-            return 'default-school.png';
-        }
-
-        /*
-         * Kalau URL langsung gambar.
-         *
-         * Untuk sekarang kita simpan URL tersebut.
-         */
-        if (
-            filter_var(
-                $photo,
-                FILTER_VALIDATE_URL
-            )
-        ) {
-
-            return $photo;
-        }
-
-        /*
-         * Kalau hanya nama file:
-         *
-         * default-school.png
-         *
-         * kita simpan nama filenya.
-         */
-        return $photo;
-    }
-
-    /**
-     * Cari nilai unik.
-     */
-    private function uniqueValue(
-        string $base,
-        callable $exists,
-        ?callable $formatter = null
-    ): string {
-
-        $formatter ??= fn ($value) => $value;
-
-        $candidate = $base;
-        $suffix = 1;
-
-        while (
-            $exists(
-                $formatter($candidate)
-            )
-        ) {
-
-            $suffix++;
-
-            $candidate =
-                "{$base}-{$suffix}";
-        }
-
-        return $formatter($candidate);
+        return $parts
+            ? implode(' — ', $parts)
+            : 'Alamat belum tersedia';
     }
 }
