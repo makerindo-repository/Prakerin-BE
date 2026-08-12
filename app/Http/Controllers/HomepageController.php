@@ -34,7 +34,13 @@ class HomepageController extends Controller
         $data = Hompage::where('name', 'LIKE', '%landing%')
             ->orderBy('created_at', 'ASC')
             ->get();
-        $partner = Partner::orderBy('created_at', 'ASC')->get();
+        // Landing page cuma nampilin maks 12 logo per tab (company/school/
+        // university) — jangan tarik SEMUA partner (bisa ribuan setelah
+        // bulk import) di tiap page-load. Ambil beberapa terbaru per type
+        // secukupnya buat isi tab + sedikit buffer.
+        $partner = collect(['company', 'school', 'university'])
+            ->flatMap(fn ($type) => Partner::where('type', $type)->latest()->limit(20)->get())
+            ->values();
                 $commentPrakerin = CommentPrakerin::orderBy('created_at', 'ASC')->get();
         $comments = Feedback::with(['fromUser.student', 'toUser.company'])
             ->where('to_type', 'company')

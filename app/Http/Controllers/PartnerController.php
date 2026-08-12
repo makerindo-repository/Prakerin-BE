@@ -51,13 +51,96 @@ class PartnerController extends Controller
     {
         $search = $request->query('search', '');
         $type = $request->query('type', null);
+        // Default 12 (pas buat grid 3 kolom x 4 baris di /mitra & landing
+        // page) — PENTING: sebelum ada pagination di sini, endpoint ini
+        // nge-fetch SEMUA partner + query tambahan (Company/School + rating)
+        // SATU-SATU per baris. Begitu jumlah partner nembus ribuan (hasil
+        // bulk import), itu jadi ribuan query per page-load & bikin
+        // /mitra + landing page lemot/timeout. Sekarang dibatasi per
+        // halaman, dan query tambahannya di-batch (bukan per-row lagi).
+        $perPage = (int) $request->query('limit', 12);
+        $page = (int) $request->query('page', 1);
 
-        $partners = Partner::where('name', 'like', "%{$search}%")
-            ->when($type, function ($query, $type) {
-                return $query->where('type', $type);
+        $query = Partner::where('name', 'like', "%{$search}%")
+            ->when($type, function ($q, $type) {
+                return $q->where('type', $type);
             })
-            ->orderBy('created_at', 'ASC')
-            ->get();
+            ->orderBy('created_at', 'ASC');
+
+        $total = $query->count();
+        $partners = $query->forPage($page, $perPage)->get();
+
+        // Load SEKALI (bukan per-partner) — tetap jauh lebih murah daripada
+        // sebelumnya (yang query ke Company/School + Feedback avg SATU-SATU
+        // per baris partner). Fuzzy-match nama (incl. strip prefix PT./CV./
+        // SMK/SMA) tetap dipertahankan, tapi dilakukan di memori PHP untuk
+        // halaman saat ini saja (maks $perPage baris), bukan lewat query SQL
+        // berulang.
+        $allCompanies = \App\Models\Company::all(['id', 'user_id', 'name']);
+        $allSchools = \App\Models\School::all(['id', 'user_id', 'name']);
+
+        $findCompany = function (string $partnerName) use ($allCompanies) {
+            $clean = mb_strtolower(preg_replace('/^(PT\.\s+|CV\.\s+)/i', '', $partnerName));
+            $target = mb_strtolower($partnerName);
+            return $allCompanies->first(
+                fn ($c) => str_contains(mb_strtolower($c->name), $target) || str_contains(mb_strtolower($c->name), $clean)
+            );
+        };
+
+        $findSchool = function (string $partnerName) use ($allSchools) {
+            $clean = mb_strtolower(preg_replace('/^(SMK\s+|SMA\s+|SMKS\s+)/i', '', $partnerName));
+            $target = mb_strtolower($partnerName);
+            return $allSchools->first(
+                fn ($s) => str_contains(mb_strtolower($s->name), $target) || str_contains(mb_strtolower($s->name), $clean)
+            );
+        };
+
+        $matchedCompanies = collect();
+        $matchedSchools = collect();
+        foreach ($partners as $partner) {
+            if ($partner->type === 'company') {
+                if ($c = $findCompany($partner->name)) $matchedCompanies->put($partner->id, $c);
+            } else {
+                if ($s = $findSchool($partner->name)) $matchedSchools->put($partner->id, $s);
+            }
+        }
+
+        $companyIds = $matchedCompanies->pluck('id')->unique()->values();
+        $schoolIds = $matchedSchools->pluck('id')->unique()->values();
+
+        $openingsByCompany = $companyIds->isEmpty()
+            ? collect()
+            : \App\Models\JobOpening::whereIn('company_id', $companyIds)
+                ->where('is_available', true)
+                ->selectRaw('company_id, COUNT(*) as total')
+                ->groupBy('company_id')
+                ->pluck('total', 'company_id');
+
+        $studentsBySchool = $schoolIds->isEmpty()
+            ? collect()
+            : \App\Models\Student::whereIn('school_id', $schoolIds)
+                ->selectRaw('school_id, COUNT(*) as total')
+                ->groupBy('school_id')
+                ->pluck('total', 'school_id');
+
+        $companyUserIds = $matchedCompanies->pluck('user_id')->filter()->unique()->values();
+        $schoolUserIds = $matchedSchools->pluck('user_id')->filter()->unique()->values();
+
+        $companyRatings = $companyUserIds->isEmpty()
+            ? collect()
+            : \App\Models\Feedback::whereIn('to_user_id', $companyUserIds)
+                ->where('to_type', 'company')
+                ->selectRaw('to_user_id, AVG(rating) as avg_rating')
+                ->groupBy('to_user_id')
+                ->pluck('avg_rating', 'to_user_id');
+
+        $schoolRatings = $schoolUserIds->isEmpty()
+            ? collect()
+            : \App\Models\Feedback::whereIn('to_user_id', $schoolUserIds)
+                ->where('to_type', 'school')
+                ->selectRaw('to_user_id, AVG(rating) as avg_rating')
+                ->groupBy('to_user_id')
+                ->pluck('avg_rating', 'to_user_id');
 
         foreach ($partners as $partner) {
             $openings_count = 0;
@@ -65,28 +148,18 @@ class PartnerController extends Controller
             $rating = 0.0;
 
             if ($partner->type === 'company') {
-                $company = \App\Models\Company::where('name', 'like', "%{$partner->name}%")
-                    ->orWhere(function($query) use ($partner) {
-                        $cleanName = preg_replace('/^(PT\.\s+|CV\.\s+)/i', '', $partner->name);
-                        $query->where('name', 'like', "%{$cleanName}%");
-                    })
-                    ->first();
+                $company = $matchedCompanies->get($partner->id);
                 if ($company) {
-                    $openings_count = \App\Models\JobOpening::where('company_id', $company->id)->where('is_available', true)->count();
-                    $ratingVal = \App\Models\Feedback::where('to_user_id', $company->user_id)->where('to_type', 'company')->avg('rating');
-                    $rating = $ratingVal ? round($ratingVal, 1) : 0.0;
+                    $openings_count = (int) ($openingsByCompany[$company->id] ?? 0);
+                    $ratingVal = $companyRatings[$company->user_id] ?? null;
+                    $rating = $ratingVal ? round((float) $ratingVal, 1) : 0.0;
                 }
             } else {
-                $school = \App\Models\School::where('name', 'like', "%{$partner->name}%")
-                    ->orWhere(function($query) use ($partner) {
-                        $cleanName = preg_replace('/^(SMK\s+|SMA\s+|SMKS\s+)/i', '', $partner->name);
-                        $query->where('name', 'like', "%{$cleanName}%");
-                    })
-                    ->first();
+                $school = $matchedSchools->get($partner->id);
                 if ($school) {
-                    $students_count = \App\Models\Student::where('school_id', $school->id)->count();
-                    $ratingVal = \App\Models\Feedback::where('to_user_id', $school->user_id)->where('to_type', 'school')->avg('rating');
-                    $rating = $ratingVal ? round($ratingVal, 1) : 0.0;
+                    $students_count = (int) ($studentsBySchool[$school->id] ?? 0);
+                    $ratingVal = $schoolRatings[$school->user_id] ?? null;
+                    $rating = $ratingVal ? round((float) $ratingVal, 1) : 0.0;
                 }
             }
 
@@ -97,6 +170,12 @@ class PartnerController extends Controller
 
         return response()->json([
             'data' => $partners,
+            'meta' => [
+                'current_page' => $page,
+                'per_page'     => $perPage,
+                'total'        => $total,
+                'last_page'    => (int) ceil($total / max($perPage, 1)),
+            ],
         ], 200);
     }
 
