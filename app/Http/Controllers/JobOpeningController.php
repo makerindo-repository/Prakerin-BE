@@ -50,11 +50,12 @@ class JobOpeningController extends Controller
         $field_id = $request->query('field_id', []);
         $duration_id = $request->query('duration_id', []);
         $isSaved = filter_var(request()->query('is_saved', false), FILTER_VALIDATE_BOOLEAN);
+        $isDashboard = filter_var($request->query('dashboard', false), FILTER_VALIDATE_BOOLEAN);
 
         $user = Auth::guard('sanctum')->user();
 
-        // If user is a company, show only their job openings
-        if ($user?->company) {
+        // If user is a company and requesting dashboard data, show only their job openings
+        if ($user?->company && $isDashboard) {
             $query = JobOpening::with([
                 'company.user',
                 'company.cityRegency.province',
@@ -75,7 +76,7 @@ class JobOpeningController extends Controller
                     return $query->whereIn('duration_id', Arr::wrap($duration_id));
                 });
         } else {
-            // If user is a student, show available job openings with filters
+            // For students, guests, or companies browsing the public landing page: show all available job openings
             $query = JobOpening::with([
                 'company.user',
                 'company.cityRegency.province',
