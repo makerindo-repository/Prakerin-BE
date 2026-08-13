@@ -905,15 +905,16 @@ class UserController extends Controller
         $isVerified = true;
         if ($user->role === "student") {
             $token = $user->createToken('Auth Token', ['student-access'])->plainTextToken;
-            $isVerified = Student::where('user_id', $user->id)->value('is_verified');
+            $isVerified = (bool) Student::where('user_id', $user->id)->value('is_verified');
         } else if ($user->role === "school") {
             $token = $user->createToken('Auth Token', ['school-access'])->plainTextToken;
-            $isVerified = School::where('user_id', $user->id)->value('is_verified');
+            $isVerified = (bool) School::where('user_id', $user->id)->value('is_verified');
         } else if ($user->role === "company") {
             $token = $user->createToken('Auth Token', ['company-access'])->plainTextToken;
-            $isVerified = Company::where('user_id', $user->id)->value('is_verified');
+            $isVerified = (bool) Company::where('user_id', $user->id)->value('is_verified');
         } else if ($user->role === "super_admin") {
             $token = $user->createToken('Auth Token', ['admin-access'])->plainTextToken;
+            $isVerified = true;
         }
 
         if (!$token) {
@@ -1223,11 +1224,23 @@ class UserController extends Controller
             }
         }
 
+        $isUserVerified = false;
+        if ($user->role === 'super_admin') {
+            $isUserVerified = true;
+        } elseif ($user->student) {
+            $isUserVerified = (bool) ($user->student->is_verified ?? false);
+        } elseif ($user->school) {
+            $isUserVerified = (bool) ($user->school->is_verified ?? false);
+        } elseif ($user->company) {
+            $isUserVerified = (bool) ($user->company->is_verified ?? false);
+        }
+
         $timezone = \App\Support\IndonesianTimezone::resolve($provinceName);
         $user['timezone'] = $timezone['zone'];       // mis. "Asia/Jakarta"
         $user['timezone_label'] = $timezone['label']; // mis. "WIB"
         $user['is_profile_complete'] = $isProfileComplete;
         $user['missing_fields'] = $missingFields;
+        $user['is_verified'] = $isUserVerified;
 
         return response()->json([
             'data' => $user,
