@@ -799,26 +799,26 @@ class UserController extends Controller
 
         if ($user->role === "student") {
             $student = new Student();
-            $student->name = $data['name'];
-            $student->school_id = $data['school_id'];
+            $student->name = !empty($data['name']) ? $data['name'] : $data['username'];
+            $student->school_id = $data['school_id'] ?? null;
             $student->user_id = $user->id;
             $student->save();
-            $schoolType = School::find($data['school_id'])?->type;
+            $schoolType = !empty($data['school_id']) ? School::find($data['school_id'])?->type : null;
             $user->syncSpatieRole($schoolType);
             $token = $user->createToken('Auth Token', ['student-access'])->plainTextToken;
         } else if ($user->role === "school") {
             $school = new School();
-            $school->name = $data['name'];
-            $school->address = $data['address'];
+            $school->name = !empty($data['name']) ? $data['name'] : $data['username'];
+            $school->address = $data['address'] ?? null;
             $school->user_id = $user->id;
-            $school->type = $data['type'];
+            $school->type = $data['type'] ?? 'school';
             $school->save();
             $user->syncSpatieRole($school->type);
             $token = $user->createToken('Auth Token', ['school-access'])->plainTextToken;
         } else if ($user->role === "company") {
             $company = new Company();
-            $company->name = $data['name'];
-            $company->address = $data['address'];
+            $company->name = !empty($data['name']) ? $data['name'] : $data['username'];
+            $company->address = $data['address'] ?? null;
             $company->user_id = $user->id;
             $company->save();
             $user->syncSpatieRole();
@@ -1001,19 +1001,61 @@ class UserController extends Controller
                 $user['school']["province_id"] = null;
             }
         }
+        $isProfileComplete = true;
+        $missingFields = [];
+
         if ($user->student) {
             $user->name = $user->student->name;
             if (isset($user->student->school)) {
                 $user['student']["school_name"] = $user->student->school->name;
+                $user['student']["school_type"] = $user->student->school->type ?? 'school';
                 $provinceName = $user->student->school->cityRegency->province->name ?? null;
             } else {
                 $user['student']["school_name"] = null;
+                $user['student']["school_type"] = null;
+            }
+
+            if (empty($user->student->school_id)) {
+                $isProfileComplete = false;
+                $missingFields[] = 'school_id';
+            }
+            if (empty($user->student->major_id)) {
+                $isProfileComplete = false;
+                $missingFields[] = 'major_id';
+            }
+            if (empty($user->student->phone_number)) {
+                $isProfileComplete = false;
+                $missingFields[] = 'phone_number';
+            }
+            if (empty($user->student->address)) {
+                $isProfileComplete = false;
+                $missingFields[] = 'address';
+            }
+        } elseif ($user->school) {
+            if (empty($user->school->address)) {
+                $isProfileComplete = false;
+                $missingFields[] = 'address';
+            }
+            if (empty($user->school->city_regency_id)) {
+                $isProfileComplete = false;
+                $missingFields[] = 'city_regency_id';
+            }
+        } elseif ($user->company) {
+            if (empty($user->company->address)) {
+                $isProfileComplete = false;
+                $missingFields[] = 'address';
+            }
+            if (empty($user->company->city_regency_id)) {
+                $isProfileComplete = false;
+                $missingFields[] = 'city_regency_id';
             }
         }
 
         $timezone = \App\Support\IndonesianTimezone::resolve($provinceName);
         $user['timezone'] = $timezone['zone'];       // mis. "Asia/Jakarta"
         $user['timezone_label'] = $timezone['label']; // mis. "WIB"
+        $user['is_profile_complete'] = $isProfileComplete;
+        $user['missing_fields'] = $missingFields;
 
         return response()->json([
             'data' => $user,
