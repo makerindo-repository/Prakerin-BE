@@ -437,12 +437,23 @@ class TaskController extends Controller
     public function count(Request $request)
     {
         $user = $request->user();
+        $companyId = $user->company?->id;
+
+        // If user is a company token but has no company profile yet, return zeros
+        if ($user->tokenCan('company-access') && !$companyId) {
+            $allStatuses = ['pending', 'in_progress', 'completed', 'cancelled'];
+            $data = collect($allStatuses)->mapWithKeys(fn($s) => [$s => 0]);
+            $data['students'] = collect();
+            return response()->json(['data' => $data], 200);
+        }
 
         $allStatuses = ['pending', 'in_progress', 'completed', 'cancelled'];
-        $data = collect($allStatuses)->mapWithKeys(function ($status) use ($user) {
+        $data = collect($allStatuses)->mapWithKeys(function ($status) use ($user, $companyId) {
             return [
-                $status => Task::whereHas('internship', function ($q) use ($user) {
-                    $q->where('company_id', $user->company->id);
+                $status => Task::whereHas('internship', function ($q) use ($user, $companyId) {
+                    if ($companyId) {
+                        $q->where('company_id', $companyId);
+                    }
                 })->where('status', $status)->count()
             ];
         });
@@ -453,7 +464,7 @@ class TaskController extends Controller
                 $join->on('internships.id', '=', 'tasks.internship_id')
                     ->where('tasks.status', 'completed');
             })
-            ->where('internships.company_id', $user->company->id)
+            ->where('internships.company_id', $companyId)
             ->where('internships.is_completed', false)
             ->select('students.name', DB::raw('COUNT(tasks.id) as completed_tasks'))
             ->groupBy('students.id', 'students.name')

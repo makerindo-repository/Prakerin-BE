@@ -478,8 +478,15 @@ class JobOpeningController extends Controller
 )]
     public function count(Request $request)
     {
-        $counts = JobOpening::when($request->user()->tokenCan("company-access"), function ($query) use ($request) {
-            $query->where("company_id", $request->user()->company->id);
+        $user = $request->user();
+        $companyId = $user->company?->id;
+
+        if ($user->tokenCan('company-access') && !$companyId) {
+            return response()->json(['data' => ['true' => 0, 'false' => 0, 'total' => 0]]);
+        }
+
+        $counts = JobOpening::when($user->tokenCan("company-access"), function ($query) use ($companyId) {
+            $query->where("company_id", $companyId);
         })
             ->selectRaw('is_available, COUNT(*) as total')
             ->groupBy('is_available')
@@ -488,7 +495,7 @@ class JobOpeningController extends Controller
 
         // siapkan default biar selalu ada key true/false meskipun count = 0
         $final = [
-            'true' => $counts[1] ?? 0, // di DB boolean biasanya 1/0
+            'true'  => $counts[1] ?? 0, // di DB boolean biasanya 1/0
             'false' => $counts[0] ?? 0,
             'total' => array_sum($counts),
         ];
