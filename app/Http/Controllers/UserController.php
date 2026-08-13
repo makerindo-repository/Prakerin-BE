@@ -466,7 +466,7 @@ class UserController extends Controller
         } else if ($user->role === "school") {
             $school = new School();
             $school->name = $data['name'];
-            $school->address = $data['address'];
+            $school->address = $data['address'] ?? '';
             $school->user_id = $user->id;
             $school->type = $data['type'] ?? 'school';
             $school->is_verified = true;
@@ -475,7 +475,7 @@ class UserController extends Controller
         } else if ($user->role === "company") {
             $company = new Company();
             $company->name = $data['name'];
-            $company->address = $data['address'];
+            $company->address = $data['address'] ?? '';
             $company->user_id = $user->id;
             $company->is_verified = true;
             $company->save();
@@ -822,7 +822,7 @@ class UserController extends Controller
         } else if ($user->role === "school") {
             $school = new School();
             $school->name = !empty($data['name']) ? $data['name'] : $data['username'];
-            $school->address = $data['address'] ?? null;
+            $school->address = $data['address'] ?? '';
             $school->user_id = $user->id;
             $school->type = $data['type'] ?? 'school';
             $school->is_verified = (bool) Setting::getVal('auto_approve_schools', false);
@@ -832,7 +832,7 @@ class UserController extends Controller
         } else if ($user->role === "company") {
             $company = new Company();
             $company->name = !empty($data['name']) ? $data['name'] : $data['username'];
-            $company->address = $data['address'] ?? null;
+            $company->address = $data['address'] ?? '';
             $company->user_id = $user->id;
             $company->is_verified = (bool) Setting::getVal('auto_approve_companies', false);
             $company->save();
