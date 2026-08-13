@@ -75,13 +75,15 @@ class UserController extends Controller
         $user = Auth::guard('sanctum')->user();
 
 
-        $users = User::when($user === null, function ($query) use ($search, $isSchool) {
+        $users = User::when($user === null || ($user?->tokenCan('student-access') && $role === 'school'), function ($query) use ($search, $isSchool) {
             $query->with(['school']);
             $query->where('role', 'school');
             $query->whereHas('school', function ($q) use ($search, $isSchool) {
                 $q->where('is_verified', true);
                 $q->where('name', 'like', "%$search%");
-                $q->where('type', $isSchool ? 'school' : 'university');
+                if ($isSchool !== null) {
+                    $q->where('type', $isSchool ? 'school' : 'university');
+                }
             });
         })
             ->when($user?->tokenCan('school-access') && ($role === 'student'), function ($query,) use ($search, $isVerified, $user, $status, $request) {
@@ -287,10 +289,15 @@ class UserController extends Controller
             ->orderBy('updated_at', 'desc')
             ->paginate($limit)
             ->through(function ($item) use ($user, $role) {
-                if ($user === null) {
+                if ($user === null || ($user?->tokenCan('student-access') && $role === 'school')) {
                     return [
                         'id' => $item->school?->id,
                         'name' => $item->school?->name,
+                        'school' => [
+                            'id' => $item->school?->id,
+                            'name' => $item->school?->name,
+                            'type' => $item->school?->type,
+                        ],
                     ];
                 } else if (($user?->tokenCan('school-access') || $user?->tokenCan('admin-access')) && ($role === 'student')) {
 
