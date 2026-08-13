@@ -661,6 +661,7 @@ Route::prefix('v1')->group(function () {
             Route::middleware('ability:admin-access')->group(function () {
                 Route::get('/', 'index');
                 Route::post('/', 'update');
+                Route::post('/upload-logo', 'uploadLogo');
                 Route::post('/test-smtp', 'testSmtp');
                 Route::post('/test-ai', 'testAiKey');
                 Route::post('/test-xendit', 'testXendit'); // legacy, jaga-jaga rollback

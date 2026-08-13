@@ -88,6 +88,61 @@ class SettingController extends Controller
     }
 
     /**
+     * Upload platform branding logo or icon.
+     */
+    public function uploadLogo(Request $request)
+    {
+        $request->validate([
+            'logo' => 'required|image|mimes:jpeg,png,jpg,gif,svg,ico,webp|max:5120',
+        ]);
+
+        if ($request->hasFile('logo')) {
+            $file = $request->file('logo');
+            $extension = $file->getClientOriginalExtension() ?: 'png';
+            $filename = 'app_logo_' . time() . '.' . $extension;
+
+            // Save to public storage/branding
+            $path = $file->storeAs('branding', $filename, 'public');
+            $url = asset('storage/' . $path);
+
+            // Directly overwrite public asset files if feasible
+            try {
+                $publicPath = public_path('logo_prakerin_new_transparent.png');
+                if (file_exists($publicPath)) {
+                    copy($file->getRealPath(), $publicPath);
+                }
+                $publicSvg = public_path('PrakerinID_ico.svg');
+                if (file_exists($publicSvg)) {
+                    copy($file->getRealPath(), $publicSvg);
+                }
+                $publicPng = public_path('PrakerinID_ico.png');
+                if (file_exists($publicPng)) {
+                    copy($file->getRealPath(), $publicPng);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Direct public logo file replacement skipped: ' . $e->getMessage());
+            }
+
+            // Save to settings table
+            Setting::updateOrCreate(
+                ['key' => 'app_logo'],
+                ['value' => $url, 'type' => 'string']
+            );
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Logo platform berhasil diunggah dan diperbarui!',
+                'url' => $url,
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'File logo tidak ditemukan.',
+        ], 400);
+    }
+
+    /**
      * Subset pengaturan yang aman dibaca semua role yang login (bukan cuma
      * admin) — dipakai misalnya buat sidebar butuh link "Kelas Pra-Magang".
      * SENGAJA whitelist manual di sini, jangan pernah expose semua Setting::all()
@@ -95,7 +150,7 @@ class SettingController extends Controller
      */
     public function publicSettings()
     {
-        $whitelist = ['pre_internship_class_url', 'platform_name', 'support_email', 'support_phone', 'pro_monthly_price', 'pro_yearly_price'];
+        $whitelist = ['pre_internship_class_url', 'platform_name', 'app_logo', 'support_email', 'support_phone', 'pro_monthly_price', 'pro_yearly_price'];
 
         $settings = Setting::whereIn('key', $whitelist)
             ->get()
