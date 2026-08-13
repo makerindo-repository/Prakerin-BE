@@ -22,7 +22,7 @@ class MentorController extends Controller
     {
         $role = $request->query('role'); // 'school' | 'company' | null
 
-        $mentors = Mentor::with('user')
+        $mentors = Mentor::with(['user.school', 'user.company', 'user.student.school'])
             ->withCount(['assignments as active_assignments_count' => function ($q) {
                 $q->whereNull('ended_at');
             }])

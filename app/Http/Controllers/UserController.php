@@ -293,16 +293,27 @@ class UserController extends Controller
                     ];
                 } else if (($user?->tokenCan('school-access') || $user?->tokenCan('admin-access')) && ($role === 'student')) {
 
+                    $schoolObj = $item->student?->school ? [
+                        'id' => $item->student->school->id,
+                        'name' => $item->student->school->name,
+                        'type' => $item->student->school->type,
+                    ] : null;
+
                     return [
                         'id' => $item->id,
                         'username' => $item->username,
                         'email' => $item->email,
                         'role' => $item->role,
                         'photo_profile' => $item->photo_profile,
+                        'school' => $schoolObj,
+                        'school_name' => $item->student?->school?->name ?? $item->student?->school_name ?? null,
                         'student' => [
                             'id' => $item->student?->id,
                             'name' => $item->student?->name,
                             'class' => $item->student?->class,
+                            'school_id' => $item->student?->school_id,
+                            'school_name' => $item->student?->school?->name ?? $item->student?->school_name ?? null,
+                            'school' => $schoolObj,
                             'status_magang' => $item->student?->status_magang ?? 'not_started',
                             'status_subscription' => $item->student?->status_subscription ?? 'free',
                             'company' => $item->student?->curriculumVitae
@@ -921,6 +932,163 @@ class UserController extends Controller
         ]);
 
         return response()->json(['token' => $token, 'role' => $user->role, 'is_verified' => $isVerified], 200);
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Format email tidak valid.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Email tidak terdaftar dalam sistem.'
+            ], 404);
+        }
+
+        // Generate 6-digit numeric OTP
+        $otp = sprintf("%06d", mt_rand(0, 999999));
+
+        // Store OTP hash in password_reset_tokens
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $request->email],
+            [
+                'token' => Hash::make($otp),
+                'created_at' => now(),
+            ]
+        );
+
+        // Attempt sending email notification safely
+        try {
+            $user->notify(new \App\Notifications\SendOtpNotification($otp));
+        } catch (\Throwable $e) {
+            Log::warning("Failed sending OTP email to {$request->email}: " . $e->getMessage());
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Kode OTP telah dikirim ke email Anda.',
+            'debug_otp' => config('app.debug') ? $otp : null,
+        ], 200);
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'otp' => 'required|string|size:6',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Kode OTP harus 6 digit.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $record = DB::table('password_reset_tokens')->where('email', $request->email)->first();
+        if (!$record) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Kode OTP tidak ditemukan atau telah kedaluwarsa.'
+            ], 400);
+        }
+
+        // Check 15 minutes expiration
+        if (\Carbon\Carbon::parse($record->created_at)->addMinutes(15)->isPast()) {
+            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+            return response()->json([
+                'status' => false,
+                'message' => 'Kode OTP telah kedaluwarsa. Silakan minta kode OTP baru.'
+            ], 400);
+        }
+
+        if (!Hash::check($request->otp, $record->token)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Kode OTP tidak sesuai. Silakan periksa kembali email Anda.'
+            ], 400);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Kode OTP valid.'
+        ], 200);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'otp' => 'required|string|size:6',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validasi gagal. Pastikan password minimal 8 karakter dan konfirmasi cocok.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $record = DB::table('password_reset_tokens')->where('email', $request->email)->first();
+        if (!$record || !Hash::check($request->otp, $record->token)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Kode OTP tidak valid atau telah kedaluwarsa.'
+            ], 400);
+        }
+
+        // Check 15 minutes expiration
+        if (\Carbon\Carbon::parse($record->created_at)->addMinutes(15)->isPast()) {
+            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+            return response()->json([
+                'status' => false,
+                'message' => 'Kode OTP telah kedaluwarsa. Silakan minta kode OTP baru.'
+            ], 400);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Pengguna tidak ditemukan.'
+            ], 404);
+        }
+
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        // Delete used token
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'reset_password',
+            'resource_type' => 'User',
+            'resource_id' => $user->id,
+            'resource_name' => $user->username,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'description' => "User reset password via OTP: " . $user->username,
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Password berhasil diperbarui. Silakan login dengan password baru Anda.'
+        ], 200);
     }
 
     /**

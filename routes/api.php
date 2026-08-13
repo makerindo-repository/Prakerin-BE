@@ -264,6 +264,9 @@ Route::prefix('v1')->group(function () {
         ->group(function () {
             Route::post('/login', 'login');
             Route::post('/register', 'register');
+            Route::post('/forgot-password', 'forgotPassword');
+            Route::post('/verify-otp', 'verifyOtp');
+            Route::post('/reset-password', 'resetPassword');
 
             Route::get('/email/verify/{id}/{hash}', 'verifyEmail')->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
 
