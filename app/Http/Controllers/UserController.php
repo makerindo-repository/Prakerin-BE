@@ -13,6 +13,7 @@ use App\Models\Mou;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
+use App\Models\Setting;
 use App\Models\ActivityLog;
 use Auth;
 use DB;
@@ -813,6 +814,7 @@ class UserController extends Controller
             $student->name = !empty($data['name']) ? $data['name'] : $data['username'];
             $student->school_id = $data['school_id'] ?? null;
             $student->user_id = $user->id;
+            $student->is_verified = (bool) Setting::getVal('auto_approve_students', false);
             $student->save();
             $schoolType = !empty($data['school_id']) ? School::find($data['school_id'])?->type : null;
             $user->syncSpatieRole($schoolType);
@@ -823,6 +825,7 @@ class UserController extends Controller
             $school->address = $data['address'] ?? null;
             $school->user_id = $user->id;
             $school->type = $data['type'] ?? 'school';
+            $school->is_verified = (bool) Setting::getVal('auto_approve_schools', false);
             $school->save();
             $user->syncSpatieRole($school->type);
             $token = $user->createToken('Auth Token', ['school-access'])->plainTextToken;
@@ -831,6 +834,7 @@ class UserController extends Controller
             $company->name = !empty($data['name']) ? $data['name'] : $data['username'];
             $company->address = $data['address'] ?? null;
             $company->user_id = $user->id;
+            $company->is_verified = (bool) Setting::getVal('auto_approve_companies', false);
             $company->save();
             $user->syncSpatieRole();
             $token = $user->createToken('Auth Token', ['company-access'])->plainTextToken;

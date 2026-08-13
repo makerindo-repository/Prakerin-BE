@@ -9,6 +9,7 @@ use App\Models\ProfileImage;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
+use App\Models\Setting;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -169,6 +170,7 @@ class StudentController extends Controller
             $student->is_verified = true;
         } else {
             $student->school_id = $data['school_id'];
+            $student->is_verified = (bool) Setting::getVal('auto_approve_students', false);
         }
         $student->user_id = $user->id;
         $student->class = $data['class'] ?? null;
