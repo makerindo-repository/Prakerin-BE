@@ -61,7 +61,7 @@ class CityRegencyController extends Controller
     public function index(Request $request)
     {
 
-        $is_accepted = filter_var($request->query('is_accepted', true), FILTER_VALIDATE_BOOLEAN);
+        $is_accepted_param = $request->query('is_accepted');
         $search = $request->query('search', '');
         $provinceId = $request->query('province_id', []);
         $limit = $request->query('limit', 10);
@@ -73,8 +73,10 @@ class CityRegencyController extends Controller
 
         Log::info("CityRegency Controller limit = $limit, sort = {$column} {$sortDir}");
 
-        $query = CityRegency::where('is_accepted', $is_accepted)
-            ->with('province')
+        $query = CityRegency::with('province')
+            ->when($is_accepted_param !== null, function ($q) use ($is_accepted_param) {
+                $q->where('is_accepted', filter_var($is_accepted_param, FILTER_VALIDATE_BOOLEAN));
+            })
             ->where('name', "like", "%$search%")
             ->when(!empty($provinceId), function ($q) use ($provinceId) {
                 $q->whereIn('province_id', Arr::wrap($provinceId));
