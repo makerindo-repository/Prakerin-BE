@@ -1152,6 +1152,30 @@ class UserController extends Controller
             $user->makeHidden('company');
         }
 
+        // ── Auto-heal: if user has a role but the related profile row is missing
+        // (e.g. registration failed partway due to a DB constraint), create it now
+        // so all subsequent endpoints don't 500 on ->company->id etc.
+        if ($user->role === 'company' && !$user->company) {
+            $company = new \App\Models\Company();
+            $company->user_id = $user->id;
+            $company->name    = $user->username;
+            $company->address = '';
+            $company->is_verified = (bool) \App\Models\Setting::getVal('auto_approve_companies', false);
+            $company->save();
+            $user->load('company');
+            $user->makeVisible('company');
+        } elseif ($user->role === 'school' && !$user->school) {
+            $school = new \App\Models\School();
+            $school->user_id = $user->id;
+            $school->name    = $user->username;
+            $school->address = '';
+            $school->type    = 'school';
+            $school->is_verified = (bool) \App\Models\Setting::getVal('auto_approve_schools', false);
+            $school->save();
+            $user->load('school');
+            $user->makeVisible('school');
+        }
+
         // Tentukan zona waktu dashboard berdasarkan provinsi institusi/sekolah
         // pengguna (WIB/WITA/WIT), bukan zona waktu perangkat/browser.
         $provinceName = null;
