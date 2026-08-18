@@ -109,7 +109,7 @@ class PreInternshipClassController extends Controller
             throw new HttpResponseException(response()->json(['errors' => $validator->errors()], 422));
         }
 
-        $class->update($request->all());
+        $class->update($validator->validated());
 
         return response()->json([
             'success' => true,

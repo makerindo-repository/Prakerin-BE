@@ -458,23 +458,28 @@ class InternshipApplicationController extends Controller
 
         $data = $validator->validated();
 
-        if ($data['status'] === 'accepted') {
-            $existingInternship = Internship::where('internship_application_id', $internshipApplication->id)->first();
-            if (!$existingInternship) {
-                $internship = new Internship();
-                $internship->internship_application_id = $internshipApplication->id;
-                $internship->start_date = $jobOpening->start_date;
-                $internship->end_date = $jobOpening->end_date;
-                $internship->student_id = $internshipApplication->curriculumVitae->student_id;
-                $internship->company_id = $request->user()->company->id;
-                $internship->save();
+        \Illuminate\Support\Facades\DB::transaction(function () use ($data, $internshipApplication, $jobOpening, $request) {
+            if ($data['status'] === 'accepted') {
+                $existingInternship = \App\Models\Internship::where('internship_application_id', $internshipApplication->id)->first();
+                if (!$existingInternship) {
+                    $internship = new \App\Models\Internship();
+                    $internship->internship_application_id = $internshipApplication->id;
+                    $internship->start_date = $jobOpening->start_date;
+                    $internship->end_date = $jobOpening->end_date;
+                    $internship->student_id = $internshipApplication->curriculumVitae->student_id;
+                    $internship->company_id = $request->user()->company->id;
+                    $internship->save();
+                }
+
+                if ($internshipApplication->curriculumVitae?->student) {
+                    $internshipApplication->curriculumVitae->student->status_magang = "ongoing";
+                    $internshipApplication->curriculumVitae->student->save();
+                }
             }
 
-            if ($internshipApplication->curriculumVitae?->student) {
-                $internshipApplication->curriculumVitae->student->status_magang = "ongoing";
-                $internshipApplication->curriculumVitae->student->save();
-            }
-        }
+            $internshipApplication->status = $data['status'];
+            $internshipApplication->save();
+        });
         $studentUser  = $internshipApplication->curriculumVitae?->student?->user;
         $statusIndo   = $data['status'] === 'accepted' ? 'DITERIMA 🎉' : 'DITOLAK';
         $jobTitle     = $internshipApplication->jobOpening?->title ?? 'Lowongan';
@@ -513,8 +518,8 @@ class InternshipApplicationController extends Controller
             Log::warning('[InternshipApplicationController] Student notification failed: ' . $e->getMessage());
         }
 
-        $internshipApplication->status = $data['status'];
-        $internshipApplication->save();
+        // $internshipApplication->status = $data['status']; // Handled in transaction
+        // $internshipApplication->save(); // Handled in transaction
 
         return response()->json([
             'data' => true

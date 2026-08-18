@@ -91,7 +91,7 @@ class MentorController extends Controller
             throw new HttpResponseException(response()->json(['errors' => $validator->errors()], 422));
         }
 
-        $mentor = Mentor::create($request->all());
+        $mentor = Mentor::create($validator->validated());
 
         return response()->json([
             'success' => true,
@@ -121,7 +121,7 @@ class MentorController extends Controller
             throw new HttpResponseException(response()->json(['errors' => $validator->errors()], 422));
         }
 
-        $mentor->update($request->all());
+        $mentor->update($validator->validated());
 
         return response()->json([
             'success' => true,

@@ -166,7 +166,7 @@ class CertificateController extends Controller
 
         // Hapus file QR temporary setelah PDF dibuat
         if (file_exists($qrPath)) {
-            unlink($qrPath);
+            @unlink($qrPath);
         }
 
         // Return PDF
@@ -237,7 +237,7 @@ class CertificateController extends Controller
 
         // Hapus file QR temporary setelah PDF dibuat
         if (file_exists($qrPath)) {
-            unlink($qrPath);
+            @unlink($qrPath);
         }
 
         // Return PDF

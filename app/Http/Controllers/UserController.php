@@ -436,58 +436,62 @@ class UserController extends Controller
         }
 
 
-        $user = new User();
-        $user->username = $data['username'];
-        $user->email = $data['email'];
-        $user->role = $data['role'];
-        $user->password = $data['password'];
+        $user = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $request) {
+            $user = new User();
+            $user->username = $data['username'];
+            $user->email = $data['email'];
+            $user->role = $data['role'];
+            $user->password = $data['password'];
 
-        if ($request->file('image')) {
-            $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
-            $user->photo_profile = $filename;
-            $request->file('image')->storeAs('photo-profile', $filename, 'public');
-        }
-        $user->save();
-
-
-        if ($user->role === "student") {
-            $student = new Student();
-            $student->name = $data['name'];
-            if (auth()->user()->tokenCan('school-access')) {
-                $student->school_id = auth()->user()->school->id;
-                $student->is_verified = true;
-            } else {
-                $student->school_id = $data['school_id'];
-                $student->is_verified = true;
+            if ($request->file('image')) {
+                $filename = now()->format('Ymd_His') . '.' . $request->file('image')->getClientOriginalExtension();
+                $user->photo_profile = $filename;
+                $request->file('image')->storeAs('photo-profile', $filename, 'public');
             }
-            $student->user_id = $user->id;
-            $student->class = $data['class'] ?? null;
-            $student->major_id = $data['major_id'] ?? null;
-            $student->gender = $data['gender'] ?? null;
-            $student->address = $data['address'] ?? null;
-            $student->phone_number = $data['phone_number'] ?? null;
-            $student->date_of_birth = $data['date_of_birth'] ?? null;
-            $student->save();
-            $schoolType = School::find($student->school_id)?->type;
-            $user->syncSpatieRole($schoolType);
-        } else if ($user->role === "school") {
-            $school = new School();
-            $school->name = $data['name'];
-            $school->address = $data['address'] ?? '';
-            $school->user_id = $user->id;
-            $school->type = $data['type'] ?? 'school';
-            $school->is_verified = true;
-            $school->save();
-            $user->syncSpatieRole($school->type);
-        } else if ($user->role === "company") {
-            $company = new Company();
-            $company->name = $data['name'];
-            $company->address = $data['address'] ?? '';
-            $company->user_id = $user->id;
-            $company->is_verified = true;
-            $company->save();
-            $user->syncSpatieRole();
-        }
+            $user->save();
+
+
+            if ($user->role === "student") {
+                $student = new Student();
+                $student->name = $data['name'];
+                if (auth()->user()->tokenCan('school-access')) {
+                    $student->school_id = auth()->user()->school->id;
+                    $student->is_verified = true;
+                } else {
+                    $student->school_id = $data['school_id'];
+                    $student->is_verified = true;
+                }
+                $student->user_id = $user->id;
+                $student->class = $data['class'] ?? null;
+                $student->major_id = $data['major_id'] ?? null;
+                $student->gender = $data['gender'] ?? null;
+                $student->address = $data['address'] ?? null;
+                $student->phone_number = $data['phone_number'] ?? null;
+                $student->date_of_birth = $data['date_of_birth'] ?? null;
+                $student->save();
+                $schoolType = School::find($student->school_id)?->type;
+                $user->syncSpatieRole($schoolType);
+            } else if ($user->role === "school") {
+                $school = new School();
+                $school->name = $data['name'];
+                $school->address = $data['address'] ?? '';
+                $school->user_id = $user->id;
+                $school->type = $data['type'] ?? 'school';
+                $school->is_verified = true;
+                $school->save();
+                $user->syncSpatieRole($school->type);
+            } else if ($user->role === "company") {
+                $company = new Company();
+                $company->name = $data['name'];
+                $company->address = $data['address'] ?? '';
+                $company->user_id = $user->id;
+                $company->is_verified = true;
+                $company->save();
+                $user->syncSpatieRole();
+            }
+
+            return $user;
+        });
 
 
         return response()->json([
