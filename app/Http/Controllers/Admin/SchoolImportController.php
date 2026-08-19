@@ -616,25 +616,15 @@ class SchoolImportController extends Controller
     /**
      * Pastikan fallback tersedia.
      */
-    private function ensureDefaultPhoto(): string
+    private function ensureDefaultPhoto(): ?string
     {
         $filename = 'default-school.png';
-
         $path = 'photo-profile/' . $filename;
 
-        if (
-            !Storage::disk('public')->exists($path)
-        ) {
-            /*
-             * Jangan membuat binary gambar palsu.
-             * Sediakan file default-school.png di:
-             *
-             * storage/app/public/photo-profile/default-school.png
-             */
-            throw new \RuntimeException(
-                'File default-school.png belum ada di ' .
-                'storage/app/public/photo-profile/'
-            );
+        if (!Storage::disk('public')->exists($path)) {
+            // Instead of throwing an exception and ruining the import,
+            // gracefully return null if the default image doesn't exist yet.
+            return null;
         }
 
         return $filename;
