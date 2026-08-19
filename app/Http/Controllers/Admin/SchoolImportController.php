@@ -421,12 +421,11 @@ class SchoolImportController extends Controller
             'message' => 'Import sedang diproses di background! Silakan tutup popup ini dan refresh halaman dalam beberapa menit untuk melihat hasilnya.',
             'summary' => [
                 'total_rows' => count($rows),
-                'created' => 'Proses Background',
-                'updated' => 'Proses Background',
-                'photos_saved_from_excel' => 'Proses Background',
-                'fallback_default_photos' => 'Proses Background',
-                'skipped' => 'Proses Background',
-                'failed' => 'Proses Background',
+                'created' => 'Berjalan di Background',
+                'skipped_existing' => 0,
+                'skipped_not_verified' => 0,
+                'skipped_invalid' => 0,
+                'failed' => 0,
             ],
             'failed_details' => [],
         ]);
