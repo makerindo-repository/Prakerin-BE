@@ -28,7 +28,7 @@ class SchoolImportController extends Controller
     public function import(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls|max:51200',
+            'file' => 'required|file|mimes:xlsx,xls|max:1048576', // Allow up to 1GB
             'type' => 'nullable|in:university,school',
         ]);
 
