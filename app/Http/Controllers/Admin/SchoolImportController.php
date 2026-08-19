@@ -96,6 +96,29 @@ class SchoolImportController extends Controller
         $processedEmails = [];
         $processedNames = [];
 
+        // OPTIMIZATION: Fetch all existing users and schools at once to prevent N+1 Queries
+        $allEmails = [];
+        $allNames = [];
+        foreach ($rows as $index => $row) {
+            $name = $this->value($row, $columns['name'] ?? null);
+            if ($name !== '') {
+                $allNames[] = $name;
+                $email = mb_strtolower($this->value($row, $columns['email'] ?? null));
+                if ($email !== '') {
+                    $allEmails[] = $email;
+                }
+            }
+        }
+
+        $existingUsersByEmail = User::whereIn(DB::raw('LOWER(email)'), array_unique($allEmails))
+            ->get()
+            ->keyBy(function($u) { return strtolower($u->email); });
+
+        $existingSchoolsByName = School::whereIn(DB::raw('LOWER(name)'), array_unique($allNames))
+            ->with('user')
+            ->get()
+            ->keyBy(function($s) { return strtolower($s->name); });
+
         foreach ($rows as $index => $row) {
             /*
              * Karena header dihapus, data pertama memiliki index 2
@@ -186,20 +209,14 @@ class SchoolImportController extends Controller
                     $user = null;
 
                     if ($email !== '') {
-                        $user = User::whereRaw(
-                            'LOWER(email) = ?',
-                            [$email]
-                        )->first();
+                        $user = $existingUsersByEmail[$email] ?? null;
                     }
 
                     /*
                      * Jika email tidak menemukan user,
                      * cari school berdasarkan nama.
                      */
-                    $school = School::whereRaw(
-                        'LOWER(name) = ?',
-                        [$name]
-                    )->first();
+                    $school = $existingSchoolsByName[strtolower($name)] ?? null;
 
                     if (
                         !$user &&
