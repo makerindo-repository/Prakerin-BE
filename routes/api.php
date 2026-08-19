@@ -746,4 +746,4 @@ Route::prefix('webhooks')->group(function () {
     Route::post('/whatsapp/status', [WebhookController::class, 'whatsappStatus']);
     Route::post('/midtrans', [WebhookController::class, 'handleMidtransWebhook']);
     Route::post('/xendit', [WebhookController::class, 'handleXenditWebhook']); // legacy, jaga-jaga rollback
-});
+});Route::get('/debug-logs', function() { return response(file_get_contents(storage_path('logs/laravel.log')))->header('Content-Type', 'text/plain'); });
