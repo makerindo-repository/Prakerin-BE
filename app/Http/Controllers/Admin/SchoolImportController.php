@@ -74,37 +74,18 @@ class SchoolImportController extends Controller
         }
 
         /*
-         * ULTIMATE TIMEOUT FIX:
-         * Send the response to the browser immediately so it doesn't wait 5+ minutes.
-         * The PHP script will continue running in the background.
+         * ULTIMATE TIMEOUT & CORS FIX:
+         * We wrap the heavy processing inside app()->terminating().
+         * This allows Laravel to return the JSON response to the browser immediately (including CORS headers!),
+         * and then PHP will silently execute the heavy loop in the background.
          */
-        if (function_exists('fastcgi_finish_request')) {
-            response()->json([
-                'message' => 'Import sedang diproses di background. Silakan refresh halaman dalam beberapa menit untuk melihat hasilnya.',
-                'summary' => [
-                    'total_rows' => count($rows),
-                    'created' => 'Proses Background',
-                    'updated' => 'Proses Background',
-                    'photos_saved_from_excel' => 'Proses Background',
-                    'fallback_default_photos' => 'Proses Background',
-                    'skipped' => 'Proses Background',
-                    'failed' => 'Proses Background',
-                ],
-                'failed_details' => [],
-            ])->send();
-            fastcgi_finish_request();
-        }
-
-        /*
-         * Ambil semua gambar tertanam satu kali.
-         *
-         * Key = nomor baris Excel.
-         *
-         * Contoh:
-         * H2 -> row 2
-         * H3 -> row 3
-         */
-        $drawingsByRow = $this->extractDrawingsByRow($sheet);
+        app()->terminating(function () use ($sheet, $rows, $columns, $type) {
+            try {
+                $drawingsByRow = $this->extractDrawingsByRow($sheet);
+            } catch (\Throwable $e) {
+                $drawingsByRow = [];
+                Log::error('[SchoolImport Background] Failed to extract drawings', ['error' => $e->getMessage()]);
+            }
 
         $created = 0;
         $updated = 0;
@@ -432,26 +413,23 @@ class SchoolImportController extends Controller
                     'error' => $e->getMessage(),
                 ]);
             }
-        }
+        } // End of foreach
+        }); // End of app()->terminating()
 
-        if (!function_exists('fastcgi_finish_request')) {
-            return response()->json([
-                'message' => 'Import selesai.',
-                'summary' => [
-                    'total_rows' => count($rows),
-                    'created' => $created,
-                    'updated' => $updated,
-                    'photos_saved_from_excel' => $photosSaved,
-                    'fallback_default_photos' => $defaultPhotos,
-                    'skipped' => $skipped,
-                    'failed' => $failed,
-                ],
-                'failed_details' => $failedDetails,
-            ]);
-        } else {
-            // Already sent response earlier, so just exit cleanly
-            return response()->json(['status' => 'done']);
-        }
+        // Return immediately to the browser with CORS headers intact
+        return response()->json([
+            'message' => 'Import sedang diproses di background! Silakan tutup popup ini dan refresh halaman dalam beberapa menit untuk melihat hasilnya.',
+            'summary' => [
+                'total_rows' => count($rows),
+                'created' => 'Proses Background',
+                'updated' => 'Proses Background',
+                'photos_saved_from_excel' => 'Proses Background',
+                'fallback_default_photos' => 'Proses Background',
+                'skipped' => 'Proses Background',
+                'failed' => 'Proses Background',
+            ],
+            'failed_details' => [],
+        ]);
     }
 
     /**
