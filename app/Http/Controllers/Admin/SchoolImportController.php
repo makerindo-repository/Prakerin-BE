@@ -74,6 +74,28 @@ class SchoolImportController extends Controller
         }
 
         /*
+         * ULTIMATE TIMEOUT FIX:
+         * Send the response to the browser immediately so it doesn't wait 5+ minutes.
+         * The PHP script will continue running in the background.
+         */
+        if (function_exists('fastcgi_finish_request')) {
+            response()->json([
+                'message' => 'Import sedang diproses di background. Silakan refresh halaman dalam beberapa menit untuk melihat hasilnya.',
+                'summary' => [
+                    'total_rows' => count($rows),
+                    'created' => 'Proses Background',
+                    'updated' => 'Proses Background',
+                    'photos_saved_from_excel' => 'Proses Background',
+                    'fallback_default_photos' => 'Proses Background',
+                    'skipped' => 'Proses Background',
+                    'failed' => 'Proses Background',
+                ],
+                'failed_details' => [],
+            ])->send();
+            fastcgi_finish_request();
+        }
+
+        /*
          * Ambil semua gambar tertanam satu kali.
          *
          * Key = nomor baris Excel.
@@ -412,19 +434,24 @@ class SchoolImportController extends Controller
             }
         }
 
-        return response()->json([
-            'message' => 'Import selesai.',
-            'summary' => [
-                'total_rows' => count($rows),
-                'created' => $created,
-                'updated' => $updated,
-                'photos_saved_from_excel' => $photosSaved,
-                'fallback_default_photos' => $defaultPhotos,
-                'skipped' => $skipped,
-                'failed' => $failed,
-            ],
-            'failed_details' => $failedDetails,
-        ]);
+        if (!function_exists('fastcgi_finish_request')) {
+            return response()->json([
+                'message' => 'Import selesai.',
+                'summary' => [
+                    'total_rows' => count($rows),
+                    'created' => $created,
+                    'updated' => $updated,
+                    'photos_saved_from_excel' => $photosSaved,
+                    'fallback_default_photos' => $defaultPhotos,
+                    'skipped' => $skipped,
+                    'failed' => $failed,
+                ],
+                'failed_details' => $failedDetails,
+            ]);
+        } else {
+            // Already sent response earlier, so just exit cleanly
+            return response()->json(['status' => 'done']);
+        }
     }
 
     /**
