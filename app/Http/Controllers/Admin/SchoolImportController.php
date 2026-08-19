@@ -104,20 +104,20 @@ class SchoolImportController extends Controller
         $allNames = [];
         foreach ($rows as $index => $row) {
             $name = $this->value($row, $columns['name'] ?? null);
-            if ($name !== '') {
+            if (!empty($name)) {
                 $allNames[] = $name;
-                $email = mb_strtolower($this->value($row, $columns['email'] ?? null));
-                if ($email !== '') {
-                    $allEmails[] = $email;
+                $email = $this->value($row, $columns['email'] ?? null);
+                if (!empty($email)) {
+                    $allEmails[] = mb_strtolower($email);
                 }
             }
         }
 
-        $existingUsersByEmail = User::whereIn(DB::raw('LOWER(email)'), array_unique($allEmails))
+        $existingUsersByEmail = User::whereIn('email', array_unique($allEmails))
             ->get()
             ->keyBy(function($u) { return strtolower($u->email); });
 
-        $existingSchoolsByName = School::whereIn(DB::raw('LOWER(name)'), array_unique($allNames))
+        $existingSchoolsByName = School::whereIn('name', array_unique($allNames))
             ->with('user')
             ->get()
             ->keyBy(function($s) { return strtolower($s->name); });
@@ -144,12 +144,8 @@ class SchoolImportController extends Controller
                 continue;
             }
 
-            $email = mb_strtolower(
-                $this->value(
-                    $row,
-                    $columns['email'] ?? null
-                )
-            );
+            $emailRaw = $this->value($row, $columns['email'] ?? null);
+            $email = $emailRaw ? mb_strtolower($emailRaw) : '';
 
             $password = $this->value(
                 $row,
