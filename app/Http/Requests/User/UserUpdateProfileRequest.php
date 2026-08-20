@@ -111,7 +111,7 @@ class UserUpdateProfileRequest extends FormRequest
                 $rules['school_id'] = 'nullable|uuid:4|exists:schools,id';
                 $rules['date_of_birth'] = 'nullable|date_format:Y-m-d';
                 $rules['gender'] = 'nullable|in:male,female';
-                $rules['class'] = 'nullable|in:1,2,3,4,5,6,7,8,9,10,11,12,13,14';
+                $rules['class'] = 'nullable|in:1,2,3,4,5,6,7,8,9,10,11,12,13,14,collage,college,kuliah';
                 $rules['skill'] = 'nullable|string|max:255';
                 $rules['portofolio_link'] = 'nullable|url|max:255';
                 $rules['social_media_link'] = 'nullable|url|max:255';

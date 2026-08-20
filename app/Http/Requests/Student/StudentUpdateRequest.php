@@ -29,7 +29,7 @@ class StudentUpdateRequest extends FormRequest
             'gender' => 'in:male,female|nullable',
             'address' => 'string|nullable',
             'phone_number' => 'string|max:20|nullable',
-            'class' => 'in:1,2,3,4,5,6,7,8,9,10,11,12,13,14|nullable',
+            'class' => 'in:1,2,3,4,5,6,7,8,9,10,11,12,13,14,collage,college,kuliah|nullable',
             'major_id' => 'max:36|exists:majors,id|nullable',
             'image' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048|nullable',
         ];
