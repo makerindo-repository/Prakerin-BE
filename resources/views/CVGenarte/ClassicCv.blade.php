@@ -36,14 +36,21 @@
 </head>
 <body>
 
-  <div class="header">
-    <h1 class="name">{{ $fullName }}</h1>
-    <div class="title">{{ $jobTitle }}</div>
-    <div class="contact-info">
-      @if($email)<span>Email: {{ $email }}</span>@endif
-      @if($phone)<span>Telepon: {{ $phone }}</span>@endif
-      @if($linkedin)<span>LinkedIn: {{ $linkedin }}</span>@endif
+  <div class="header" style="display: table; width: 100%;">
+    <div style="display: table-cell; vertical-align: top;">
+      <h1 class="name">{{ $fullName }}</h1>
+      <div class="title">{{ $jobTitle }}</div>
+      <div class="contact-info">
+        @if($email)<span>Email: {{ $email }}</span>@endif
+        @if($phone)<span>Telepon: {{ $phone }}</span>@endif
+        @if($linkedin)<span>LinkedIn: {{ $linkedin }}</span>@endif
+      </div>
     </div>
+    @if(isset($data['photo_profile']))
+    <div style="display: table-cell; vertical-align: top; width: 100px; text-align: right;">
+      <img src="{{ $data['photo_profile'] }}" alt="Profile Photo" style="width: 90px; height: 90px; border-radius: 8px; border: 1px solid #ccc;">
+    </div>
+    @endif
   </div>
 
   @if($summary)

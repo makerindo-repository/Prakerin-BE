@@ -49,9 +49,13 @@
     <!-- SIDEBAR -->
     <div class="sidebar">
         <div style="text-align: center; margin-bottom: 25px;">
-            <div style="width: 70px; height: 70px; background-color: {{ $ACCENT_COLOR }}; border-radius: 50%; margin: 0 auto 12px; line-height: 70px; text-align: center; font-size: 22pt; font-weight: bold; color: #ffffff;">
-                {{ strtoupper(substr($fullName, 0, 1)) }}
-            </div>
+            @if(isset($data['photo_profile']))
+                <img src="{{ $data['photo_profile'] }}" alt="Profile Photo" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid {{ $ACCENT_COLOR }}; margin: 0 auto 12px; display: block;">
+            @else
+                <div style="width: 70px; height: 70px; background-color: {{ $ACCENT_COLOR }}; border-radius: 50%; margin: 0 auto 12px; line-height: 70px; text-align: center; font-size: 22pt; font-weight: bold; color: #ffffff;">
+                    {{ strtoupper(substr($fullName, 0, 1)) }}
+                </div>
+            @endif
             <h1 class="header-h1">{{ $fullName }}</h1>
             <h2 class="header-h2">{{ $jobTitle }}</h2>
         </div>
