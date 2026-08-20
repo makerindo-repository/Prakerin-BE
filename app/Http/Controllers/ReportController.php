@@ -774,6 +774,20 @@ Hasilkan respons dalam format JSON dengan struktur berikut:
                 )
             )->generateContent($prompt);
 
+            // Log activity
+            try {
+                \App\Models\ActivityLog::create([
+                    'user_id' => auth()->id() ?? 1,
+                    'action' => 'Generate AI Report',
+                    'resource_type' => 'ReportAI',
+                    'resource_id' => null,
+                    'resource_name' => 'Laporan Aktivitas Sistem',
+                    'description' => 'User generated an AI-powered summary report'
+                ]);
+            } catch (\Throwable $logEx) {
+                \Log::warning('Failed to log AI report generation: ' . $logEx->getMessage());
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => $result->json()

@@ -21,7 +21,11 @@ class ActivityLogController extends Controller
 
         $query = ActivityLog::with('user');
 
-        if ($userId) {
+        $user = $request->user();
+        if ($user && !$user->tokenCan('admin-access') && !$user->tokenCan('school-access') && !$user->tokenCan('company-access')) {
+            // For students or standard users, force them to only see their own logs
+            $query->byUser($user->id);
+        } else if ($userId) {
             $query->byUser($userId);
         }
         if ($action) {

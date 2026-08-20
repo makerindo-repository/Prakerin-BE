@@ -181,6 +181,20 @@ class CvGeneratorController extends Controller
         // ]);
 
         // 5. Kembalikan data JSON ke frontend
+
+        if (auth()->check()) {
+            \App\Models\ActivityLog::create([
+                'user_id' => auth()->id(),
+                'action' => 'create',
+                'resource_type' => 'CVGenerator',
+                'resource_id' => auth()->id(),
+                'resource_name' => 'CV AI Generated',
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'description' => "Generated CV using AI",
+            ]);
+        }
+
         return response()->json($result->json());
     }
 }

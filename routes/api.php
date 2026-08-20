@@ -647,8 +647,8 @@ Route::prefix('v1')->group(function () {
 
         // P2 Activity Logs
         Route::prefix('activity-logs')->controller(ActivityLogController::class)->group(function () {
+            Route::get('/', 'index'); // Accessible to all authenticated users, controller handles isolation
             Route::middleware('abilities:admin-access')->group(function () {
-                Route::get('/', 'index');
                 Route::get('/stats', 'stats');
             });
         });

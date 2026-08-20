@@ -1456,6 +1456,17 @@ class UserController extends Controller
 
         $user->save();
 
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'update',
+            'resource_type' => 'User',
+            'resource_id' => $user->id,
+            'resource_name' => $user->username,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'description' => "Updated profile: " . $user->username,
+        ]);
+
         //refresh from database to ensure it returns the actual saved data
         $user = User::with(['student', 'school', 'company'])->find($userId);
 

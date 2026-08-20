@@ -51,6 +51,9 @@ class ActivityLog extends Model
 
     public function scopeByResourceType($query, $type)
     {
+        if (is_array($type)) {
+            return $query->whereIn('resource_type', $type);
+        }
         return $query->where('resource_type', $type);
     }
 

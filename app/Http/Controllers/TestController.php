@@ -357,6 +357,20 @@ Hasilkan skenario tes yang profesional dalam bahasa Indonesia dengan struktur JS
                 )
             )->generateContent($prompt);
 
+            // Log activity
+            try {
+                \App\Models\ActivityLog::create([
+                    'user_id' => auth()->id() ?? 1, // Fallback to 1 if no auth in CLI/test
+                    'action' => 'Generate AI Test',
+                    'resource_type' => 'TestScenarioAI',
+                    'resource_id' => null,
+                    'resource_name' => substr($jobTitle, 0, 50),
+                    'description' => 'Admin generated test scenario using AI for position: ' . $jobTitle
+                ]);
+            } catch (\Throwable $logEx) {
+                \Log::warning('Failed to log AI test scenario generation: ' . $logEx->getMessage());
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => $result->json()
