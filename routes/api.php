@@ -736,6 +736,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/revenue/dashboard', [RevenueController::class, 'dashboard']);
             Route::get('/revenue/accounts', [RevenueController::class, 'accounts']);
             Route::post('/revenue/{id}/sync', [RevenueController::class, 'syncStatus']);
+            Route::delete('/revenue/{id}', [RevenueController::class, 'destroy']);
 
             Route::post('/schools/import', [SchoolImportController::class, 'import']);
         });

@@ -200,4 +200,19 @@ class RevenueController extends Controller
             'data'    => $revenue,
         ]);
     }
+
+    // ── DELETE /api/v1/admin/revenue/{id} ───────────────────────────────
+
+    /**
+     * Hapus satu catatan log revenue / riwayat transaksi.
+     */
+    public function destroy(string $id): JsonResponse
+    {
+        $revenue = Revenue::findOrFail($id);
+        $revenue->delete();
+
+        return response()->json([
+            'message' => 'Catatan log transaksi berhasil dihapus.',
+        ]);
+    }
 }
