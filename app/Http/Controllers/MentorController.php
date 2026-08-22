@@ -15,7 +15,7 @@ class MentorController extends Controller
 {
     /**
      * List all mentors (Public). Bisa difilter berdasarkan role user
-     * pemilik profil mentor-nya (school = guru pembimbing, company =
+     * pemilik profil mentor-nya (school = pembimbing sekolah, company =
      * pembimbing perusahaan). Tanpa filter = semua (dipakai dashboard admin).
      */
     public function index(Request $request)
@@ -38,7 +38,7 @@ class MentorController extends Controller
     /**
      * Get candidates for mentor profile (Users who are not students and
      * don't have mentor profile yet). Bisa difilter role juga, biar
-     * "Tambah Pembimbing" di halaman Guru Pembimbing cuma nawarin akun
+     * "Tambah Pembimbing" di halaman Pembimbing Sekolah cuma nawarin akun
      * sekolah, dan di halaman Pembimbing Perusahaan cuma nawarin akun
      * perusahaan.
      */

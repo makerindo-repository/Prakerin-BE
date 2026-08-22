@@ -227,7 +227,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/class-attendance', [PreInternshipClassController::class, 'markAttendance']);
     });
 
-    // Mentors (Guru Pembimbing)
+    // Mentors (Pembimbing)
     Route::prefix('/mentors')
         ->controller(MentorController::class)
         ->group(function () {
@@ -650,6 +650,8 @@ Route::prefix('v1')->group(function () {
             Route::get('/', 'index'); // Accessible to all authenticated users, controller handles isolation
             Route::middleware('abilities:admin-access')->group(function () {
                 Route::get('/stats', 'stats');
+                Route::delete('/clear', 'clear');
+                Route::post('/clear', 'clear');
             });
         });
 

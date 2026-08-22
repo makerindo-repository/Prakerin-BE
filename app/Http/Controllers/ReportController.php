@@ -568,17 +568,21 @@ class ReportController extends Controller
                 return response()->json(['message' => 'Data profil siswa tidak ditemukan.'], 404);
             }
 
+            // Check if student has active premium subscription
+            $isPremium = $student->status_subscription === 'premium' && (!$student->subscription || $student->subscription->status === 'active');
+            if (!$isPremium) {
+                return response()->json([
+                    'message' => 'Layanan AI Report hanya tersedia untuk akun Premium. Silakan tingkatkan akun Anda.'
+                ], 403);
+            }
+
             // Find student's active internship
             $internship = Internship::where('student_id', $student->id)->with(['company', 'tasks', 'jobPosition'])->first();
             if (!$internship) {
                 return response()->json([
-                    'success' => true,
-                    'data' => [
-                        'summary' => 'Anda belum terdaftar dalam program magang aktif.',
-                        'insights' => ['Belum ada riwayat magang aktif yang tercatat.'],
-                        'recommendations' => ['Silakan ajukan lamaran magang pada posisi yang tersedia atau hubungi pembimbing sekolah Anda.']
-                    ]
-                ]);
+                    'success' => false,
+                    'message' => 'Anda belum terdaftar dalam program magang aktif.'
+                ], 422);
             }
 
             // Gather student internship info
@@ -591,6 +595,12 @@ class ReportController extends Controller
             $totalTasks = $allTasks->count();
             $completedTasks = $allTasks->where('status', 'completed');
             $completedCount = $completedTasks->count();
+
+            if ($completedCount === 0) {
+                return response()->json([
+                    'message' => 'Fitur AI Report memerlukan minimal 1 tugas magang yang telah diselesaikan untuk dianalisis.'
+                ], 422);
+            }
 
             $tasksText = "";
             foreach ($allTasks as $idx => $task) {

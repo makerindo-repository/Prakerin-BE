@@ -106,4 +106,46 @@ class ActivityLogController extends Controller
             'logins_today' => $loginsToday
         ]);
     }
+
+    /**
+     * Clear activity logs based on type (ai, general, or all).
+     */
+    public function clear(Request $request)
+    {
+        $type = $request->query('type', 'all');
+        $aiResourceTypes = [
+            'CVGenerator',
+            'AiAnalytic',
+            'JobOpening',
+            'TestScenarioAI',
+            'ReportAI'
+        ];
+
+        $query = ActivityLog::query();
+
+        if ($type === 'ai') {
+            $query->whereIn('resource_type', $aiResourceTypes);
+        } elseif ($type === 'general') {
+            if ($request->has('exclude_ai')) {
+                $query->whereNotIn('resource_type', $aiResourceTypes);
+            }
+        }
+
+        if ($request->has('resource_type')) {
+            $rType = $request->query('resource_type');
+            if (is_array($rType)) {
+                $query->whereIn('resource_type', $rType);
+            } else {
+                $query->where('resource_type', $rType);
+            }
+        }
+
+        $deletedCount = $query->delete();
+
+        return response()->json([
+            'message' => "Berhasil menghapus {$deletedCount} data log aktivitas.",
+            'deleted_count' => $deletedCount,
+        ]);
+    }
 }
+
