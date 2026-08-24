@@ -363,6 +363,8 @@ Route::prefix('v1')->group(function () {
             Route::middleware('abilities:company-access')->group(function () {
                 Route::patch('/{idInternshipApplication}/tests/{idTest}', 'updateTestPassed');
                 Route::patch('/{idInternshipApplication}/test/{idTest}', 'updateTestPassed');
+                Route::patch('/{id}/mark-as-read', 'markAsRead');
+                Route::post('/{id}/mark-as-read', 'markAsRead');
                 Route::get('/{id}', 'show');
                 Route::patch('/{id}', 'update');
                 Route::delete('/{id}', 'destroy');

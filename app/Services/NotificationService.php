@@ -74,7 +74,7 @@ class NotificationService
         string $type,
         ?string $actionUrl = null,
         ?string $relatedType = null,
-        ?int $relatedId = null,
+        string|int|null $relatedId = null,
         ?string $senderId = null
     ): InboxItem {
         $inboxItem = InboxItem::createForUser(

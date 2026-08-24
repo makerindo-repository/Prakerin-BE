@@ -15,6 +15,7 @@ class InternshipApplication extends Model
     protected $keyType = 'string';
     protected $casts = [
         'cover_letter' => 'array',
+        'read_at' => 'datetime',
     ];
 
     protected $fillable = [
@@ -22,6 +23,7 @@ class InternshipApplication extends Model
         'curriculum_vitae_id',
         'job_opening_id',
         'status',
+        'read_at',
         'cover_letter',
         'message_rejected',
     ];

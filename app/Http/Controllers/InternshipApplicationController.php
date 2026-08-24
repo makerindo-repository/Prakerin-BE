@@ -70,6 +70,8 @@ class InternshipApplicationController extends Controller
                     ],
                     'job_opening_id' => $item->job_opening_id,
                     'status' => $item->status,
+                    'read_at' => $item->read_at,
+                    'is_read' => !is_null($item->read_at),
                     'cover_letter' => $item->cover_letter,
                     'created_at' => $item->created_at,
                     'updated_at' => $item->updated_at,
@@ -98,6 +100,8 @@ class InternshipApplicationController extends Controller
                 'id' => $app->id,
                 'job_opening_id' => $app->job_opening_id,
                 'status' => $app->status,
+                'read_at' => $app->read_at,
+                'is_read' => !is_null($app->read_at),
                 'cover_letter' => $app->cover_letter,
                 'created_at' => $app->created_at,
                 'updated_at' => $app->updated_at,
@@ -357,8 +361,11 @@ class InternshipApplicationController extends Controller
         }
 
         $internshipApplication = [
+            'id' => $internshipApplication->id,
             'cover_letter' => $internshipApplication->cover_letter,
             'status' => $internshipApplication->status,
+            'read_at' => $internshipApplication->read_at,
+            'is_read' => !is_null($internshipApplication->read_at),
             'student' => $internshipApplication->curriculumVitae->student->makeHidden(['user']),
             'user' => $internshipApplication->curriculumVitae->student->user,
             'major' => $internshipApplication->curriculumVitae->student->major,
@@ -444,6 +451,13 @@ class InternshipApplicationController extends Controller
             ));
         }
 
+        if (!$internshipApplication->read_at) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => 'Lamaran harus ditandai sebagai sudah dibaca terlebih dahulu sebelum Anda dapat menerima atau menolak pelamar.'],
+                400
+            ));
+        }
+
         $validator = Validator::make($request->all(), [
             'status' => 'required|in:accepted,rejected',
             'file' => 'required|file|mimes:pdf|max:2048',
@@ -504,18 +518,20 @@ class InternshipApplicationController extends Controller
         }
 
         // Inbox + WhatsApp notification for student
-        try {
-            app(NotificationService::class)->notify(
-                userId      : $studentUser->id,
-                title       : "Status Lamaran: {$statusIndo}",
-                content     : "Lamaran Anda untuk posisi '{$jobTitle}' telah diperbarui menjadi {$statusIndo}. Silakan cek detail lamaran untuk informasi selengkapnya.",
-                type        : 'application_status',
-                actionUrl   : "{$frontendUrl}/dashboard/student/lamaran/{$internshipApplication->id}",
-                relatedType : 'InternshipApplication',
-                relatedId   : $internshipApplication->id
-            );
-        } catch (\Throwable $e) {
-            Log::warning('[InternshipApplicationController] Student notification failed: ' . $e->getMessage());
+        if ($studentUser) {
+            try {
+                app(NotificationService::class)->notify(
+                    userId      : $studentUser->id,
+                    title       : "Status Lamaran: {$statusIndo}",
+                    content     : "Lamaran Anda untuk posisi '{$jobTitle}' telah diperbarui menjadi {$statusIndo}. Silakan cek detail lamaran untuk informasi selengkapnya.",
+                    type        : 'application_status',
+                    actionUrl   : "{$frontendUrl}/dashboard",
+                    relatedType : 'InternshipApplication',
+                    senderId    : auth()->id()
+                );
+            } catch (\Throwable $e) {
+                Log::warning('[InternshipApplicationController] Student notification failed: ' . $e->getMessage());
+            }
         }
 
         // $internshipApplication->status = $data['status']; // Handled in transaction
@@ -620,5 +636,91 @@ class InternshipApplicationController extends Controller
                 'in_progress' => $inProgressCount,
             ]
         ]);
+    }
+
+    /**
+     * Mark an internship application as read by HR and notify the student.
+     */
+    #[OA\Patch(
+        path: '/internship-applications/{id}/mark-as-read',
+        summary: 'Mark internship application as read by HR and notify student',
+        tags: ['Internship Application'],
+        security: [['bearerAuth' => []]],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'string')
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Marked as read successfully'),
+            new OA\Response(response: 403, description: 'Forbidden'),
+            new OA\Response(response: 404, description: 'Not found')
+        ]
+    )]
+    public function markAsRead(Request $request, string $id)
+    {
+        $internshipApplication = InternshipApplication::with([
+            'jobOpening.company.user',
+            'curriculumVitae.student.user'
+        ])->find($id);
+
+        if (!$internshipApplication) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => 'Internship Application not found.'],
+                404
+            ));
+        }
+
+        $companyId = auth()->user()->company?->id;
+        if (!$companyId) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => 'Company profile not found.'],
+                403
+            ));
+        }
+
+        if ($internshipApplication->jobOpening?->company_id !== $companyId) {
+            throw new HttpResponseException(response()->json(
+                ['errors' => 'Forbidden.'],
+                403
+            ));
+        }
+
+        $internshipApplication->read_at = now();
+        $internshipApplication->save();
+
+        // Notify the student
+        $studentUser = $internshipApplication->curriculumVitae?->student?->user;
+        $companyName = $internshipApplication->jobOpening?->company?->name ?? 'Perusahaan';
+        $jobTitle    = $internshipApplication->jobOpening?->title ?? 'Lowongan Magang';
+        $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
+
+        if ($studentUser) {
+            try {
+                app(NotificationService::class)->notify(
+                    userId      : $studentUser->id,
+                    title       : "Lamaran Dilihat: {$jobTitle}",
+                    content     : "Kabar baik! Lamaran Anda untuk posisi '{$jobTitle}' di {$companyName} telah dilihat dan ditinjau oleh HR.",
+                    type        : 'application_read',
+                    actionUrl   : "{$frontendUrl}/dashboard",
+                    relatedType : 'InternshipApplication',
+                    senderId    : auth()->id()
+                );
+            } catch (\Throwable $e) {
+                Log::warning('[InternshipApplicationController] Student read notification failed: ' . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'message' => 'Lamaran berhasil ditandai sebagai sudah dibaca.',
+            'data' => [
+                'id' => $internshipApplication->id,
+                'read_at' => $internshipApplication->read_at,
+                'is_read' => true,
+            ]
+        ], 200);
     }
 }

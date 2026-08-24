@@ -87,7 +87,7 @@ class InboxItem extends Model
         string $type,
         ?string $actionUrl = null,
         ?string $relatedType = null,
-        ?int $relatedId = null,
+        string|int|null $relatedId = null,
         ?string $senderId = null
     ): self {
         return self::create([

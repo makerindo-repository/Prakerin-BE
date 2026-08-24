@@ -332,7 +332,7 @@ class CurriculumVitaeController extends Controller
     )]
     public function preview(Request $request, string $id)
     {
-        $cv = CurriculumVitae::find($id);
+        $cv = CurriculumVitae::with(['student.user', 'student.school', 'student.major'])->find($id);
 
         if (!$cv) {
             return response()->json([
@@ -343,9 +343,19 @@ class CurriculumVitaeController extends Controller
         $relPath = "curriculum-vitaes/$cv->file";
         $altPath = "/curriculum-vitaes/$cv->file";
 
+        // If file doesn't exist on disk or is an old 1-line placeholder, regenerate it
+        $needsRegen = false;
         if (!Storage::exists($relPath) && !Storage::exists($altPath)) {
-            $title = "Placeholder CV for Student: " . ($cv->student->name ?? 'Student');
-            $pdfContent = $this->getPlaceholderPdf($title);
+            $needsRegen = true;
+        } else {
+            $existingPath = Storage::exists($relPath) ? $relPath : $altPath;
+            if (Storage::size($existingPath) < 1000) {
+                $needsRegen = true;
+            }
+        }
+
+        if ($needsRegen) {
+            $pdfContent = $this->generateCvPdf($cv);
             Storage::put($relPath, $pdfContent);
         }
 
@@ -382,7 +392,7 @@ class CurriculumVitaeController extends Controller
     )]
     public function download(Request $request, string $id)
     {
-        $cv = CurriculumVitae::find($id);
+        $cv = CurriculumVitae::with(['student.user', 'student.school', 'student.major'])->find($id);
 
         if (!$cv) {
             return response()->json([
@@ -393,9 +403,19 @@ class CurriculumVitaeController extends Controller
         $relPath = "curriculum-vitaes/$cv->file";
         $altPath = "/curriculum-vitaes/$cv->file";
 
+        // If file doesn't exist on disk or is an old 1-line placeholder, regenerate it
+        $needsRegen = false;
         if (!Storage::exists($relPath) && !Storage::exists($altPath)) {
-            $title = "Placeholder CV for Student: " . ($cv->student->name ?? 'Student');
-            $pdfContent = $this->getPlaceholderPdf($title);
+            $needsRegen = true;
+        } else {
+            $existingPath = Storage::exists($relPath) ? $relPath : $altPath;
+            if (Storage::size($existingPath) < 1000) {
+                $needsRegen = true;
+            }
+        }
+
+        if ($needsRegen) {
+            $pdfContent = $this->generateCvPdf($cv);
             Storage::put($relPath, $pdfContent);
         }
 
@@ -407,19 +427,180 @@ class CurriculumVitaeController extends Controller
         ]);
     }
 
-    private function getPlaceholderPdf(string $title = 'Document Placeholder')
+    private function generateCvPdf(CurriculumVitae $cv): string
     {
-        $content = "BT\n/F1 12 Tf\n72 712 Td\n($title) Tj\nET";
-        $stream = "stream\n$content\nendstream";
-        $streamLength = strlen($content);
-        
-        return "%PDF-1.4\n" .
-            "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n" .
-            "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n" .
-            "3 0 obj\n<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /MediaBox [0 0 612 792] /Contents 4 0 R >>\nendobj\n" .
-            "4 0 obj\n<< /Length $streamLength >>\n$stream\nendobj\n" .
-            "xref\n0 5\n0000000000 65535 f\n0000000009 00000 n\n0000000058 00000 n\n0000000115 00000 n\n0000000236 00000 n\n" .
-            "trailer\n<< /Size 5 /Root 1 0 R >>\n" .
-            "startxref\n340\n%%EOF";
+        $student = $cv->student;
+        $user = $student?->user;
+        $school = $student?->school;
+        $major = $student?->major;
+
+        $name = htmlspecialchars($student?->name ?? $user?->username ?? 'Peserta Magang');
+        $email = htmlspecialchars($user?->email ?? '-');
+        $phone = htmlspecialchars($student?->phone_number ?? $user?->whatsapp_number ?? '-');
+        $schoolName = htmlspecialchars($school?->name ?? 'Sekolah / Universitas');
+        $majorName = htmlspecialchars($major?->name ?? '-');
+        $className = htmlspecialchars($student?->class ?? '-');
+        $skills = htmlspecialchars($student?->skill ?? 'Komunikasi, Kerja Sama Tim');
+        $address = htmlspecialchars($student?->address ?? '-');
+        $portfolio = htmlspecialchars($student?->portofolio_link ?? '-');
+        $social = htmlspecialchars($student?->social_media_link ?? '-');
+
+        $skillsHtml = '';
+        foreach (explode(',', $skills) as $s) {
+            $trimmed = trim($s);
+            if ($trimmed) {
+                $skillsHtml .= "<span class='skill-badge'>" . htmlspecialchars($trimmed) . "</span> ";
+            }
+        }
+
+        $html = "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='utf-8'>
+            <title>Curriculum Vitae - {$name}</title>
+            <style>
+                body {
+                    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                    color: #333333;
+                    margin: 0;
+                    padding: 30px;
+                    line-height: 1.5;
+                }
+                .header {
+                    border-bottom: 2px solid #00809d;
+                    padding-bottom: 18px;
+                    margin-bottom: 20px;
+                }
+                .name {
+                    font-size: 24px;
+                    font-weight: bold;
+                    color: #00809d;
+                    margin: 0 0 4px 0;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .title {
+                    font-size: 13px;
+                    color: #666666;
+                    font-weight: 600;
+                    margin-bottom: 10px;
+                }
+                .contact-table {
+                    width: 100%;
+                    font-size: 12px;
+                    color: #444444;
+                }
+                .contact-table td {
+                    padding: 3px 0;
+                }
+                .section-title {
+                    font-size: 14px;
+                    font-weight: bold;
+                    color: #00809d;
+                    text-transform: uppercase;
+                    border-bottom: 1px solid #e0e0e0;
+                    padding-bottom: 4px;
+                    margin-top: 18px;
+                    margin-bottom: 10px;
+                }
+                .content-box {
+                    margin-bottom: 12px;
+                }
+                .item-title {
+                    font-size: 13px;
+                    font-weight: bold;
+                    color: #222222;
+                }
+                .item-subtitle {
+                    font-size: 12px;
+                    color: #555555;
+                    font-style: italic;
+                }
+                .item-desc {
+                    font-size: 12px;
+                    color: #444444;
+                    margin-top: 4px;
+                }
+                .skill-badge {
+                    display: inline-block;
+                    background-color: #f0fdfa;
+                    border: 1px solid #ccfbf1;
+                    color: #0f766e;
+                    padding: 4px 10px;
+                    border-radius: 10px;
+                    font-size: 11px;
+                    font-weight: bold;
+                    margin-right: 4px;
+                    margin-bottom: 4px;
+                }
+                .footer {
+                    margin-top: 35px;
+                    border-top: 1px solid #eeeeee;
+                    padding-top: 10px;
+                    font-size: 10px;
+                    color: #888888;
+                    text-align: center;
+                }
+            </style>
+        </head>
+        <body>
+            <div class='header'>
+                <div class='name'>{$name}</div>
+                <div class='title'>Calon Peserta Prakerin / Magang</div>
+                <table class='contact-table'>
+                    <tr>
+                        <td width='50%'><strong>Email:</strong> {$email}</td>
+                        <td width='50%'><strong>Telepon / WA:</strong> {$phone}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Asal Institusi:</strong> {$schoolName}</td>
+                        <td><strong>Jurusan / Kelas:</strong> {$majorName} ({$className})</td>
+                    </tr>
+                    <tr>
+                        <td colspan='2'><strong>Alamat:</strong> {$address}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class='section-title'>Ringkasan Profil</div>
+            <div class='content-box'>
+                <p class='item-desc'>
+                    Siswa/Mahasiswa berdedikasi dan memiliki motivasi tinggi dari <strong>{$schoolName}</strong> jurusan <strong>{$majorName}</strong>. 
+                    Siap berkontribusi aktif, mempelajari alur kerja profesional di industri, serta menerapkan keahlian teknis dan kerja sama tim secara optimal selama program Praktik Kerja Industri (Prakerin) / Magang.
+                </p>
+            </div>
+
+            <div class='section-title'>Pendidikan</div>
+            <div class='content-box'>
+                <div class='item-title'>{$schoolName}</div>
+                <div class='item-subtitle'>Jurusan {$majorName} &bull; Kelas {$className}</div>
+            </div>
+
+            <div class='section-title'>Keahlian & Kompetensi</div>
+            <div class='content-box'>
+                {$skillsHtml}
+            </div>
+
+            " . ($portfolio !== '-' || $social !== '-' ? "
+            <div class='section-title'>Portofolio & Media Sosial</div>
+            <div class='content-box'>
+                <table class='contact-table'>
+                    " . ($portfolio !== '-' ? "<tr><td width='25%'><strong>Portofolio:</strong></td><td>{$portfolio}</td></tr>" : "") . "
+                    " . ($social !== '-' ? "<tr><td><strong>Profil:</strong></td><td>{$social}</td></tr>" : "") . "
+                </table>
+            </div>
+            " : "") . "
+
+            <div class='footer'>
+                Dokumen Curriculum Vitae resmi • Platform PRAKERIN.ID • " . date('d F Y') . "
+            </div>
+        </body>
+        </html>
+        ";
+
+        return \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)
+            ->setPaper('a4', 'portrait')
+            ->output();
     }
 }
