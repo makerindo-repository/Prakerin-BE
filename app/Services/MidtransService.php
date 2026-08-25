@@ -465,14 +465,27 @@ class MidtransService
             if ($student->user_id) {
                 \App\Models\User::where('id', $student->user_id)->update(['is_pro' => true]);
             }
+        } else {
+            $company = \App\Models\Company::find($userId);
+            if ($company) {
+                $company->update([
+                    'status_subscription'     => 'premium',
+                    'subscription_renewed_at' => now(),
+                ]);
+
+                if ($company->user_id) {
+                    \App\Models\User::where('id', $company->user_id)->update(['is_pro' => true]);
+                }
+            }
         }
 
-        Log::info("[MidtransService] Payment confirmed for order_id={$invoiceId}, student={$userId}");
+        Log::info("[MidtransService] Payment confirmed for order_id={$invoiceId}, user={$userId}");
 
         try {
-            if ($student && $student->user_id) {
+            $targetUserId = $student?->user_id ?? ($company?->user_id ?? null);
+            if ($targetUserId) {
                 app(\App\Services\NotificationService::class)->notify(
-                    $student->user_id,
+                    $targetUserId,
                     '🎉 Pembayaran Berhasil!',
                     'Akun Premium kamu sudah aktif. Nikmati semua fitur premium Prakerin!',
                     'subscription_payment_confirmed',

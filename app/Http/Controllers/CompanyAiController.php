@@ -45,10 +45,12 @@ class CompanyAiController extends Controller
         ]);
 
         $companyData = json_encode($validated, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-        $extraPrompt = $validated['prompt_extra'] ?? 'Rapi dan poles narasi profil perusahaan agar tampak profesional, terpercaya, dan menarik bagi pencari kerja/magang dan mitra bisnis.';
+        $extraPrompt = $validated['prompt_extra'] ?? 'Susun dan proses narasi profil perusahaan agar tampak profesional, terpercaya, dan menarik bagi pencari kerja/magang dan mitra bisnis.';
 
         $apiKey = config('gemini.api_key');
         $aiProvider = Setting::getVal('ai_provider', 'gemini');
+
+        $resultData = null;
 
         if ($aiProvider !== 'none' && $apiKey) {
             try {
@@ -103,30 +105,24 @@ Tolong susun narasi profil perusahaan yang elegan, formal, dan komprehensif dala
                 $decoded = json_decode($text, true);
 
                 if ($decoded) {
-                    return response()->json([
-                        'status' => 'success',
-                        'message' => 'Profil perusahaan berhasil disusun oleh AI.',
-                        'data' => $decoded,
-                    ]);
+                    $resultData = $decoded;
                 }
             } catch (\Exception $e) {
                 Log::error('Gemini generate company profile error: ' . $e->getMessage());
             }
         }
 
-        // Fallback generator if AI is unreachable
-        $compList = $validated['competencies'] ?? ['Pengembangan Perangkat Lunak', 'Solusi Digital', 'Teknologi Informasi'];
-        $portList = $validated['portfolios'] ?? [
-            [
-                'title' => 'Smart Factory Monitoring',
-                'description' => 'Solusi pemantauan produksi real-time untuk industri manufaktur.'
-            ]
-        ];
+        if (!$resultData) {
+            // Fallback generator if AI is unreachable
+            $compList = $validated['competencies'] ?? ['Pengembangan Perangkat Lunak', 'Solusi Digital', 'Teknologi Informasi'];
+            $portList = $validated['portfolios'] ?? [
+                [
+                    'title' => 'Smart Factory Monitoring',
+                    'description' => 'Solusi pemantauan produksi real-time untuk industri manufaktur.'
+                ]
+            ];
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Profil perusahaan berhasil disusun (mode standar).',
-            'data' => [
+            $resultData = [
                 'tagline' => ($validated['sector'] ?? 'Teknologi') . ' • Inovasi • Profesional',
                 'about_company' => $validated['short_description']
                     ? $validated['short_description'] . ' Kami berkomitmen menghadirkan solusi terbaik dan inovatif yang berdampak bagi mitra dan masyarakat.'
@@ -137,7 +133,85 @@ Tolong susun narasi profil perusahaan yang elegan, formal, dan komprehensif dala
                 'core_competencies' => $compList,
                 'portfolio_highlights' => $portList,
                 'completeness_score' => 90,
-            ],
+            ];
+        }
+
+        // Save into history database
+        $user = $request->user();
+        $historyRecord = \App\Models\CompanyAiProfileHistory::create([
+            'user_id'            => $user?->id,
+            'company_id'         => $user?->company?->id,
+            'company_name'       => $validated['name'],
+            'tagline'            => $resultData['tagline'] ?? null,
+            'about_company'      => $resultData['about_company'] ?? null,
+            'sector'             => $validated['sector'] ?? null,
+            'established_year'   => $validated['established_year'] ?? null,
+            'employee_count'     => $validated['employee_count'] ?? null,
+            'website'            => $validated['website'] ?? null,
+            'email'              => $validated['email'] ?? null,
+            'phone'              => $validated['phone'] ?? null,
+            'linkedin'           => $validated['linkedin'] ?? null,
+            'address'            => $validated['address'] ?? null,
+            'vision'             => $validated['vision'] ?? null,
+            'mission'            => $validated['mission'] ?? null,
+            'competencies'       => $resultData['core_competencies'] ?? ($validated['competencies'] ?? []),
+            'portfolios'         => $resultData['portfolio_highlights'] ?? ($validated['portfolios'] ?? []),
+            'completeness_score' => $resultData['completeness_score'] ?? 85,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Profil perusahaan berhasil disusun oleh AI.',
+            'data' => array_merge($resultData, [
+                'history_id' => $historyRecord->id,
+                'created_at' => $historyRecord->created_at->toIso8601String(),
+            ]),
+        ]);
+    }
+
+    /**
+     * Get list of AI profile generation histories.
+     */
+    public function getProfileHistories(Request $request)
+    {
+        $user = $request->user();
+        $query = \App\Models\CompanyAiProfileHistory::query();
+
+        if ($user && $user->role !== 'super_admin') {
+            $companyId = $user->company?->id;
+            $query->where(function ($q) use ($user, $companyId) {
+                $q->where('user_id', $user->id);
+                if ($companyId) {
+                    $q->orWhere('company_id', $companyId);
+                }
+            });
+        }
+
+        $histories = $query->latest()->take(50)->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $histories,
+        ]);
+    }
+
+    /**
+     * Delete an AI profile history item.
+     */
+    public function deleteProfileHistory(Request $request, string $id)
+    {
+        $user = $request->user();
+        $history = \App\Models\CompanyAiProfileHistory::findOrFail($id);
+
+        if ($user && $user->role !== 'super_admin' && $history->user_id !== $user->id && $history->company_id !== $user->company?->id) {
+            return response()->json(['errors' => 'Anda tidak memiliki akses.'], 403);
+        }
+
+        $history->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Riwayat generasi berhasil dihapus.',
         ]);
     }
 
@@ -282,6 +356,7 @@ Ekstrak profil dan kebutuhan talent dari perusahaan ini dalam Bahasa Indonesia:
                 'id' => 'mock-1',
                 'name' => 'Rizky Maulana',
                 'initials' => 'RM',
+                'photo_profile' => 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
                 'target_role' => 'IoT & Embedded Developer',
                 'education' => 'D4 Teknik Komputer',
                 'institution' => 'Politeknik Negeri Bandung',
@@ -297,6 +372,7 @@ Ekstrak profil dan kebutuhan talent dari perusahaan ini dalam Bahasa Indonesia:
                 'id' => 'mock-2',
                 'name' => 'Siti Rahmawati',
                 'initials' => 'SR',
+                'photo_profile' => 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
                 'target_role' => 'Frontend Developer',
                 'education' => 'SMK RPL',
                 'institution' => 'SMKN 4 Bandung',
@@ -312,6 +388,7 @@ Ekstrak profil dan kebutuhan talent dari perusahaan ini dalam Bahasa Indonesia:
                 'id' => 'mock-3',
                 'name' => 'Dimas Pratama',
                 'initials' => 'DP',
+                'photo_profile' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
                 'target_role' => 'Data Analyst',
                 'education' => 'S1 Informatika',
                 'institution' => 'Universitas Padjadjaran',
@@ -327,6 +404,7 @@ Ekstrak profil dan kebutuhan talent dari perusahaan ini dalam Bahasa Indonesia:
                 'id' => 'mock-4',
                 'name' => 'Aditya Pratama',
                 'initials' => 'AP',
+                'photo_profile' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
                 'target_role' => 'Fullstack Developer',
                 'education' => 'D3 Manajemen Informatika',
                 'institution' => 'Politeknik Negeri Jakarta',
@@ -342,6 +420,7 @@ Ekstrak profil dan kebutuhan talent dari perusahaan ini dalam Bahasa Indonesia:
                 'id' => 'mock-5',
                 'name' => 'Nabila Putri',
                 'initials' => 'NP',
+                'photo_profile' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
                 'target_role' => 'UI/UX & Mobile Developer',
                 'education' => 'SMK Rekayasa Perangkat Lunak',
                 'institution' => 'SMKN 1 Cimahi',
@@ -378,6 +457,7 @@ Ekstrak profil dan kebutuhan talent dari perusahaan ini dalam Bahasa Indonesia:
                     'id' => $student->id,
                     'name' => $student->name,
                     'initials' => strtoupper(substr($student->name, 0, 2)),
+                    'photo_profile' => optional($student->user)->photo_profile,
                     'target_role' => $skillsArray[0] . ' Specialist',
                     'education' => $eduType . ' - ' . $majorName,
                     'institution' => $schoolName,

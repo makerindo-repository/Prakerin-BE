@@ -355,8 +355,10 @@ Route::prefix('v1')->group(function () {
         ->controller(CompanyAiController::class)
         ->middleware('auth:sanctum')
         ->group(function () {
-            // Free Feature: Profil Perusahaan AI
+            // Free Feature: Profil Perusahaan AI & Riwayat
             Route::post('/profile/generate', 'generateProfile');
+            Route::get('/profile/histories', 'getProfileHistories');
+            Route::delete('/profile/histories/{id}', 'deleteProfileHistory');
 
             // Premium Feature: Analisis Compro & Rekomendasi Talent
             Route::middleware('premium')->group(function () {

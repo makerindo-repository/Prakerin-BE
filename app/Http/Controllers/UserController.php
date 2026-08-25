@@ -1279,6 +1279,7 @@ class UserController extends Controller
             $statusSubscription = $user->company->status_subscription ?? 'free';
         }
 
+        $timezone = \App\Support\IndonesianTimezone::resolve($provinceName);
         $user['timezone'] = $timezone['zone'];       // mis. "Asia/Jakarta"
         $user['timezone_label'] = $timezone['label']; // mis. "WIB"
         $user['is_profile_complete'] = $isProfileComplete;
