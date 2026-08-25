@@ -1270,12 +1270,21 @@ class UserController extends Controller
             $isUserVerified = (bool) ($user->company->is_verified ?? false);
         }
 
-        $timezone = \App\Support\IndonesianTimezone::resolve($provinceName);
+        $statusSubscription = 'free';
+        if ($user->role === 'super_admin') {
+            $statusSubscription = 'premium';
+        } elseif ($user->student) {
+            $statusSubscription = $user->student->status_subscription ?? 'free';
+        } elseif ($user->company) {
+            $statusSubscription = $user->company->status_subscription ?? 'free';
+        }
+
         $user['timezone'] = $timezone['zone'];       // mis. "Asia/Jakarta"
         $user['timezone_label'] = $timezone['label']; // mis. "WIB"
         $user['is_profile_complete'] = $isProfileComplete;
         $user['missing_fields'] = $missingFields;
         $user['is_verified'] = $isUserVerified;
+        $user['status_subscription'] = $statusSubscription;
 
         return response()->json([
             'data' => $user,

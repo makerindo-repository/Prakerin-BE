@@ -25,11 +25,14 @@ class Company extends Model
         'phone_number',
         'is_verified',
         'website',
+        'status_subscription',
+        'subscription_renewed_at',
     ];
 
     protected $casts = [
         'is_verified' => 'boolean',
         'description' => 'array',
+        'subscription_renewed_at' => 'datetime',
     ];
 
     protected static function booted()
