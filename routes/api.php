@@ -6,6 +6,7 @@ use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CityRegencyController;
 use App\Http\Controllers\CommentPrakerinController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\CompanyAiController;
 use App\Http\Controllers\ContactUsController;
 use App\Http\Controllers\CurriculumVitaeController;
 use App\Http\Controllers\CvGeneratorController;
@@ -346,6 +347,21 @@ Route::prefix('v1')->group(function () {
             });
             Route::middleware('ability:admin-access')->group(function () {
                 Route::patch('/{id}/review', 'review');
+            });
+        });
+
+    // Company AI Features
+    Route::prefix('/company-ai')
+        ->controller(CompanyAiController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
+            // Free Feature: Profil Perusahaan AI
+            Route::post('/profile/generate', 'generateProfile');
+
+            // Premium Feature: Analisis Compro & Rekomendasi Talent
+            Route::middleware('premium')->group(function () {
+                Route::post('/compro/analyze', 'analyzeCompro');
+                Route::get('/compro/talents', 'getTalents');
             });
         });
 

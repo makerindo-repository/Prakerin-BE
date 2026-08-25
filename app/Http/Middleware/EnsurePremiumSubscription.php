@@ -24,19 +24,32 @@ class EnsurePremiumSubscription
     {
         $user = $request->user();
 
-        // super_admin & role lain yang bukan siswa (mis. lolos lewat
-        // ability:admin-access di route yang sama) tidak digate di sini —
-        // fitur premium ini konsepnya khusus siswa/mahasiswa.
-        $student = $user?->student;
-        if (!$student) {
+        // super_admin is always allowed
+        if ($user?->role === 'super_admin') {
             return $next($request);
         }
 
-        if ($student->status_subscription !== 'premium') {
-            return response()->json([
-                'errors' => 'Fitur ini khusus untuk pengguna Premium. Silakan upgrade akun kamu terlebih dahulu.',
-                'code'   => 'PREMIUM_REQUIRED',
-            ], 403);
+        $student = $user?->student;
+        if ($student) {
+            if ($student->status_subscription !== 'premium') {
+                return response()->json([
+                    'errors' => 'Fitur ini khusus untuk pengguna Premium. Silakan upgrade akun kamu terlebih dahulu.',
+                    'code'   => 'PREMIUM_REQUIRED',
+                ], 403);
+            }
+            return $next($request);
+        }
+
+        $company = $user?->company;
+        if ($company) {
+            $status = $company->status_subscription ?? 'free';
+            if ($status !== 'premium') {
+                return response()->json([
+                    'errors' => 'Fitur ini khusus untuk akun Perusahaan Premium. Silakan upgrade paket langganan industri Anda terlebih dahulu.',
+                    'code'   => 'PREMIUM_REQUIRED',
+                ], 403);
+            }
+            return $next($request);
         }
 
         return $next($request);
