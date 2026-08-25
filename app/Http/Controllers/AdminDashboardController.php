@@ -233,6 +233,44 @@ class AdminDashboardController extends Controller
                 'time_ago'      => $log->created_at->diffForHumans(),
             ]);
 
+        // ── Recent registered users ─────────────────────────────────────────
+        $recentRegistrations = User::with(['student.school', 'school', 'company'])
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($u) {
+                $name = $u->student?->name ?? $u->school?->name ?? $u->company?->name ?? $u->username;
+                $institution = $u->student?->school?->name ?? null;
+                $roleLabel = match ($u->role) {
+                    'student' => $u->student?->school?->type === 'university' ? 'Mahasiswa' : 'Siswa',
+                    'school' => $u->school?->type === 'university' ? 'Perguruan Tinggi' : 'Sekolah',
+                    'company' => 'Industri',
+                    'super_admin' => 'Admin',
+                    default => ucfirst($u->role),
+                };
+                $roleColor = match ($roleLabel) {
+                    'Siswa' => 'blue',
+                    'Mahasiswa' => 'orange',
+                    'Industri' => 'green',
+                    'Sekolah' => 'purple',
+                    'Perguruan Tinggi' => 'yellow',
+                    default => 'blue',
+                };
+                return [
+                    'id'            => $u->id,
+                    'name'          => $name,
+                    'username'      => $u->username,
+                    'email'         => $u->email,
+                    'role'          => $u->role,
+                    'role_label'    => $roleLabel,
+                    'role_color'    => $roleColor,
+                    'institution'   => $institution,
+                    'photo_profile' => $u->photo_profile,
+                    'created_at'    => $u->created_at?->toISOString(),
+                    'time_ago'      => $u->created_at?->diffForHumans() ?? 'baru saja',
+                ];
+            });
+
         // ── AI Matching Score (dynamic based on real data) ───────────────
         $activeJobOpenings = JobOpening::where('is_available', true)->with('field')->get();
         $totalActiveJobs = $activeJobOpenings->count();
@@ -405,6 +443,7 @@ class AdminDashboardController extends Controller
             'insights'               => $insights,
             'recommendations'        => $recommendations,
             'recent_activities'      => $recentActivities,
+            'recent_registrations'   => $recentRegistrations,
             'pre_internship_summary' => $preInternshipSummary,
             'matching_scores'        => $matchingScores,
         ]);

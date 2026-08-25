@@ -106,6 +106,7 @@ class AdminDashboardTest extends TestCase
             'insights',
             'recommendations',
             'recent_activities',
+            'recent_registrations',
             'pre_internship_summary',
             'matching_scores' => [
                 'smk',
