@@ -7,6 +7,7 @@ use App\Http\Controllers\CityRegencyController;
 use App\Http\Controllers\CommentPrakerinController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CompanyAiController;
+use App\Http\Controllers\SchoolAiController;
 use App\Http\Controllers\ContactUsController;
 use App\Http\Controllers\CurriculumVitaeController;
 use App\Http\Controllers\CvGeneratorController;
@@ -365,6 +366,21 @@ Route::prefix('v1')->group(function () {
                 Route::post('/compro/analyze', 'analyzeCompro');
                 Route::get('/compro/talents', 'getTalents');
             });
+        });
+
+    // School AI Features
+    Route::prefix('/school-ai')
+        ->controller(SchoolAiController::class)
+        ->middleware('auth:sanctum')
+        ->group(function () {
+            // Free Feature for School & University: Profil Sekolah AI & Riwayat
+            Route::post('/profile/generate', 'generateProfile');
+            Route::get('/profile/histories', 'getProfileHistories');
+            Route::delete('/profile/histories/{id}', 'deleteProfileHistory');
+
+            // Free Feature for School & University: Analisis Silabus/Mata Pelajaran & Pencocokan Industri
+            Route::post('/curriculum/analyze', 'analyzeCurriculum');
+            Route::get('/match-companies', 'getMatchingCompaniesList');
         });
 
     // Internship Application
