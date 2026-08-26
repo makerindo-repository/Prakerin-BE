@@ -400,7 +400,7 @@ class InternshipApplicationController extends Controller
         content: new OA\MediaType(
             mediaType: 'multipart/form-data',
             schema: new OA\Schema(
-                required: ['status','file'],
+                required: ['status'],
                 properties: [
                     new OA\Property(
                         property: 'status',
@@ -410,7 +410,14 @@ class InternshipApplicationController extends Controller
                     new OA\Property(
                         property: 'file',
                         type: 'string',
-                        format: 'binary'
+                        format: 'binary',
+                        description: 'Surat penerimaan (wajib jika diterima) atau penolakan (opsional jika ditolak)'
+                    ),
+                    new OA\Property(
+                        property: 'message_rejected',
+                        type: 'string',
+                        nullable: true,
+                        description: 'Pesan/catatan penolakan opsional'
                     )
                 ]
             )
@@ -460,7 +467,8 @@ class InternshipApplicationController extends Controller
 
         $validator = Validator::make($request->all(), [
             'status' => 'required|in:accepted,rejected',
-            'file' => 'required|file|mimes:pdf|max:2048',
+            'file' => $request->input('status') === 'accepted' ? 'required|file|mimes:pdf|max:2048' : 'nullable|file|mimes:pdf|max:2048',
+            'message_rejected' => 'nullable|string|max:1000',
         ]);
 
         if ($validator->fails()) {
@@ -491,6 +499,10 @@ class InternshipApplicationController extends Controller
                 }
             }
 
+            if ($data['status'] === 'rejected' && isset($data['message_rejected'])) {
+                $internshipApplication->message_rejected = $data['message_rejected'];
+            }
+
             $internshipApplication->status = $data['status'];
             $internshipApplication->save();
         });
@@ -500,18 +512,26 @@ class InternshipApplicationController extends Controller
         $frontendUrl  = config('app.frontend_url', 'http://localhost:3000');
 
         $pdf = $request->file('file');
-        if ($pdf && $studentUser?->email) {
+        if ($studentUser?->email) {
             try {
-                $pdfContent = file_get_contents($pdf->getRealPath());
                 $email = $studentUser->email;
-                Mail::send([], [], function ($message) use ($email, $pdf, $pdfContent) {
-                    $message->to($email)
-                        ->subject('Update Status Lamaran Magang')
-                        ->html('<p>Halo, status lamaran magang Anda telah di-update!</p>');
-                    $message->attachData($pdfContent, $pdf->getClientOriginalName(), [
-                        'mime' => 'application/pdf',
-                    ]);
-                });
+                if ($pdf) {
+                    $pdfContent = file_get_contents($pdf->getRealPath());
+                    Mail::send([], [], function ($message) use ($email, $pdf, $pdfContent, $statusIndo, $jobTitle) {
+                        $message->to($email)
+                            ->subject("Update Status Lamaran Magang: {$statusIndo}")
+                            ->html("<p>Halo, status lamaran magang Anda untuk posisi <strong>" . htmlspecialchars($jobTitle) . "</strong> telah di-update menjadi <strong>{$statusIndo}</strong>. Terlampir surat keputusan resmi dari pihak perusahaan.</p>");
+                        $message->attachData($pdfContent, $pdf->getClientOriginalName(), [
+                            'mime' => 'application/pdf',
+                        ]);
+                    });
+                } else {
+                    Mail::send([], [], function ($message) use ($email, $statusIndo, $jobTitle) {
+                        $message->to($email)
+                            ->subject("Update Status Lamaran Magang: {$statusIndo}")
+                            ->html("<p>Halo, status lamaran magang Anda untuk posisi <strong>" . htmlspecialchars($jobTitle) . "</strong> telah di-update menjadi <strong>{$statusIndo}</strong>. Silakan cek detail lamaran pada dashboard PRAKERIN Anda untuk informasi selengkapnya.</p>");
+                    });
+                }
             } catch (\Throwable $e) {
                 Log::warning('[InternshipApplicationController] Email sending failed: ' . $e->getMessage());
             }
