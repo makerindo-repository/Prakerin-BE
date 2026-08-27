@@ -96,15 +96,6 @@ class UserController extends Controller
                 $query->whereHas('student', function ($q) use ($isVerified, $user) {
                     $q->where('is_verified', $isVerified);
                     $q->where('school_id', $user->school->id);
-                    if ($user->school->type === 'school') {
-                        if ($isVerified) {
-                            $q->where(function ($subQuery) {
-                                $subQuery->whereIn('class', ['10', '11', '12', '13', '14'])
-                                    ->orWhereNull('class')
-                                    ->orWhere('class', '');
-                            });
-                        }
-                    }
                 });
                 if ($search !== '' && $search !== null) {
                     $query->where(function ($q) use ($search) {
@@ -228,21 +219,10 @@ class UserController extends Controller
                 // Filter students by school type (school = SMK/Siswa, university = Mahasiswa)
                 $query->when(
                     $role === 'student' && $schoolType,
-                    function ($query) use ($schoolType, $isVerified) {
+                    function ($query) use ($schoolType) {
                         $query->whereHas('student.school', function ($q) use ($schoolType) {
                             $q->where('type', $schoolType);
                         });
-                        if ($schoolType === 'school') {
-                            $query->whereHas('student', function ($q) use ($isVerified) {
-                                if ($isVerified !== false) {
-                                    $q->where(function ($subQuery) {
-                                        $subQuery->whereIn('class', ['11', '12'])
-                                            ->orWhereNull('class')
-                                            ->orWhere('class', '');
-                                    });
-                                }
-                            });
-                        }
                     }
                 );
 

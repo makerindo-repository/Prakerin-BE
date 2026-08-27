@@ -43,12 +43,11 @@ class AdminDashboardController extends Controller
         $totalSekolah         = School::where('type', 'school')->count();
         $totalPerguruanTinggi = School::where('type', 'university')->count();
 
-        // ── Segmented student counts (matching StudentController filters) ───────
+        // ── Segmented student counts (all verified students per institution type) ───
         $totalSiswa = Student::where('is_verified', true)
             ->whereHas('school', function ($q) {
                 $q->where('type', 'school');
             })
-            ->whereIn('class', ['11', '12'])
             ->count();
 
         $totalMahasiswa = Student::where('is_verified', true)

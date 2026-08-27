@@ -71,22 +71,10 @@ class StudentController extends Controller
             $students = Student::where('school_id', $request->user()->school->id)
                 ->where('is_verified', $isAccepted)
                 ->where('name', 'like', "%$search%")
-                ->when($request->user()->school->type === 'school', function ($q) {
-                    $q->whereIn('class', ['11', '12']);
-                })
                 ->paginate($limit);
         } else {
             $students = Student::where('name', 'like', "%$search%")
                 ->where('is_verified', $isAccepted)
-                ->where(function ($q) {
-                    $q->whereHas('school', function ($schoolQuery) {
-                        $schoolQuery->where('type', 'school');
-                    })->whereIn('class', ['11', '12'])
-                    ->orWhereHas('school', function ($schoolQuery) {
-                        $schoolQuery->where('type', 'university');
-                    })
-                    ->orWhereNull('school_id');
-                })
                 ->paginate($limit);
         }
 
