@@ -90,7 +90,11 @@ class UserController extends Controller
                 $query->with(
                     'student.major',
                     'student.curriculumVitae.internshipApplications.jobOpening.company.user',
-                    'student.curriculumVitae.internshipApplications.jobOpening.company.cityRegency.province'
+                    'student.curriculumVitae.internshipApplications.jobOpening.company.cityRegency.province',
+                    'student.internships.company.user',
+                    'student.internships.company.cityRegency.province',
+                    'student.internships.internshipApplication.jobOpening',
+                    'student.internships.jobPosition'
                 );
                 $query->where('role', 'student');
                 $query->whereHas('student', function ($q) use ($isVerified, $user) {
@@ -287,12 +291,43 @@ class UserController extends Controller
                         'type' => $item->student->school->type,
                     ] : null;
 
+                    $companiesFromCv = $item->student?->curriculumVitae
+                        ?->flatMap->internshipApplications
+                        ?->map->jobOpening
+                        ?->map->company
+                        ?->filter() ?? collect();
+
+                    $companiesFromInternship = $item->student?->internships
+                        ?->map->company
+                        ?->filter() ?? collect();
+
+                    $mergedCompanies = $companiesFromCv->concat($companiesFromInternship)
+                        ->unique('id')
+                        ->map(function ($company) {
+                            if (!$company) return null;
+                            $data = $company->toArray();
+                            $data['item'] = $company->item?->toArray();
+                            $data['city_regency'] = $company->cityRegency?->toArray();
+                            $data['province'] = $company->cityRegency?->province?->toArray();
+                            return $data;
+                        })
+                        ->filter()
+                        ->values()
+                        ->all();
+
+                    $jobTitle = $item->student?->internships?->first()?->internshipApplication?->jobOpening?->title
+                        ?? $item->student?->internships?->first()?->jobPosition?->name
+                        ?? $item->student?->curriculumVitae?->flatMap->internshipApplications?->map->jobOpening?->first()?->title
+                        ?? $item->student?->internships?->first()?->internshipApplication?->jobOpening?->role
+                        ?? null;
+
                     return [
                         'id' => $item->id,
                         'username' => $item->username,
                         'email' => $item->email,
                         'role' => $item->role,
                         'photo_profile' => $item->photo_profile,
+                        'job' => $jobTitle,
                         'school' => $schoolObj,
                         'school_name' => $item->student?->school?->name ?? $item->student?->school_name ?? null,
                         'student' => [
@@ -304,21 +339,7 @@ class UserController extends Controller
                             'school' => $schoolObj,
                             'status_magang' => $item->student?->status_magang ?? 'not_started',
                             'status_subscription' => $item->student?->status_subscription ?? 'free',
-                            'company' => $item->student?->curriculumVitae
-                                ?->flatMap->internshipApplications
-                                ?->map->jobOpening
-                                ?->map->company
-                                ?->unique('id')
-                                ?->map(function ($company) {
-                                    if (!$company) return null;
-                                    $data = $company->toArray();
-                                    $data['item'] = $company->item?->toArray();
-                                    $data['city_regency'] = $company->cityRegency?->toArray();
-                                    $data['province'] = $company->cityRegency?->province?->toArray();
-                                    return $data;
-                                })
-                                ?->filter()
-                                ?->values() ?? [],
+                            'company' => $mergedCompanies,
                         ],
                         'major' => [
                             'name' => $item->student?->major?->name
@@ -577,6 +598,55 @@ class UserController extends Controller
                 'city_regency' => $user->school?->cityRegency ? $user->school->cityRegency->makeHidden(['province']) : null,
                 'province' => $user->school?->cityRegency?->province,
                 'mou' => $mou,
+            ];
+        } else if ($user->role === 'student' && $user->student) {
+            $user->student->load([
+                'major',
+                'internships.company.user',
+                'internships.company.cityRegency.province',
+                'internships.internshipApplication.jobOpening',
+                'internships.jobPosition',
+            ]);
+
+            $latestInternship = $user->student->internships?->first();
+            $internshipData = null;
+            if ($latestInternship) {
+                $jobOpening = $latestInternship->internshipApplication?->jobOpening;
+                $internshipData = [
+                    'id' => $latestInternship->id,
+                    'start_date' => $latestInternship->start_date ?? $jobOpening?->start_date,
+                    'end_date' => $latestInternship->end_date ?? $jobOpening?->end_date,
+                    'is_completed' => (bool)$latestInternship->is_completed,
+                    'role' => $jobOpening?->title ?? $jobOpening?->role ?? $latestInternship->jobPosition?->name ?? null,
+                    'type' => $jobOpening?->type ?? null,
+                    'location' => $jobOpening?->location ?? null,
+                    'company' => $latestInternship->company ? [
+                        'id' => $latestInternship->company->id,
+                        'name' => $latestInternship->company->name,
+                        'address' => $latestInternship->company->address,
+                        'photo_profile' => $latestInternship->company->user?->photo_profile,
+                        'city_regency' => $latestInternship->company->cityRegency ? [
+                            'name' => $latestInternship->company->cityRegency->name,
+                            'province' => $latestInternship->company->cityRegency->province ? [
+                                'name' => $latestInternship->company->cityRegency->province->name,
+                            ] : null,
+                        ] : null,
+                    ] : null,
+                ];
+            }
+
+            $user = [
+                'id' => $user->id,
+                'username' => $user->username,
+                'email' => $user->email,
+                'photo_profile' => $user->photo_profile,
+                'student' => [
+                    'name' => $user->student->name,
+                    'class' => $user->student->class,
+                    'status' => $user->student->status_magang ?? 'not_started',
+                    'major' => $user->student->major ? ['name' => $user->student->major->name] : null,
+                ],
+                'internship' => $internshipData,
             ];
         }
 
