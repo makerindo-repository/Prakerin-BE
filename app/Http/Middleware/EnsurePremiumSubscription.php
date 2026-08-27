@@ -52,6 +52,18 @@ class EnsurePremiumSubscription
             return $next($request);
         }
 
+        $school = $user?->school;
+        if ($school) {
+            $status = $school->status_subscription ?? 'free';
+            if ($status !== 'premium') {
+                return response()->json([
+                    'errors' => 'Fitur ini khusus untuk akun Sekolah / Perguruan Tinggi Premium. Silakan upgrade paket langganan institusi Anda terlebih dahulu.',
+                    'code'   => 'PREMIUM_REQUIRED',
+                ], 403);
+            }
+            return $next($request);
+        }
+
         return $next($request);
     }
 }

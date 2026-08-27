@@ -1277,6 +1277,8 @@ class UserController extends Controller
             $statusSubscription = $user->student->status_subscription ?? 'free';
         } elseif ($user->company) {
             $statusSubscription = $user->company->status_subscription ?? 'free';
+        } elseif ($user->school) {
+            $statusSubscription = $user->school->status_subscription ?? 'free';
         }
 
         $timezone = \App\Support\IndonesianTimezone::resolve($provinceName);

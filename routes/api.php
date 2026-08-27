@@ -378,9 +378,11 @@ Route::prefix('v1')->group(function () {
             Route::get('/profile/histories', 'getProfileHistories');
             Route::delete('/profile/histories/{id}', 'deleteProfileHistory');
 
-            // Free Feature for School & University: Analisis Silabus/Mata Pelajaran & Pencocokan Industri
-            Route::post('/curriculum/analyze', 'analyzeCurriculum');
-            Route::get('/match-companies', 'getMatchingCompaniesList');
+            // Premium Feature for School & University: Analisis Silabus/Mata Pelajaran & Pencocokan Industri
+            Route::middleware('premium')->group(function () {
+                Route::post('/curriculum/analyze', 'analyzeCurriculum');
+                Route::get('/match-companies', 'getMatchingCompaniesList');
+            });
         });
 
     // Internship Application

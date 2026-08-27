@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\School;
 use App\Models\Student;
 use App\Models\Subscription;
 use Illuminate\Http\JsonResponse;
@@ -14,14 +15,50 @@ class SubscriptionAdminController extends Controller
     // ── GET /api/v1/admin/subscriptions/list ──────────────────────────────
 
     /**
-     * Paginated list of all students or companies with their subscription status.
+     * Paginated list of all students, companies, or schools with their subscription status.
      */
     public function list(Request $request): JsonResponse
     {
         $limit       = $request->integer('limit', 15);
         $search      = $request->input('search', '');
         $tier        = $request->input('tier'); // 'free' | 'premium' | null (all)
-        $accountType = $request->input('account_type', 'student'); // 'student' | 'company'
+        $accountType = $request->input('account_type', 'student'); // 'student' | 'company' | 'school'
+
+        if ($accountType === 'school') {
+            $schools = School::with(['user', 'cityRegency'])
+                ->when($search, function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('npsn', 'like', "%{$search}%")
+                      ->orWhereHas('user', fn ($uq) => $uq->where('email', 'like', "%{$search}%"));
+                })
+                ->when($tier, fn ($q) => $q->where('status_subscription', $tier))
+                ->paginate($limit);
+
+            $data = $schools->map(function (School $s) {
+                return [
+                    'id'                      => $s->id,
+                    'name'                    => $s->name,
+                    'email'                   => $s->user?->email,
+                    'user_type'               => 'school',
+                    'school'                  => $s->type === 'university' ? 'Perguruan Tinggi' : 'SMK / SMA',
+                    'status_subscription'     => $s->status_subscription ?? 'free',
+                    'status_magang'           => 'active',
+                    'subscription_end_date'   => $s->subscription_renewed_at ? \Carbon\Carbon::parse($s->subscription_renewed_at)->addYear()->toIso8601String() : null,
+                    'renewal_date'            => $s->subscription_renewed_at,
+                    'subscription_status'     => $s->status_subscription === 'premium' ? 'active' : 'inactive',
+                ];
+            });
+
+            return response()->json([
+                'data'  => $data,
+                'meta'  => [
+                    'total'        => $schools->total(),
+                    'per_page'     => $schools->perPage(),
+                    'current_page' => $schools->currentPage(),
+                    'last_page'    => $schools->lastPage(),
+                ],
+            ]);
+        }
 
         if ($accountType === 'company') {
             $companies = Company::with(['user', 'sector'])
@@ -93,20 +130,66 @@ class SubscriptionAdminController extends Controller
     // ── POST /api/v1/admin/subscriptions/toggle ───────────────────────────
 
     /**
-     * Manually toggle a student or company's subscription tier (admin override).
+     * Manually toggle a student, company, or school's subscription tier (admin override).
      */
     public function toggleTier(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'student_id'          => 'nullable|uuid',
             'company_id'          => 'nullable|uuid',
+            'school_id'           => 'nullable|uuid',
             'account_id'          => 'nullable|uuid',
-            'account_type'        => 'nullable|in:student,company',
+            'account_type'        => 'nullable|in:student,company,school',
             'status_subscription' => 'required|in:free,premium',
         ]);
 
         $companyId = $validated['company_id'] ?? ($validated['account_type'] === 'company' ? $validated['account_id'] : null);
+        $schoolId  = $validated['school_id']  ?? ($validated['account_type'] === 'school'  ? $validated['account_id'] : null);
         $studentId = $validated['student_id'] ?? ($validated['account_type'] === 'student' ? $validated['account_id'] : null);
+
+        if ($schoolId) {
+            $school = School::findOrFail($schoolId);
+            $newStatus = $validated['status_subscription'];
+            $now = now();
+
+            $school->update([
+                'status_subscription'     => $newStatus,
+                'subscription_renewed_at' => $newStatus === 'premium' ? $now : null,
+            ]);
+
+            if ($school->user_id) {
+                \App\Models\User::where('id', $school->user_id)->update([
+                    'is_pro' => $newStatus === 'premium',
+                ]);
+            }
+
+            if ($newStatus === 'premium') {
+                Subscription::updateOrCreate(
+                    ['user_id' => $school->id],
+                    [
+                        'user_type'               => 'school',
+                        'amount'                  => 0,
+                        'currency'                => 'IDR',
+                        'status'                  => 'active',
+                        'subscription_start_date' => $now,
+                        'subscription_end_date'   => $now->copy()->addYear(),
+                        'renewal_date'            => $now->copy()->addYear(),
+                        'payment_method'          => 'MANUAL_ADMIN',
+                    ]
+                );
+            } else {
+                Subscription::where('user_id', $school->id)
+                    ->where('status', 'active')
+                    ->update(['status' => 'expired']);
+            }
+
+            return response()->json([
+                'message'             => 'Tier sekolah berhasil diperbarui.',
+                'school_id'           => $school->id,
+                'name'                => $school->name,
+                'status_subscription' => $school->status_subscription,
+            ]);
+        }
 
         if ($companyId) {
             $company = Company::findOrFail($companyId);

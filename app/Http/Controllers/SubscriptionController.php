@@ -25,12 +25,51 @@ class SubscriptionController extends Controller
         $authUser = $request->user();
         $isOwnerStudent = $authUser?->student?->id === $userId || $authUser?->id === $userId;
         $isOwnerCompany = $authUser?->company?->id === $userId;
+        $isOwnerSchool  = $authUser?->school?->id === $userId;
         $isAdmin        = $authUser?->role === 'super_admin';
 
-        if (!$isOwnerStudent && !$isOwnerCompany && !$isAdmin) {
+        if (!$isOwnerStudent && !$isOwnerCompany && !$isOwnerSchool && !$isAdmin) {
             return response()->json([
                 'errors' => 'Anda tidak memiliki akses ke data langganan ini.',
             ], 403);
+        }
+
+        // Cek jika ID adalah School
+        $school = \App\Models\School::where('id', $userId)->orWhere('user_id', $userId)->first();
+        if ($school && ($isOwnerSchool || $isAdmin || $authUser?->school?->id === $school->id)) {
+            $subscription = Subscription::where('user_id', $school->id)->first();
+            $pendingRevenue = Revenue::where('user_id', $school->id)
+                ->where('payment_status', 'pending')
+                ->where('expiry_date', '>', now())
+                ->latest()
+                ->first();
+
+            return response()->json([
+                'student_id'              => $school->id,
+                'school_id'               => $school->id,
+                'company_id'              => null,
+                'status_subscription'     => $school->status_subscription ?? 'free',
+                'subscription_renewed_at' => $school->subscription_renewed_at,
+                'subscription'            => $school->status_subscription === 'premium' ? [
+                    'id'                      => $subscription?->id ?? 1,
+                    'status'                  => 'active',
+                    'amount'                  => $subscription?->amount ?? 0,
+                    'currency'                => 'IDR',
+                    'subscription_start_date' => $school->subscription_renewed_at,
+                    'subscription_end_date'   => $school->subscription_renewed_at ? \Carbon\Carbon::parse($school->subscription_renewed_at)->addYear() : null,
+                    'renewal_date'            => null,
+                    'is_expired'              => false,
+                    'is_renewal_due'          => false,
+                ] : null,
+                'pending_payment' => $pendingRevenue ? [
+                    'invoice_id'  => $pendingRevenue->payment_reference_id,
+                    'invoice_url' => $pendingRevenue->invoice_url,
+                    'qr_code_url' => $pendingRevenue->qr_code_url,
+                    'amount'      => $pendingRevenue->amount,
+                    'package'     => $this->resolvePackageKeyFromAmount($pendingRevenue->amount),
+                    'expiry_date' => $pendingRevenue->expiry_date,
+                ] : null,
+            ]);
         }
 
         // Cek jika ID adalah Company
@@ -133,12 +172,119 @@ class SubscriptionController extends Controller
         $validated = $request->validate([
             'student_id' => 'nullable|uuid',
             'company_id' => 'nullable|uuid',
+            'school_id'  => 'nullable|uuid',
             'package'    => 'required|in:monthly,yearly',
         ]);
 
         $authUser  = $request->user();
         $companyId = $validated['company_id'] ?? null;
+        $schoolId  = $validated['school_id'] ?? null;
         $studentId = $validated['student_id'] ?? null;
+
+        if ($schoolId) {
+            $school = \App\Models\School::findOrFail($schoolId);
+            $isOwner = $authUser?->school?->id === $school->id;
+            $isAdmin = $authUser?->role === 'super_admin';
+
+            if (!$isOwner && !$isAdmin) {
+                return response()->json([
+                    'errors' => 'Anda tidak bisa membuat pembayaran untuk akun sekolah lain.',
+                ], 403);
+            }
+
+            $packages = config('subscription.packages');
+            $package  = $packages[$validated['package']];
+
+            $existing = Revenue::where('user_id', $school->id)
+                ->where('payment_status', 'pending')
+                ->where('amount', $package['amount'])
+                ->where('expiry_date', '>', now())
+                ->latest()
+                ->first();
+
+            if ($existing) {
+                return response()->json([
+                    'message'     => 'Melanjutkan invoice pembayaran yang sudah ada.',
+                    'invoice_id'  => $existing->payment_reference_id,
+                    'invoice_url' => $existing->invoice_url,
+                    'qr_code_url' => $existing->qr_code_url,
+                    'amount'      => $existing->amount,
+                    'package'     => $validated['package'],
+                    'expiry_date' => $existing->expiry_date,
+                    'resumed'     => true,
+                ], 200);
+            }
+
+            Revenue::where('user_id', $school->id)
+                ->where('payment_status', 'pending')
+                ->update(['payment_status' => 'failed']);
+
+            $now          = now();
+            $endDate      = $now->copy()->addDays($package['duration_days']);
+            $renewalDate  = $now->copy()->addDays($package['duration_days']);
+            $referenceId  = 'SUB-SCH-' . strtoupper(Str::random(10)) . '-' . substr($school->id, 0, 8);
+
+            $subscription = Subscription::updateOrCreate(
+                ['user_id' => $school->id],
+                [
+                    'user_type'               => 'school',
+                    'amount'                  => $package['amount'],
+                    'currency'                => 'IDR',
+                    'status'                  => 'pending_payment',
+                    'subscription_start_date' => $now,
+                    'subscription_end_date'   => $endDate,
+                    'renewal_date'            => $renewalDate,
+                    'payment_method'          => 'QRIS',
+                    'external_id'             => $referenceId,
+                ]
+            );
+
+            $revenue = Revenue::create([
+                'subscription_id'  => $subscription->id,
+                'user_id'          => $school->id,
+                'user_type'        => 'school',
+                'amount'           => $package['amount'],
+                'currency'         => 'IDR',
+                'payment_status'   => 'pending',
+                'period_start'     => $now,
+                'period_end'       => $endDate,
+                'external_id'      => $referenceId,
+            ]);
+
+            try {
+                $invoice = $this->paymentGateway->createInvoice(
+                    $package['amount'],
+                    $school,
+                    $referenceId,
+                    $package['name']
+                );
+            } catch (\Throwable $e) {
+                $revenue->delete();
+                Log::error('[SubscriptionController] school createInvoice failed: ' . $e->getMessage());
+                return response()->json([
+                    'errors' => 'Gagal membuat invoice pembayaran. Coba lagi.',
+                    'debug'  => $e->getMessage(),
+                ], 500);
+            }
+
+            $revenue->update([
+                'payment_reference_id'    => $invoice['id'],
+                'qr_payment_reference_id' => $invoice['qr_order_id'] ?? null,
+                'invoice_url'             => $invoice['invoice_url'],
+                'qr_code_url'             => $invoice['qr_code_url'],
+                'expiry_date'             => $invoice['expiry_date'] ?? null,
+            ]);
+            $subscription->update(['payment_reference_id' => $invoice['id']]);
+
+            return response()->json([
+                'invoice_id'  => $invoice['id'],
+                'invoice_url' => $invoice['invoice_url'],
+                'qr_code_url' => $invoice['qr_code_url'],
+                'amount'      => $invoice['amount'],
+                'package'     => $validated['package'],
+                'expiry_date' => $invoice['expiry_date'] ?? null,
+            ], 201);
+        }
 
         if ($companyId) {
             $company = \App\Models\Company::findOrFail($companyId);
@@ -441,11 +587,48 @@ class SubscriptionController extends Controller
         $validated = $request->validate([
             'student_id' => 'nullable|uuid',
             'company_id' => 'nullable|uuid',
+            'school_id'  => 'nullable|uuid',
         ]);
 
         $authUser  = $request->user();
         $companyId = $validated['company_id'] ?? null;
+        $schoolId  = $validated['school_id'] ?? null;
         $studentId = $validated['student_id'] ?? null;
+
+        if ($schoolId) {
+            $school  = \App\Models\School::findOrFail($schoolId);
+            $isOwner = $authUser?->school?->id === $school->id;
+            $isAdmin = $authUser?->role === 'super_admin';
+
+            if (!$isOwner && !$isAdmin) {
+                return response()->json([
+                    'errors' => 'Anda tidak memiliki hak untuk membatalkan langganan sekolah ini.',
+                ], 403);
+            }
+
+            $school->update([
+                'status_subscription'     => 'free',
+                'subscription_renewed_at' => null,
+            ]);
+
+            if ($school->user_id) {
+                \App\Models\User::where('id', $school->user_id)->update(['is_pro' => false]);
+            }
+
+            Subscription::where('user_id', $school->id)->where('status', 'active')->update(['status' => 'expired']);
+
+            Revenue::where('user_id', $school->id)
+                ->where('payment_status', 'pending')
+                ->update(['payment_status' => 'failed']);
+
+            return response()->json([
+                'message' => 'Paket langganan Premium sekolah berhasil dibatalkan.',
+                'data'    => [
+                    'school_id'           => $school->id,
+                    'status_subscription' => 'free',
+                ]
+            ]);
+        }
 
         if ($companyId) {
             $company = \App\Models\Company::findOrFail($companyId);

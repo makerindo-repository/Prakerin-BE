@@ -476,13 +476,25 @@ class MidtransService
                 if ($company->user_id) {
                     \App\Models\User::where('id', $company->user_id)->update(['is_pro' => true]);
                 }
+            } else {
+                $school = \App\Models\School::find($userId);
+                if ($school) {
+                    $school->update([
+                        'status_subscription'     => 'premium',
+                        'subscription_renewed_at' => now(),
+                    ]);
+
+                    if ($school->user_id) {
+                        \App\Models\User::where('id', $school->user_id)->update(['is_pro' => true]);
+                    }
+                }
             }
         }
 
         Log::info("[MidtransService] Payment confirmed for order_id={$invoiceId}, user={$userId}");
 
         try {
-            $targetUserId = $student?->user_id ?? ($company?->user_id ?? null);
+            $targetUserId = $student?->user_id ?? ($company?->user_id ?? ($school?->user_id ?? null));
             if ($targetUserId) {
                 app(\App\Services\NotificationService::class)->notify(
                     $targetUserId,

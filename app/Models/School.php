@@ -31,6 +31,8 @@ class School extends Model
         'website',
         'npsn',
         'status',
+        'status_subscription',
+        'subscription_renewed_at',
         'description',
         'report_template',
     ];
