@@ -350,90 +350,6 @@ Ekstrak profil dan kebutuhan talent dari perusahaan ini dalam Bahasa Indonesia:
 
         $students = $query->take(50)->get();
 
-        // Sample / Mock fallbacks if database is sparse
-        $mockTalents = [
-            [
-                'id' => 'mock-1',
-                'name' => 'Rizky Maulana',
-                'initials' => 'RM',
-                'photo_profile' => 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
-                'target_role' => 'IoT & Embedded Developer',
-                'education' => 'D4 Teknik Komputer',
-                'institution' => 'Politeknik Negeri Bandung',
-                'skills' => ['ESP32', 'MQTT', 'C++', 'Arduino', 'Python'],
-                'match_score' => 94,
-                'status' => 'Aktif mencari pekerjaan',
-                'status_code' => 'seeking_job',
-                'phone' => '6281234567890',
-                'email' => 'rizky.maulana@example.com',
-                'cv_url' => '/dashboard/cv/preview/sample-1',
-            ],
-            [
-                'id' => 'mock-2',
-                'name' => 'Siti Rahmawati',
-                'initials' => 'SR',
-                'photo_profile' => 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-                'target_role' => 'Frontend Developer',
-                'education' => 'SMK RPL',
-                'institution' => 'SMKN 4 Bandung',
-                'skills' => ['React', 'Tailwind CSS', 'REST API', 'JavaScript', 'Next.js'],
-                'match_score' => 91,
-                'status' => 'Aktif mencari magang',
-                'status_code' => 'seeking_internship',
-                'phone' => '6281298765432',
-                'email' => 'siti.rahma@example.com',
-                'cv_url' => '/dashboard/cv/preview/sample-2',
-            ],
-            [
-                'id' => 'mock-3',
-                'name' => 'Dimas Pratama',
-                'initials' => 'DP',
-                'photo_profile' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-                'target_role' => 'Data Analyst',
-                'education' => 'S1 Informatika',
-                'institution' => 'Universitas Padjadjaran',
-                'skills' => ['Python', 'SQL', 'Power BI', 'Pandas', 'Tableau'],
-                'match_score' => 87,
-                'status' => 'Aktif mencari pekerjaan',
-                'status_code' => 'seeking_job',
-                'phone' => '6281345678901',
-                'email' => 'dimas.pratama@example.com',
-                'cv_url' => '/dashboard/cv/preview/sample-3',
-            ],
-            [
-                'id' => 'mock-4',
-                'name' => 'Aditya Pratama',
-                'initials' => 'AP',
-                'photo_profile' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-                'target_role' => 'Fullstack Developer',
-                'education' => 'D3 Manajemen Informatika',
-                'institution' => 'Politeknik Negeri Jakarta',
-                'skills' => ['Laravel', 'Vue.js', 'MySQL', 'Node.js', 'Git'],
-                'match_score' => 84,
-                'status' => 'Aktif mencari magang',
-                'status_code' => 'seeking_internship',
-                'phone' => '6281567890123',
-                'email' => 'aditya.p@example.com',
-                'cv_url' => '/dashboard/cv/preview/sample-4',
-            ],
-            [
-                'id' => 'mock-5',
-                'name' => 'Nabila Putri',
-                'initials' => 'NP',
-                'photo_profile' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-                'target_role' => 'UI/UX & Mobile Developer',
-                'education' => 'SMK Rekayasa Perangkat Lunak',
-                'institution' => 'SMKN 1 Cimahi',
-                'skills' => ['Figma', 'Flutter', 'Dart', 'UI Design'],
-                'match_score' => 82,
-                'status' => 'Aktif mencari magang',
-                'status_code' => 'seeking_internship',
-                'phone' => '6281678901234',
-                'email' => 'nabila.putri@example.com',
-                'cv_url' => '/dashboard/cv/preview/sample-5',
-            ]
-        ];
-
         $matchedTalents = [];
 
         if ($students->isNotEmpty()) {
@@ -472,8 +388,7 @@ Ekstrak profil dan kebutuhan talent dari perusahaan ini dalam Bahasa Indonesia:
             }
         }
 
-        // Merge with mock talents if results are few to provide great experience
-        $allTalents = !empty($matchedTalents) ? array_merge($matchedTalents, $mockTalents) : $mockTalents;
+        $allTalents = $matchedTalents;
 
         // Apply status filter if provided
         if ($statusFilter === 'seeking_job') {

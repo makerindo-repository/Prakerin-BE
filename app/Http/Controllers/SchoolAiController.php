@@ -411,135 +411,6 @@ Ekstrak profil kompetensi mata pelajaran dan peluang kemitraan industri dalam Ba
 
         $companies = $query->take(60)->get();
 
-        // Sample rich mock companies fallback if database has few companies
-        $mockCompanies = [
-            [
-                'id' => 'mock-comp-1',
-                'name' => 'PT Makerindo Prima Solusi',
-                'initials' => 'MP',
-                'logo' => 'https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=150&auto=format&fit=crop&q=80',
-                'sector' => 'Teknologi Informasi & Rekayasa Perangkat Lunak',
-                'city' => 'Kota Bandung, Jawa Barat',
-                'address' => 'Jl. Pelajar Pejuang 45 No. 65, Bandung',
-                'website' => 'https://makerindo.com',
-                'phone' => '628122334455',
-                'email' => 'hrd@makerindo.com',
-                'match_score' => 96,
-                'matched_subjects' => ['Pemrograman Web', 'Mobile Development', 'IoT & Embedded', 'Cloud Computing'],
-                'mou_status' => 'has_mou',
-                'is_mou_partner' => true,
-                'active_openings_count' => 3,
-                'openings' => [
-                    ['title' => 'Web Developer Intern', 'type' => 'Magang', 'duration' => '6 Bulan'],
-                    ['title' => 'IoT Firmware Specialist', 'type' => 'Magang', 'duration' => '6 Bulan'],
-                ],
-            ],
-            [
-                'id' => 'mock-comp-2',
-                'name' => 'PT Nusantara Digital Inovasi',
-                'initials' => 'ND',
-                'logo' => 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=150&auto=format&fit=crop&q=80',
-                'sector' => 'Software House & Layanan Cloud',
-                'city' => 'Jakarta Selatan, DKI Jakarta',
-                'address' => 'Kawasan SCBD Lot 8, Jakarta Selatan',
-                'website' => 'https://nusantaradigital.id',
-                'phone' => '6281399887766',
-                'email' => 'partnership@nusantaradigital.id',
-                'match_score' => 93,
-                'matched_subjects' => ['Pemrograman Berorientasi Objek', 'Basis Data SQL', 'API & Microservices'],
-                'mou_status' => 'no_mou',
-                'is_mou_partner' => false,
-                'active_openings_count' => 2,
-                'openings' => [
-                    ['title' => 'Backend Laravel / Node.js Intern', 'type' => 'Magang', 'duration' => '3 - 6 Bulan'],
-                    ['title' => 'Frontend React.js Intern', 'type' => 'Magang', 'duration' => '3 - 6 Bulan'],
-                ],
-            ],
-            [
-                'id' => 'mock-comp-3',
-                'name' => 'PT Surya Kreatif Multimedia',
-                'initials' => 'SK',
-                'logo' => 'https://images.unsplash.com/photo-1572021335469-31706a17aaef?w=150&auto=format&fit=crop&q=80',
-                'sector' => 'Kreatif, Desain Grafis & UI/UX',
-                'city' => 'Kota Surabaya, Jawa Timur',
-                'address' => 'Jl. Mayjen Sungkono No. 120, Surabaya',
-                'website' => 'https://suryakreatif.com',
-                'phone' => '6281555667788',
-                'email' => 'talent@suryakreatif.com',
-                'match_score' => 89,
-                'matched_subjects' => ['Desain Grafis & Vektor', 'UI/UX Design Figma', 'Animasi 2D/3D'],
-                'mou_status' => 'no_mou',
-                'is_mou_partner' => false,
-                'active_openings_count' => 4,
-                'openings' => [
-                    ['title' => 'Junior UI/UX Designer', 'type' => 'Magang', 'duration' => '6 Bulan'],
-                    ['title' => 'Graphic & Motion Designer', 'type' => 'Magang', 'duration' => '6 Bulan'],
-                ],
-            ],
-            [
-                'id' => 'mock-comp-4',
-                'name' => 'PT Telekomunikasi Jaringan Nusantara',
-                'initials' => 'TJ',
-                'logo' => 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=150&auto=format&fit=crop&q=80',
-                'sector' => 'Telekomunikasi & Jaringan Komputer',
-                'city' => 'Kota Semarang, Jawa Tengah',
-                'address' => 'Jl. Pahlawan No. 45, Semarang',
-                'website' => 'https://telnusantara.co.id',
-                'phone' => '6281777888999',
-                'email' => 'magang@telnusantara.co.id',
-                'match_score' => 86,
-                'matched_subjects' => ['Administrasi Server Jaringan', 'Routing & Switching', 'Fiber Optik & Wireless'],
-                'mou_status' => 'has_mou',
-                'is_mou_partner' => true,
-                'active_openings_count' => 3,
-                'openings' => [
-                    ['title' => 'Network Technician Intern', 'type' => 'Magang', 'duration' => '6 Bulan'],
-                    ['title' => 'NOC Junior Operator', 'type' => 'Magang', 'duration' => '6 Bulan'],
-                ],
-            ],
-            [
-                'id' => 'mock-comp-5',
-                'name' => 'PT Manufaktur Presisi Otomasi',
-                'initials' => 'MP',
-                'logo' => 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=150&auto=format&fit=crop&q=80',
-                'sector' => 'Manufaktur, Permesinan & Otomasi Industri',
-                'city' => 'Kab. Bekasi, Jawa Barat',
-                'address' => 'Kawasan Industri GIIC Cikarang',
-                'website' => 'https://presisi-otomasi.co.id',
-                'phone' => '6281888999000',
-                'email' => 'hr@presisi-otomasi.co.id',
-                'match_score' => 84,
-                'matched_subjects' => ['Teknik Mesin Bubut/CNC', 'PLC & Kendali Kelistrikan', 'CAD/CAM SolidWorks'],
-                'mou_status' => 'no_mou',
-                'is_mou_partner' => false,
-                'active_openings_count' => 5,
-                'openings' => [
-                    ['title' => 'Operator Mesin CNC Magang', 'type' => 'Magang', 'duration' => '6 Bulan'],
-                    ['title' => 'Drafter CAD Mekanikal', 'type' => 'Magang', 'duration' => '6 Bulan'],
-                ],
-            ],
-            [
-                'id' => 'mock-comp-6',
-                'name' => 'PT Finansial Mitra Digital',
-                'initials' => 'FM',
-                'logo' => 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=150&auto=format&fit=crop&q=80',
-                'sector' => 'Keuangan, Perbankan & Akuntansi Lembaga',
-                'city' => 'Kota Yogyakarta, D.I. Yogyakarta',
-                'address' => 'Jl. Malioboro No. 88, Yogyakarta',
-                'website' => 'https://finansialmitra.id',
-                'phone' => '6281999000111',
-                'email' => 'recruitment@finansialmitra.id',
-                'match_score' => 82,
-                'matched_subjects' => ['Akuntansi Komputer & Spreadsheet', 'Administrasi Perpajakan', 'Analisis Laporan Keuangan'],
-                'mou_status' => 'no_mou',
-                'is_mou_partner' => false,
-                'active_openings_count' => 2,
-                'openings' => [
-                    ['title' => 'Staff Administrasi & Akuntansi Magang', 'type' => 'Magang', 'duration' => '3 - 6 Bulan'],
-                ],
-            ]
-        ];
-
         $matchedCompanies = [];
 
         if ($companies->isNotEmpty()) {
@@ -598,8 +469,7 @@ Ekstrak profil kompetensi mata pelajaran dan peluang kemitraan industri dalam Ba
             }
         }
 
-        // Merge real database companies with mock dataset for rich experience
-        $allCompanies = !empty($matchedCompanies) ? array_merge($matchedCompanies, $mockCompanies) : $mockCompanies;
+        $allCompanies = $matchedCompanies;
 
         // Apply filters
         if ($mouFilter === 'has_mou') {
