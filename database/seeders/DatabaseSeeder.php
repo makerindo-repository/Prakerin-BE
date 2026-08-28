@@ -792,7 +792,7 @@ class DatabaseSeeder extends Seeder
                 'photo_profile' => 'pfpupload/usrpfp5.jpeg',
                 'name' => 'Fitri Astuti',
                 'position' => 'Alumni Magang Universitas Indonesia',
-                'comment' => 'Sangat bersyukur dengan adanya seleksi tes teknis yang terintegrasi di Prakerin. Soal-soalnya sangat relevan dengan kebutuhan industri sesungguhnya, sehingga melatih kesiapan mental kerja saya semenjak kuliah.',
+                'comment' => 'Sangat bersyukur dengan adanya seleksi tes teknis yang terintegrasi di Prakerin. Soal-soalnya sangat relevan dengan kebutuhan industri sesungguhnya, sehingga melatih kesiapan mental kerja saya semenjak di perguruan tinggi.',
             ],
         ];
 
