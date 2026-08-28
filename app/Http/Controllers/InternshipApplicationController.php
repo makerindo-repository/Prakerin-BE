@@ -39,53 +39,83 @@ class InternshipApplicationController extends Controller
         $status = request()->query('status', null);
 
 
-        if (auth()->user()->tokenCan('company-access')) {
+        $user = auth()->user();
+        $isCompany = $user->tokenCan('company-access') || $user->role === 'company';
+        $isSuperAdmin = $user->tokenCan('admin-access') || $user->tokenCan('super_admin') || $user->role === 'super_admin' || (method_exists($user, 'hasRole') && $user->hasRole('super_admin'));
 
+        if ($isCompany || $isSuperAdmin) {
             $search = request()->query('search', '');
+            $jobOpeningId = request()->query('job_opening_id', null);
 
-            $internshipApplications = InternshipApplication::with([
+            $query = InternshipApplication::with([
                 'curriculumVitae.student.user',
-                'curriculumVitae.student.school'
+                'curriculumVitae.student.school',
+                'curriculumVitae.student.major',
+                'jobOpening.company'
             ])
-                ->whereHas('jobOpening', function ($query) {
-                    $query->where('company_id', auth()->user()->company->id);
+                ->when($isCompany && !$isSuperAdmin && $user->company, function ($query) use ($user) {
+                    $query->whereHas('jobOpening', function ($q) use ($user) {
+                        $q->where('company_id', $user->company->id);
+                    });
                 })
-                ->whereHas('curriculumVitae.student', function ($query) use ($search) {
-                    $query->where('name', 'like', "%$search%");
+                ->when($jobOpeningId, function ($query) use ($jobOpeningId) {
+                    $query->where('job_opening_id', $jobOpeningId);
                 })
-                ->when($status !== null, function ($query) use ($status) {
+                ->where(function ($query) use ($search) {
+                    if ($search) {
+                        $query->whereHas('curriculumVitae.student', function ($q) use ($search) {
+                            $q->where('name', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('curriculumVitae.student.school', function ($q) use ($search) {
+                            $q->where('name', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('jobOpening', function ($q) use ($search) {
+                            $q->where('title', 'like', "%{$search}%");
+                        });
+                    }
+                })
+                ->when($status !== null && $status !== '', function ($query) use ($status) {
                     $query->where('status', $status);
                 })
-                ->paginate($limit);
+                ->latest();
+
+            $internshipApplications = $query->paginate($limit);
 
             $internshipApplications->getCollection()->transform(function ($item) {
-                $student = $item->curriculumVitae->student;
-                $student->makeHidden(['user', 'school']);
+                $student = $item->curriculumVitae?->student;
+                if ($student) {
+                    $student->makeHidden(['user', 'school']);
+                }
 
                 return [
                     'id' => $item->id,
                     'curriculum_vitae' => [
-                        'id' => $item->curriculumVitae->id,
-                        'name' => $item->curriculumVitae->name,
+                        'id' => $item->curriculumVitae?->id,
+                        'name' => $item->curriculumVitae?->name,
                     ],
                     'job_opening_id' => $item->job_opening_id,
+                    'job_opening' => $item->jobOpening ? [
+                        'id' => $item->jobOpening->id,
+                        'title' => $item->jobOpening->title,
+                        'type' => $item->jobOpening->type,
+                        'location' => $item->jobOpening->location,
+                        'company_name' => $item->jobOpening->company?->name,
+                    ] : null,
                     'status' => $item->status,
                     'read_at' => $item->read_at,
                     'is_read' => !is_null($item->read_at),
                     'cover_letter' => $item->cover_letter,
+                    'message_rejected' => $item->message_rejected,
                     'created_at' => $item->created_at,
                     'updated_at' => $item->updated_at,
                     'student' => $student,
-                    'user' => $student->user,
-                    'school' => $student->school,
-                    'major' => $student->major?->name,
-
+                    'user' => $student?->user,
+                    'school' => $student?->school,
+                    'major' => $student?->major?->name,
                 ];
-
             });
 
             return response()->json($internshipApplications);
-
         }
 
 
@@ -632,12 +662,28 @@ class InternshipApplicationController extends Controller
 )]
     public function count()
     {
+        $user = auth()->user();
+        $isCompany = $user->tokenCan('company-access') || $user->role === 'company';
+        $isSuperAdmin = $user->tokenCan('admin-access') || $user->tokenCan('super_admin') || $user->role === 'super_admin' || (method_exists($user, 'hasRole') && $user->hasRole('super_admin'));
 
-        $counts = InternshipApplication::whereHas(
-            'curriculumVitae',
-            fn($query) =>
-            $query->where('student_id', auth()->user()->student->id)
-        )
+        $query = InternshipApplication::query();
+
+        if ($isCompany && !$isSuperAdmin && $user->company) {
+            $query->whereHas('jobOpening', function ($q) use ($user) {
+                $q->where('company_id', $user->company->id);
+            });
+        } elseif (!$isSuperAdmin && $user->student) {
+            $query->whereHas('curriculumVitae', function ($q) use ($user) {
+                $q->where('student_id', $user->student->id);
+            });
+        }
+
+        $jobOpeningId = request()->query('job_opening_id', null);
+        if ($jobOpeningId) {
+            $query->where('job_opening_id', $jobOpeningId);
+        }
+
+        $counts = $query
             ->selectRaw("status, COUNT(*) as total")
             ->groupBy('status')
             ->pluck('total', 'status');
@@ -646,14 +692,15 @@ class InternshipApplicationController extends Controller
         $acceptedCount = $counts['accepted'] ?? 0;
         $rejectedCount = $counts['rejected'] ?? 0;
         $inProgressCount = $counts['in_progress'] ?? 0;
+        $acceptanceRate = $internshipApplicationsCount > 0 ? round(($acceptedCount / $internshipApplicationsCount) * 100, 1) : 0;
 
         return response()->json([
             'data' => [
-
                 'total' => $internshipApplicationsCount,
                 'accepted' => $acceptedCount,
                 'rejected' => $rejectedCount,
                 'in_progress' => $inProgressCount,
+                'acceptance_rate' => $acceptanceRate,
             ]
         ]);
     }

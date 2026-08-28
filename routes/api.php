@@ -391,12 +391,16 @@ Route::prefix('v1')->group(function () {
         ->middleware('auth:sanctum')
         ->group(function () {
 
-            Route::middleware('abilities:student-access')->group(function () {
+            Route::middleware('ability:student-access,super_admin,admin-access')->group(function () {
                 Route::post('/', 'store');
-                Route::get('/count', 'count');
             });
 
-            Route::middleware('abilities:company-access')->group(function () {
+            Route::middleware('ability:student-access,company-access,admin-access,super_admin')->group(function () {
+                Route::get('/count', 'count');
+                Route::get('/', 'index');
+            });
+
+            Route::middleware('ability:company-access,admin-access,super_admin')->group(function () {
                 Route::patch('/{idInternshipApplication}/tests/{idTest}', 'updateTestPassed');
                 Route::patch('/{idInternshipApplication}/test/{idTest}', 'updateTestPassed');
                 Route::patch('/{id}/mark-as-read', 'markAsRead');
@@ -405,10 +409,6 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}', 'update');
                 Route::delete('/{id}', 'destroy');
             });
-
-            Route::middleware('ability:student-access,company-access')->group(function () {
-                Route::get('/', 'index');
-            });
         });
 
     // Job Opening
@@ -416,13 +416,13 @@ Route::prefix('v1')->group(function () {
         ->controller(JobOpeningController::class)
         ->group(function () {
             Route::middleware('auth:sanctum')->group(function () {
-                Route::middleware('abilities:company-access')->group(function () {
+                Route::middleware('ability:company-access,admin-access,super_admin')->group(function () {
                     Route::post('/', 'store');
                     Route::patch('/{id}', 'update');
                     Route::delete('/{id}', 'destroy');
                 });
 
-                Route::middleware("ability:school-access,company-access")->group(function () {
+                Route::middleware("ability:school-access,company-access,admin-access,super_admin")->group(function () {
                     Route::get('/count', 'count');
                 });
             });

@@ -53,6 +53,7 @@ class JobOpeningController extends Controller
         $isDashboard = filter_var($request->query('dashboard', false), FILTER_VALIDATE_BOOLEAN);
 
         $user = Auth::guard('sanctum')->user();
+        $isSuperAdmin = $user && ($user->role === 'super_admin' || $user->tokenCan('admin-access') || $user->tokenCan('super_admin') || (method_exists($user, 'hasRole') && $user->hasRole('super_admin')));
 
         // If user is a company and requesting dashboard data, show only their job openings
         if ($user?->company && $isDashboard) {
@@ -75,6 +76,44 @@ class JobOpeningController extends Controller
                 ->when($duration_id, function ($query) use ($duration_id) {
                     return $query->whereIn('duration_id', Arr::wrap($duration_id));
                 });
+        } elseif ($isSuperAdmin && $isDashboard) {
+            // If user is super_admin and requesting dashboard data, show all job openings across all companies
+            $query = JobOpening::with([
+                'company.user',
+                'company.cityRegency.province',
+                'field',
+                'duration',
+                'test'
+            ])
+                ->where(function ($q) use ($search) {
+                    if ($search) {
+                        $q->where('title', 'like', "%{$search}%")
+                          ->orWhereHas('company', function ($cq) use ($search) {
+                              $cq->where('name', 'like', "%{$search}%");
+                          });
+                    }
+                })
+                ->whereHas('company', function ($query) use ($province_id, $city_regency_id) {
+                    if ($province_id) {
+                        $query->whereHas('cityRegency', function ($query) use ($province_id) {
+                            $query->whereIn('province_id', Arr::wrap($province_id));
+                        });
+                    }
+                    if ($city_regency_id) {
+                        $query->whereIn('city_regency_id', Arr::wrap($city_regency_id));
+                    }
+                })
+                ->when($grade, function ($query) use ($grade) {
+                    $gradeArray = Arr::wrap($grade);
+                    return $query->whereIn('grade', $gradeArray);
+                })
+                ->when($field_id, function ($query) use ($field_id) {
+                    return $query->whereIn('field_id', Arr::wrap($field_id));
+                })
+                ->when($duration_id, function ($query) use ($duration_id) {
+                    return $query->whereIn('duration_id', Arr::wrap($duration_id));
+                })
+                ->latest();
         } else {
             // For students, guests, or companies browsing the public landing page: show all available job openings
             $query = JobOpening::with([
@@ -367,12 +406,15 @@ class JobOpeningController extends Controller
             throw new HttpResponseException(response()->json(['errors' => 'Job opening not found.'], 404));
         }
 
-        $companyId = auth()->user()->company?->id;
-        if (!$companyId) {
+        $user = auth()->user();
+        $isSuperAdmin = $user && ($user->role === 'super_admin' || $user->tokenCan('admin-access') || $user->tokenCan('super_admin') || (method_exists($user, 'hasRole') && $user->hasRole('super_admin')));
+        $companyId = $user->company?->id;
+
+        if (!$companyId && !$isSuperAdmin) {
             throw new HttpResponseException(response()->json(['errors' => 'Company profile not found.'], 403));
         }
 
-        if ($jobOpening->company_id !== $companyId) {
+        if (!$isSuperAdmin && $jobOpening->company_id !== $companyId) {
             throw new HttpResponseException(response()->json(['errors' => 'Forbidden.'], 403));
         }
 
@@ -447,12 +489,15 @@ class JobOpeningController extends Controller
             throw new HttpResponseException(response()->json(['errors' => 'Job opening not found.'], 404));
         }
 
-        $companyId = auth()->user()->company?->id;
-        if (!$companyId) {
+        $user = auth()->user();
+        $isSuperAdmin = $user && ($user->role === 'super_admin' || $user->tokenCan('admin-access') || $user->tokenCan('super_admin') || (method_exists($user, 'hasRole') && $user->hasRole('super_admin')));
+        $companyId = $user->company?->id;
+
+        if (!$companyId && !$isSuperAdmin) {
             throw new HttpResponseException(response()->json(['errors' => 'Company profile not found.'], 403));
         }
 
-        if ($jobOpening->company_id !== $companyId) {
+        if (!$isSuperAdmin && $jobOpening->company_id !== $companyId) {
             throw new HttpResponseException(response()->json(['errors' => 'Forbidden.'], 403));
         }
 
@@ -481,13 +526,14 @@ class JobOpeningController extends Controller
     public function count(Request $request)
     {
         $user = $request->user();
+        $isSuperAdmin = $user && ($user->role === 'super_admin' || $user->tokenCan('admin-access') || $user->tokenCan('super_admin') || (method_exists($user, 'hasRole') && $user->hasRole('super_admin')));
         $companyId = $user->company?->id;
 
-        if ($user->tokenCan('company-access') && !$companyId) {
+        if (!$isSuperAdmin && $user->tokenCan('company-access') && !$companyId) {
             return response()->json(['data' => ['true' => 0, 'false' => 0, 'total' => 0]]);
         }
 
-        $counts = JobOpening::when($user->tokenCan("company-access"), function ($query) use ($companyId) {
+        $counts = JobOpening::when(!$isSuperAdmin && $user->tokenCan("company-access"), function ($query) use ($companyId) {
             $query->where("company_id", $companyId);
         })
             ->selectRaw('is_available, COUNT(*) as total')
