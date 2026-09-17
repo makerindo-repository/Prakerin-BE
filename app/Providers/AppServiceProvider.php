@@ -27,17 +27,23 @@ class AppServiceProvider extends ServiceProvider
             
             // Dynamic mail config overrides
             if (isset($settings['smtp_host']) && !empty($settings['smtp_host'])) {
+                $port = (int) ($settings['smtp_port'] ?? 587);
                 $enc = $settings['smtp_encryption'] ?? 'tls';
                 if ($enc === 'none' || empty($enc)) {
                     $enc = null;
                 }
+                $scheme = ($enc === 'ssl' || $port === 465) ? 'smtps' : 'smtp';
+
                 config([
                     'mail.default'                 => 'smtp',
+                    'mail.mailers.smtp.transport'  => 'smtp',
+                    'mail.mailers.smtp.scheme'     => $scheme,
                     'mail.mailers.smtp.host'       => $settings['smtp_host'],
-                    'mail.mailers.smtp.port'       => (int) ($settings['smtp_port'] ?? 587),
+                    'mail.mailers.smtp.port'       => $port,
                     'mail.mailers.smtp.username'   => $settings['smtp_username'] ?? '',
                     'mail.mailers.smtp.password'   => $settings['smtp_password'] ?? '',
                     'mail.mailers.smtp.encryption' => $enc,
+                    'mail.mailers.smtp.timeout'    => 15,
                     'mail.from.address'            => $settings['smtp_from_email'] ?? config('mail.from.address'),
                     'mail.from.name'               => $settings['smtp_from_name'] ?? config('mail.from.name'),
                 ]);

@@ -69,12 +69,13 @@ class SettingController extends Controller
             }
         }
 
-        // Programmatically clear config cache so dynamic overrides apply cleanly
+        // Programmatically clear config cache and re-apply fresh mail settings
         try {
             \Illuminate\Support\Facades\Artisan::call('config:clear');
         } catch (\Exception $e) {
             Log::warning('Artisan config:clear failed: ' . $e->getMessage());
         }
+        $this->applyMailConfig();
 
         // Return the fresh casted list of settings
         $settings = Setting::all()->mapWithKeys(function ($item) {
@@ -166,6 +167,7 @@ class SettingController extends Controller
      */
     public function testSmtp()
     {
+        $this->applyMailConfig();
         $host = config('mail.mailers.smtp.host');
         $port = (int) config('mail.mailers.smtp.port', 587);
         $encryption = strtolower(config('mail.mailers.smtp.encryption', 'tls'));
@@ -370,6 +372,7 @@ class SettingController extends Controller
      */
     public function sendTestEmail(Request $request)
     {
+        $this->applyMailConfig();
         $validated = $request->validate([
             'recipient_email' => 'required|email',
         ]);
@@ -415,6 +418,7 @@ class SettingController extends Controller
      */
     public function sendEmailBroadcast(Request $request)
     {
+        $this->applyMailConfig();
         $validated = $request->validate([
             'target_group'           => 'required|string|in:all_email_users,unapplied_students,active_interns,pro_users,test_single_user',
             'title'                  => 'required|string|max:150',
@@ -688,6 +692,37 @@ class SettingController extends Controller
                 'status'  => 'error',
                 'message' => 'Gagal menghubungi Xendit API: ' . $e->getMessage(),
             ], 400);
+        }
+    }
+
+    /**
+     * Dynamically override mail configuration from latest DB settings.
+     */
+    private function applyMailConfig(): void
+    {
+        $settings = Setting::all()->pluck('value', 'key');
+        if (isset($settings['smtp_host']) && !empty($settings['smtp_host'])) {
+            $port = (int) ($settings['smtp_port'] ?? 587);
+            $enc = $settings['smtp_encryption'] ?? 'tls';
+            if ($enc === 'none' || empty($enc)) {
+                $enc = null;
+            }
+            $scheme = ($enc === 'ssl' || $port === 465) ? 'smtps' : 'smtp';
+
+            config([
+                'mail.default'                 => 'smtp',
+                'mail.mailers.smtp.transport'  => 'smtp',
+                'mail.mailers.smtp.scheme'     => $scheme,
+                'mail.mailers.smtp.host'       => $settings['smtp_host'],
+                'mail.mailers.smtp.port'       => $port,
+                'mail.mailers.smtp.username'   => $settings['smtp_username'] ?? '',
+                'mail.mailers.smtp.password'   => $settings['smtp_password'] ?? '',
+                'mail.mailers.smtp.encryption' => $enc,
+                'mail.mailers.smtp.timeout'    => 15,
+                'mail.from.address'            => $settings['smtp_from_email'] ?? config('mail.from.address'),
+                'mail.from.name'               => $settings['smtp_from_name'] ?? config('mail.from.name'),
+            ]);
+            \Illuminate\Support\Facades\Mail::purge('smtp');
         }
     }
 }
