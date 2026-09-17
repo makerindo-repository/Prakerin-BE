@@ -42,7 +42,6 @@ class JobOpeningController extends Controller
 )]
     public function index(Request $request) //This function is 80% overhauled as the previous one cannot load any job openings
     {
-        $limit = $request->query('limit', 10);
         $search = $request->query('search', '');
         $province_id = $request->query('province_id', []);
         $city_regency_id = $request->query('city_regency_id', []);
@@ -153,11 +152,11 @@ class JobOpeningController extends Controller
                     $query->whereHas('saveJobOpening', function ($q) use ($user) {
                         $q->where('student_id', $user?->student?->id);
                     });
-                });
+                })
+                ->latest();
         }
 
-        $paginated = $query->paginate($limit);
-        $paginated->getCollection()->transform(function ($item) {
+        $transformItem = function ($item) {
             return [
                 "id" => $item->id,
                 "company_id" => $item->company_id,
@@ -185,9 +184,30 @@ class JobOpeningController extends Controller
                 'duration' => $item->duration,
                 'test' => $item->test,
             ];
-        });
+        };
 
-        return response()->json($paginated);
+        $hasLimit = $request->has('limit') && $request->query('limit') !== 'all' && is_numeric($request->query('limit')) && (int)$request->query('limit') > 0;
+
+        if ($hasLimit) {
+            $paginated = $query->paginate((int)$request->query('limit'));
+            $paginated->getCollection()->transform($transformItem);
+            return response()->json($paginated);
+        }
+
+        $items = $query->get()->map($transformItem);
+        return response()->json([
+            'current_page' => 1,
+            'data' => $items,
+            'first_page_url' => $request->url(),
+            'from' => $items->isNotEmpty() ? 1 : null,
+            'last_page' => 1,
+            'next_page_url' => null,
+            'path' => $request->url(),
+            'per_page' => $items->count(),
+            'prev_page_url' => null,
+            'to' => $items->count(),
+            'total' => $items->count(),
+        ]);
     }
 
     /**
