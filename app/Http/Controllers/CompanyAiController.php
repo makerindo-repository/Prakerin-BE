@@ -14,6 +14,7 @@ use Gemini\Enums\DataType;
 use Gemini\Enums\ResponseMimeType;
 use Gemini\Enums\MimeType;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -27,6 +28,7 @@ class CompanyAiController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string',
+            'company_type' => 'nullable|string',
             'sector' => 'nullable|string',
             'established_year' => 'nullable|string',
             'employee_count' => 'nullable|string',
@@ -34,8 +36,13 @@ class CompanyAiController extends Controller
             'email' => 'nullable|string',
             'phone' => 'nullable|string',
             'linkedin' => 'nullable|string',
+            'social_links' => 'nullable|array|max:4',
+            'social_links.*.platform' => 'nullable|string',
+            'social_links.*.url' => 'nullable|string',
             'address' => 'nullable|string',
             'short_description' => 'nullable|string',
+            'vision' => 'nullable|string',
+            'mission' => 'nullable|string',
             'competencies' => 'nullable|array',
             'competencies.*' => 'string',
             'portfolios' => 'nullable|array',
@@ -43,6 +50,16 @@ class CompanyAiController extends Controller
             'portfolios.*.description' => 'nullable|string',
             'prompt_extra' => 'nullable|string',
         ]);
+
+        // Auto-fill linkedin from social_links if provided and not explicitly set
+        if (empty($validated['linkedin']) && !empty($validated['social_links'])) {
+            foreach ($validated['social_links'] as $sl) {
+                if (($sl['platform'] ?? '') === 'linkedin' && !empty($sl['url'])) {
+                    $validated['linkedin'] = $sl['url'];
+                    break;
+                }
+            }
+        }
 
         $companyData = json_encode($validated, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         $extraPrompt = $validated['prompt_extra'] ?? 'Susun dan proses narasi profil perusahaan agar tampak profesional, terpercaya, dan menarik bagi pencari kerja/magang dan mitra bisnis.';
@@ -138,7 +155,7 @@ Tolong susun narasi profil perusahaan yang elegan, formal, dan komprehensif dala
 
         // Save into history database
         $user = $request->user();
-        $historyRecord = \App\Models\CompanyAiProfileHistory::create([
+        $historyData = [
             'user_id'            => $user?->id,
             'company_id'         => $user?->company?->id,
             'company_name'       => $validated['name'],
@@ -157,14 +174,26 @@ Tolong susun narasi profil perusahaan yang elegan, formal, dan komprehensif dala
             'competencies'       => $resultData['core_competencies'] ?? ($validated['competencies'] ?? []),
             'portfolios'         => $resultData['portfolio_highlights'] ?? ($validated['portfolios'] ?? []),
             'completeness_score' => $resultData['completeness_score'] ?? 85,
-        ]);
+        ];
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('company_ai_profile_histories', 'company_type')) {
+            $historyData['company_type'] = $validated['company_type'] ?? null;
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn('company_ai_profile_histories', 'social_links')) {
+            $historyData['social_links'] = $validated['social_links'] ?? null;
+        }
+
+        $historyRecord = \App\Models\CompanyAiProfileHistory::create($historyData);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Profil perusahaan berhasil disusun oleh AI.',
             'data' => array_merge($resultData, [
-                'history_id' => $historyRecord->id,
-                'created_at' => $historyRecord->created_at->toIso8601String(),
+                'history_id'   => $historyRecord->id,
+                'company_type' => $validated['company_type'] ?? null,
+                'social_links' => $validated['social_links'] ?? [],
+                'website'      => $validated['website'] ?? null,
+                'created_at'   => $historyRecord->created_at->toIso8601String(),
             ]),
         ]);
     }
@@ -363,14 +392,16 @@ Ekstrak profil dan kebutuhan talent dari perusahaan ini dalam Bahasa Indonesia:
                 }
 
                 $majorName = optional($student->major)->name ?? 'Teknik Informatika';
-                $schoolName = optional($student->school)->name ?? 'Sekolah/Universitas Mitra';
-                $eduType = optional($student->school)->type === 'university' ? 'Mahasiswa' : 'Siswa SMK';
+                $schoolName = optional($student->school)->name ?? 'SMK / Perguruan Tinggi Mitra';
+                $schoolType = strtolower(optional($student->school)->type ?? '');
+                $eduType = in_array($schoolType, ['university', 'polytechnic', 'institute', 'perguruan_tinggi']) ? 'Mahasiswa' : 'Siswa SMK';
 
                 // Calculate matching score
                 $matchScore = max(70, min(96, 95 - ($index * 3)));
 
                 $matchedTalents[] = [
                     'id' => $student->id,
+                    'user_id' => $student->user_id,
                     'name' => $student->name,
                     'initials' => strtoupper(substr($student->name, 0, 2)),
                     'photo_profile' => optional($student->user)->photo_profile,
@@ -381,8 +412,8 @@ Ekstrak profil dan kebutuhan talent dari perusahaan ini dalam Bahasa Indonesia:
                     'match_score' => $matchScore,
                     'status' => $student->status_magang === 'ongoing' ? 'Sedang Magang' : 'Aktif mencari magang / kerja',
                     'status_code' => $student->status_magang === 'ongoing' ? 'ongoing' : 'seeking',
-                    'phone' => $student->phone_number ?? '6281234567890',
-                    'email' => optional($student->user)->email ?? 'student@example.com',
+                    'phone' => $student->phone_number ?: optional($student->user)->phone_number ?: null,
+                    'email' => optional($student->user)->email ?: null,
                     'cv_url' => optional($student->curriculumVitae->first())->file ? Storage::url($student->curriculumVitae->first()->file) : null,
                 ];
             }
@@ -406,5 +437,69 @@ Ekstrak profil dan kebutuhan talent dari perusahaan ini dalam Bahasa Indonesia:
             'data' => $paginated,
             'total' => $total,
         ];
+    }
+
+    /**
+     * Send internship selection invitation to a student candidate.
+     */
+    public function inviteTalent(Request $request)
+    {
+        $request->validate([
+            'student_id' => 'required',
+            'message'    => 'nullable|string|max:1000',
+        ]);
+
+        $student = Student::with(['user', 'school'])->where('id', $request->input('student_id'))->first();
+
+        if (!$student) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Data kandidat siswa tidak ditemukan.',
+            ], 404);
+        }
+
+        $userId = $student->user_id ?: optional($student->user)->id;
+        if (!$userId) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Akun pengguna siswa tidak terhubung dengan profil ini.',
+            ], 422);
+        }
+
+        $sender = Auth::user();
+        $company = $sender->company ?? null;
+        $companyName = $company?->name ?? $sender->username ?? 'Perusahaan Mitra';
+
+        $invitationMessage = trim($request->input('message') ?? '');
+        if (empty($invitationMessage)) {
+            $invitationMessage = "Halo {$student->name}, profil Anda sangat cocok dengan kebutuhan perusahaan kami ({$companyName}). Kami mengundang Anda untuk mengikuti proses seleksi magang di perusahaan kami.";
+        }
+
+        $title = "Undangan Seleksi Magang dari {$companyName}";
+
+        // Trigger NotificationService: creates InboxItem in DB and sends notification via Email/WhatsApp
+        $notificationService = app(\App\Services\NotificationService::class);
+        $inboxItem = $notificationService->notify(
+            userId: $userId,
+            title: $title,
+            content: $invitationMessage,
+            type: 'internship_invitation',
+            actionUrl: '/dashboard/inbox',
+            relatedType: 'Company',
+            relatedId: $company?->id ?? null,
+            senderId: $sender->id
+        );
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => "Undangan seleksi magang berhasil dikirimkan kepada {$student->name}!",
+            'data'    => [
+                'inbox_item_id' => $inboxItem->id,
+                'student_id'    => $student->id,
+                'student_name'  => $student->name,
+                'user_id'       => $userId,
+                'email'         => optional($student->user)->email,
+            ]
+        ]);
     }
 }

@@ -16,6 +16,7 @@ class CompanyAiProfileHistory extends Model
         'user_id',
         'company_id',
         'company_name',
+        'company_type',
         'tagline',
         'about_company',
         'sector',
@@ -25,6 +26,7 @@ class CompanyAiProfileHistory extends Model
         'email',
         'phone',
         'linkedin',
+        'social_links',
         'address',
         'vision',
         'mission',
@@ -34,8 +36,9 @@ class CompanyAiProfileHistory extends Model
     ];
 
     protected $casts = [
-        'competencies' => 'array',
-        'portfolios'   => 'array',
+        'competencies'   => 'array',
+        'portfolios'     => 'array',
+        'social_links'   => 'array',
     ];
 
     public function user()

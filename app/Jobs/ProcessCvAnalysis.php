@@ -75,11 +75,14 @@ class ProcessCvAnalysis implements ShouldQueue
                 }
             }
 
-            $studentGrade = ($user && $user->student && $user->student->school) ? $user->student->school->type : 'school';
+            $studentGrade = strtolower(($user && $user->student && $user->student->school) ? ($user->student->school->type ?? 'school') : 'school');
+            $isHigherEdu = in_array($studentGrade, ['university', 'polytechnic', 'institute', 'perguruan_tinggi']);
+            $educationLevelLabel = $isHigherEdu ? 'Perguruan Tinggi (Mahasiswa)' : 'Sekolah Menengah (Siswa SMK)';
+
             $prompt = "Anda adalah asisten AI karir & rekrutmen profesional untuk Prakerin.ID.
 Tugas Anda adalah menganalisis dokumen CV/Resume berbentuk PDF yang diunggah oleh kandidat (siswa/mahasiswa) secara komprehensif, mendalam, dan objektif untuk menghasilkan dashboard analisis karir yang lengkap dan mencocokkannya dengan daftar lowongan magang aktif yang tersedia di bawah ini.
 
-Kandidat saat ini menempuh pendidikan tingkat: " . ($studentGrade === 'university' ? 'Perguruan Tinggi (Mahasiswa)' : 'Sekolah Menengah (Siswa)'). ". Harap prioritaskan lowongan magang yang cocok untuk tingkat ini.
+Kandidat saat ini menempuh pendidikan tingkat: {$educationLevelLabel}. Harap prioritaskan lowongan magang yang cocok untuk tingkat ini (evaluasi capaian mata kuliah/SKS untuk mahasiswa atau mata pelajaran kejuruan untuk siswa SMK).
 
 Berikut adalah daftar lowongan magang aktif yang tersedia di sistem:
 $jobsText

@@ -28,9 +28,31 @@ class SchoolAiController extends Controller
      */
     public function generateProfile(Request $request)
     {
+        // Decode JSON-encoded fields if sent via multipart/form-data
+        $rawMajors = $request->input('majors');
+        if (is_string($rawMajors)) {
+            $decoded = json_decode($rawMajors, true);
+            if (is_array($decoded)) $request->merge(['majors' => $decoded]);
+        }
+        $rawComp = $request->input('competencies');
+        if (is_string($rawComp)) {
+            $decoded = json_decode($rawComp, true);
+            if (is_array($decoded)) $request->merge(['competencies' => $decoded]);
+        }
+        $rawFac = $request->input('facilities');
+        if (is_string($rawFac)) {
+            $decoded = json_decode($rawFac, true);
+            if (is_array($decoded)) $request->merge(['facilities' => $decoded]);
+        }
+        $rawPart = $request->input('partnerships');
+        if (is_string($rawPart)) {
+            $decoded = json_decode($rawPart, true);
+            if (is_array($decoded)) $request->merge(['partnerships' => $decoded]);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string',
-            'type' => 'nullable|string', // smk, sma, university, institute, polytechnic
+            'type' => 'nullable|string', // smk, university, institute, polytechnic
             'npsn' => 'nullable|string',
             'accreditation' => 'nullable|string',
             'city' => 'nullable|string',
@@ -52,10 +74,17 @@ class SchoolAiController extends Controller
             'partnerships.*.title' => 'nullable|string',
             'partnerships.*.description' => 'nullable|string',
             'prompt_extra' => 'nullable|string',
+            'uploaded_file' => 'nullable|file|mimes:pdf|max:20480',
         ]);
 
+        $instType = strtolower($validated['type'] ?? 'smk');
+        $isHigherEdu = in_array($instType, ['university', 'polytechnic', 'institute', 'perguruan_tinggi']);
+
         $schoolData = json_encode($validated, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-        $extraPrompt = $validated['prompt_extra'] ?? 'Susun profil sekolah/kampus secara komprehensif, akademis, dan menarik untuk kemitraan industri (DUDI) dan program magang/Prakerin.';
+        $defaultExtra = $isHigherEdu
+            ? 'Susun profil perguruan tinggi/kampus secara komprehensif, akademis, dan menarik untuk program kemitraan industri, magang MSIB, riset terapan, dan rekrutmen lulusan.'
+            : 'Susun profil sekolah kejuruan (SMK) secara komprehensif, terstruktur, dan menarik untuk kemitraan industri (DUDI) dan program Praktik Kerja Lapangan (PKL).';
+        $extraPrompt = $validated['prompt_extra'] ?? $defaultExtra;
 
         $apiKey = config('gemini.api_key');
         $aiProvider = Setting::getVal('ai_provider', 'gemini');
@@ -64,16 +93,36 @@ class SchoolAiController extends Controller
 
         if ($aiProvider !== 'none' && $apiKey) {
             try {
+                $instRole = $isHigherEdu
+                    ? 'konsultan pendidikan tinggi dan branding kampus/perguruan tinggi profesional'
+                    : 'konsultan pendidikan vokasi dan branding institusi pendidikan kejuruan profesional';
+
+                $subjectContext = $isHigherEdu
+                    ? 'menonjolkan keunggulan kurikulum perguruan tinggi, mata kuliah utama/unggulan, capaian pembelajaran (CPL), dan kesiapan mahasiswa/lulusan di dunia kerja'
+                    : 'menonjolkan keunggulan kurikulum vokasi, mata pelajaran produktif kejuruan, dan kesiapan kerja siswa di dunia industri';
+
                 $prompt = "
-Anda adalah seorang konsultan pendidikan vokasi dan branding institusi pendidikan profesional.
-Berikut adalah data mentah institusi sekolah/perguruan tinggi:
+Anda adalah seorang {$instRole}.
+Berikut adalah data mentah institusi:
 ```json
 {$schoolData}
 ```
 
 Instruksi: {$extraPrompt}
-Tolong susun narasi profil sekolah/kampus yang formal, inspiratif, dan menonjolkan keunggulan kurikulum, mata pelajaran kejuruan, serta kesiapan siswa/mahasiswa dalam Bahasa Indonesia.
+Tolong susun narasi profil institusi yang formal, inspiratif, dan {$subjectContext} dalam Bahasa Indonesia.
+Jika terlampir dokumen kurikulum/mata kuliah berbentuk PDF, baca dan ekstrak mata kuliah/kompetensi intinya ke dalam competency_highlights.
 ";
+
+                $contentParts = [$prompt];
+
+                if ($request->hasFile('uploaded_file')) {
+                    $pdfFile = $request->file('uploaded_file');
+                    $blob = new Blob(
+                        mimeType: MimeType::APPLICATION_PDF,
+                        data: base64_encode(file_get_contents($pdfFile->getRealPath()))
+                    );
+                    $contentParts[] = $blob;
+                }
 
                 $result = Gemini::generativeModel("gemini-3.1-flash-lite")->withGenerationConfig(
                     generationConfig: new GenerationConfig(
@@ -81,8 +130,8 @@ Tolong susun narasi profil sekolah/kampus yang formal, inspiratif, dan menonjolk
                         responseSchema: new Schema(
                             type: DataType::OBJECT,
                             properties: [
-                                'tagline' => new Schema(type: DataType::STRING, description: 'Slogan/tagline ringkas 3-5 kata, misal: Unggul Vokasi • Berkarakter • Siap Kerja Global'),
-                                'about_school' => new Schema(type: DataType::STRING, description: 'Narasi Tentang Institusi/Sekolah yang rapi, berbobot, dan memikat dunia industri'),
+                                'tagline' => new Schema(type: DataType::STRING, description: 'Slogan/tagline ringkas 3-5 kata'),
+                                'about_school' => new Schema(type: DataType::STRING, description: 'Narasi Tentang Institusi yang rapi, berbobot, dan memikat dunia industri'),
                                 'academic_strengths' => new Schema(
                                     type: DataType::ARRAY,
                                     items: new Schema(type: DataType::STRING),
@@ -91,7 +140,7 @@ Tolong susun narasi profil sekolah/kampus yang formal, inspiratif, dan menonjolk
                                 'competency_highlights' => new Schema(
                                     type: DataType::ARRAY,
                                     items: new Schema(type: DataType::STRING),
-                                    description: 'Rangkuman kompetensi keahlian dan mata pelajaran unggulan'
+                                    description: 'Rangkuman kompetensi keahlian dan mata pelajaran/mata kuliah unggulan'
                                 ),
                                 'facility_summary' => new Schema(
                                     type: DataType::ARRAY,
@@ -110,12 +159,12 @@ Tolong susun narasi profil sekolah/kampus yang formal, inspiratif, dan menonjolk
                             required: ['tagline', 'about_school', 'academic_strengths', 'competency_highlights', 'facility_summary', 'partnership_prospect', 'completeness_score']
                         )
                     )
-                )->generateContent($prompt);
+                )->generateContent($contentParts);
 
                 $text = $result->text();
                 $decoded = json_decode($text, true);
 
-                if ($decoded) {
+                if ($decoded && is_array($decoded)) {
                     $resultData = $decoded;
                 }
             } catch (\Exception $e) {
@@ -124,36 +173,66 @@ Tolong susun narasi profil sekolah/kampus yang formal, inspiratif, dan menonjolk
         }
 
         if (!$resultData) {
-            // Fallback generator if AI is unreachable
-            $majorsList = $validated['majors'] ?? ['Rekayasa Perangkat Lunak', 'Teknik Komputer & Jaringan', 'Desain Komunikasi Visual'];
-            $compList = $validated['competencies'] ?? ['Pemrograman Web & Mobile', 'Administrasi Infrastruktur Jaringan', 'UI/UX & Desain Grafis', 'Basis Data'];
+            // Fallback generator if AI is unreachable or offline
+            $majorsList = $validated['majors'] ?? (
+                $isHigherEdu
+                    ? ['Teknik Informatika', 'Sistem Informasi', 'Teknologi Rekayasa Perangkat Lunak']
+                    : ['Rekayasa Perangkat Lunak', 'Teknik Komputer & Jaringan', 'Desain Komunikasi Visual']
+            );
+
+            $compList = $validated['competencies'] ?? (
+                $isHigherEdu
+                    ? ['Struktur Data & Algoritma', 'Pemrograman Berorientasi Objek', 'Sistem Basis Data Terdistribusi', 'Rekayasa Perangkat Lunak', 'Kecerdasan Buatan & Sains Data']
+                    : ['Pemrograman Web & Mobile', 'Administrasi Infrastruktur Jaringan', 'UI/UX & Desain Grafis', 'Basis Data']
+            );
+
             $facList = $validated['facilities'] ?? [
                 [
                     'title' => 'Laboratorium Komputer & Software Studio',
-                    'description' => 'Fasilitas workstation modern untuk pengembangan aplikasi dan multimedia.'
+                    'description' => 'Fasilitas workstation modern untuk riset aplikasi dan pengembangan perangkat lunak.'
                 ],
                 [
-                    'title' => 'Teaching Factory & Workshop Industri',
-                    'description' => 'Ruang praktik berstandar industri nyata untuk membiasakan siswa pada alur kerja profesional.'
+                    'title' => $isHigherEdu ? 'Pusat Riset & Inkubator Bisnis Kampus' : 'Teaching Factory & Workshop Industri',
+                    'description' => $isHigherEdu
+                        ? 'Ruang inkubasi inovasi dan kolaborasi riset terapan bersama mitra korporasi.'
+                        : 'Ruang praktik berstandar industri nyata untuk membiasakan siswa pada alur kerja profesional.'
                 ]
             ];
 
-            $typeLabel = strtoupper($validated['type'] ?? 'SMK');
+            $typeLabel = $isHigherEdu
+                ? ($instType === 'polytechnic' ? 'Politeknik' : ($instType === 'institute' ? 'Institut' : 'Universitas'))
+                : strtoupper($validated['type'] ?? 'SMK');
+
             $resultData = [
-                'tagline' => 'Inovasi Vokasi • Berkarakter • Siap Kerja Global',
+                'tagline' => $isHigherEdu ? 'Inovasi Akademik • Riset & Karakter • Siap Kerja Global' : 'Inovasi Vokasi • Berkarakter • Siap Kerja Global',
                 'about_school' => ($validated['short_description'] ?? '')
-                    ? $validated['short_description'] . ' Kami berkomitmen menyelenggarakan pendidikan vokasi berkualitas tinggi yang terintegrasi dengan kebutuhan industri modern.'
-                    : ($validated['name'] ?? 'Institusi Pendidikan kami') . ' adalah lembaga pendidikan ' . $typeLabel . ' yang berdedikasi mencetak lulusan kompeten, berdaya saing tinggi, dan berintegritas melalui kurikulum berbasis industri dan pembelajaran berbasis proyek.',
-                'academic_strengths' => [
+                    ? $validated['short_description'] . ($isHigherEdu ? ' Kami berkomitmen menyelenggarakan pendidikan tinggi berkualitas yang berorientasi riset terapan dan link-and-match dengan industri.' : ' Kami berkomitmen menyelenggarakan pendidikan vokasi berkualitas tinggi yang terintegrasi dengan kebutuhan industri modern.')
+                    : ($validated['name'] ?? 'Institusi Pendidikan kami') . ' adalah institusi ' . $typeLabel . ' yang berdedikasi mencetak lulusan kompeten, adaptif, dan berintegritas tinggi melalui kurikulum berbasis kebutuhan industri dan pembelajaran berbasis proyek.',
+                'academic_strengths' => $isHigherEdu ? [
+                    'Kurikulum Berbasis Outcome-Based Education (OBE)',
+                    'Pembelajaran Berbasis Proyek Riset & Studi Kasus Nyata',
+                    'Penguatan Soft Skills, Kesiapan Magang MSIB & Karir Global',
+                ] : [
                     'Kurikulum Berbasis Industri & Merdeka Vokasi',
                     'Pembelajaran Berbasis Proyek (Project-Based Learning)',
                     'Penguatan Soft Skills, Etos Kerja & Kepemimpinan',
                 ],
                 'competency_highlights' => $compList,
                 'facility_summary' => $facList,
-                'partnership_prospect' => 'Membuka peluang kerja sama strategis berupa Praktik Kerja Lapangan (PKL), program Guru Tamu, penyelarasan kurikulum, dan rekrutmen kerja lulusan.',
+                'partnership_prospect' => $isHigherEdu
+                    ? 'Membuka peluang kerja sama kemitraan berupa Magang Bersertifikat (MSIB), program Dosen Praktisi, Riset Terapan Bersama, dan Penyerapan Lulusan Mahasiswa.'
+                    : 'Membuka peluang kerja sama strategis berupa Praktik Kerja Lapangan (PKL), program Guru Tamu, penyelarasan kurikulum, dan rekrutmen kerja lulusan.',
                 'completeness_score' => 90,
             ];
+        }
+
+        // Ensure competency_highlights is always a clean array of strings
+        if (!isset($resultData['competency_highlights']) || !is_array($resultData['competency_highlights']) || empty($resultData['competency_highlights'])) {
+            $resultData['competency_highlights'] = !empty($validated['competencies'])
+                ? $validated['competencies']
+                : ($isHigherEdu
+                    ? ['Struktur Data & Algoritma', 'Pemrograman Berorientasi Objek', 'Sistem Basis Data Terdistribusi', 'Rekayasa Perangkat Lunak']
+                    : ['Pemrograman Web & Mobile', 'Administrasi Infrastruktur Jaringan', 'UI/UX & Desain Grafis', 'Basis Data']);
         }
 
         // Save into history database
@@ -176,7 +255,7 @@ Tolong susun narasi profil sekolah/kampus yang formal, inspiratif, dan menonjolk
             'vision'             => $validated['vision'] ?? null,
             'mission'            => $validated['mission'] ?? null,
             'majors'             => $validated['majors'] ?? [],
-            'competencies'       => $resultData['competency_highlights'] ?? ($validated['competencies'] ?? []),
+            'competencies'       => $resultData['competency_highlights'],
             'facilities'         => $resultData['facility_summary'] ?? ($validated['facilities'] ?? []),
             'partnerships'       => $validated['partnerships'] ?? [],
             'completeness_score' => $resultData['completeness_score'] ?? 88,
@@ -184,7 +263,7 @@ Tolong susun narasi profil sekolah/kampus yang formal, inspiratif, dan menonjolk
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Profil sekolah berhasil disusun oleh AI.',
+            'message' => 'Profil institusi berhasil disusun oleh AI.',
             'data' => array_merge($resultData, [
                 'history_id' => $historyRecord->id,
                 'created_at' => $historyRecord->created_at->toIso8601String(),
@@ -490,5 +569,75 @@ Ekstrak profil kompetensi mata pelajaran dan peluang kemitraan industri dalam Ba
             'data' => $paginated,
             'total' => $total,
         ];
+    }
+
+    /**
+     * Quick free extraction of course subjects from uploaded PDF curriculum / syllabus.
+     */
+    public function extractCurriculumCourses(Request $request)
+    {
+        $request->validate([
+            'uploaded_file' => 'required|file|mimes:pdf|max:20480',
+        ]);
+
+        $apiKey = config('gemini.api_key');
+        $aiProvider = Setting::getVal('ai_provider', 'gemini');
+
+        $courses = [
+            'Struktur Data & Algoritma',
+            'Pemrograman Berorientasi Objek',
+            'Sistem Basis Data Terdistribusi',
+            'Rekayasa Perangkat Lunak',
+            'Jaringan Komputer & Cloud Architecture',
+            'Kecerdasan Buatan & Machine Learning',
+            'Keamanan Siber & Jaringan'
+        ];
+
+        if ($aiProvider !== 'none' && $apiKey) {
+            try {
+                $file = $request->file('uploaded_file');
+                $blob = new Blob(
+                    mimeType: MimeType::APPLICATION_PDF,
+                    data: base64_encode(file_get_contents($file->getRealPath()))
+                );
+
+                $prompt = "
+Analisis dokumen kurikulum/silabus/daftar mata kuliah perguruan tinggi ini secara teliti.
+Ekstrak daftar mata kuliah inti dan kompetensi akademis unggulan (antara 5 sampai 15 mata kuliah penting).
+Kembalikan dalam array of strings bahasa Indonesia.
+";
+
+                $result = Gemini::generativeModel("gemini-3.1-flash-lite")->withGenerationConfig(
+                    generationConfig: new GenerationConfig(
+                        responseMimeType: ResponseMimeType::APPLICATION_JSON,
+                        responseSchema: new Schema(
+                            type: DataType::OBJECT,
+                            properties: [
+                                'courses' => new Schema(
+                                    type: DataType::ARRAY,
+                                    items: new Schema(type: DataType::STRING),
+                                    description: 'Daftar mata kuliah atau kompetensi unggulan'
+                                ),
+                            ],
+                            required: ['courses']
+                        )
+                    )
+                )->generateContent([$prompt, $blob]);
+
+                $decoded = json_decode($result->text(), true);
+                if (!empty($decoded['courses']) && is_array($decoded['courses'])) {
+                    $courses = $decoded['courses'];
+                }
+            } catch (\Exception $e) {
+                Log::error('Gemini extract curriculum courses error: ' . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'courses' => $courses,
+            ],
+        ]);
     }
 }

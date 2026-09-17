@@ -21,10 +21,11 @@ class InboxNotificationMail extends Mailable
     public function build(): self
     {
         $typeLabels = [
-            'application_status' => 'Status Lamaran',
-            'new_task'           => 'Tugas Baru',
-            'report_feedback'    => 'Feedback Laporan',
-            'new_application'    => 'Lamaran Masuk',
+            'application_status'     => 'Status Lamaran',
+            'new_task'               => 'Tugas Baru',
+            'report_feedback'        => 'Feedback Laporan',
+            'new_application'        => 'Lamaran Masuk',
+            'internship_invitation'  => 'Undangan Seleksi Magang',
         ];
 
         $typeLabel  = $typeLabels[$this->inboxItem->type] ?? ucfirst(str_replace('_', ' ', $this->inboxItem->type));

@@ -365,6 +365,7 @@ Route::prefix('v1')->group(function () {
             Route::middleware('premium')->group(function () {
                 Route::post('/compro/analyze', 'analyzeCompro');
                 Route::get('/compro/talents', 'getTalents');
+                Route::post('/compro/invite', 'inviteTalent');
             });
         });
 
@@ -377,6 +378,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/profile/generate', 'generateProfile');
             Route::get('/profile/histories', 'getProfileHistories');
             Route::delete('/profile/histories/{id}', 'deleteProfileHistory');
+            Route::post('/curriculum/extract', 'extractCurriculumCourses');
 
             // Premium Feature for School & University: Analisis Silabus/Mata Pelajaran & Pencocokan Industri
             Route::middleware('premium')->group(function () {
