@@ -755,6 +755,8 @@ Route::prefix('v1')->group(function () {
         ->middleware(['auth:sanctum', 'ability:admin-access']);
     Route::post('/settings/broadcast-email', [SettingController::class, 'sendEmailBroadcast'])
         ->middleware(['auth:sanctum', 'ability:admin-access']);
+    Route::post('/settings/send-test-email', [SettingController::class, 'sendTestEmail'])
+        ->middleware(['auth:sanctum', 'ability:admin-access']);
 
     // ─── Subscription (user-facing) ───────────────────────────────────────
     Route::prefix('subscriptions')

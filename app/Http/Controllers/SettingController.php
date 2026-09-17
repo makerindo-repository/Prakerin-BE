@@ -365,6 +365,51 @@ class SettingController extends Controller
     }
 
     /**
+     * Send an immediate test email to verify SMTP delivery end-to-end.
+     * POST /api/v1/settings/send-test-email
+     */
+    public function sendTestEmail(Request $request)
+    {
+        $validated = $request->validate([
+            'recipient_email' => 'required|email',
+        ]);
+
+        $recipient = $validated['recipient_email'];
+
+        try {
+            $fromAddress = config('mail.from.address', 'notif@prakerin.id');
+            $fromName    = config('mail.from.name', 'Prakerin Support');
+            $appName     = \App\Models\Setting::getVal('platform_name', 'Prakerin');
+
+            \Illuminate\Support\Facades\Mail::send('emails.inbox-notification', [
+                'title'      => '✅ Tes Koneksi & Pengiriman Email Prakerin Berhasil',
+                'content'    => "Halo!\n\nEmail ini adalah bukti bahwa konfigurasi SMTP server pada platform Prakerin Anda telah BERHASIL disetel dan siap mengirim notifikasi ke pengguna.\n\nWaktu kirim: " . now()->format('d M Y, H:i:s') . ".",
+                'type'       => 'Uji Coba Sistem',
+                'actionUrl'  => config('app.frontend_url', 'http://localhost:3000') . '/dashboard/pengaturan',
+                'userName'   => 'Admin Prakerin',
+                'appLogoUrl' => \App\Models\Setting::getVal('app_logo'),
+                'appName'    => $appName,
+            ], function ($message) use ($recipient, $fromAddress, $fromName) {
+                $message->to($recipient)
+                    ->from($fromAddress, $fromName)
+                    ->subject('✅ [Uji Coba] Konfigurasi Email SMTP Prakerin Berhasil!');
+            });
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => "Email uji coba berhasil dikirim langsung ke {$recipient}!"
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Send Test Email Error: ' . $e->getMessage());
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gagal mengirim email: ' . $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
      * Send an email broadcast notification to targeted user segments.
      * POST /api/v1/settings/broadcast-email
      */
@@ -394,16 +439,80 @@ class SettingController extends Controller
         $rawMessage  = $validated['message'];
         $actionUrl   = $validated['action_url'] ?? config('app.frontend_url', 'http://localhost:3000') . '/dashboard';
 
-        $query = \App\Models\User::query();
-
+        // Single user test mode: send immediately and synchronously
         if ($targetGroup === 'test_single_user') {
             $identifier = $validated['single_user_identifier'];
-            $query->where(function ($q) use ($identifier) {
+            $targetUser = \App\Models\User::where(function ($q) use ($identifier) {
                 $q->where('id', $identifier)
                   ->orWhere('email', $identifier)
                   ->orWhere('whatsapp_number', $identifier);
-            });
-        } elseif ($targetGroup === 'unapplied_students') {
+            })->first();
+
+            $recipientEmail = $targetUser?->email ?? (filter_var($identifier, FILTER_VALIDATE_EMAIL) ? $identifier : null);
+
+            if (!$recipientEmail) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Target pengguna tidak ditemukan atau format email tidak valid.',
+                ], 404);
+            }
+
+            $userName = $targetUser->username ?? 'Pengguna Uji Coba';
+            $personalizedMessage = str_replace(
+                ['{name}', '{role}', '{link}'],
+                [$userName, ucfirst($targetUser->role ?? 'User'), $actionUrl],
+                $rawMessage
+            );
+
+            if ($targetUser) {
+                \App\Models\InboxItem::createForUser(
+                    $targetUser->id,
+                    $title,
+                    $personalizedMessage,
+                    'broadcast',
+                    $actionUrl
+                );
+            }
+
+            $fromAddress = config('mail.from.address', 'notif@prakerin.id');
+            $fromName    = config('mail.from.name', 'Prakerin Support');
+            $appName     = \App\Models\Setting::getVal('platform_name', 'Prakerin');
+
+            try {
+                \Illuminate\Support\Facades\Mail::send('emails.inbox-notification', [
+                    'title'      => $title,
+                    'content'    => $personalizedMessage,
+                    'type'       => 'Broadcast Email',
+                    'actionUrl'  => $actionUrl,
+                    'userName'   => $userName,
+                    'appLogoUrl' => \App\Models\Setting::getVal('app_logo'),
+                    'appName'    => $appName,
+                ], function ($message) use ($recipientEmail, $fromAddress, $fromName, $title, $appName) {
+                    $message->to($recipientEmail)
+                        ->from($fromAddress, $fromName)
+                        ->subject($title . ' — ' . $appName);
+                });
+
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => "Email broadcast uji coba berhasil dikirim langsung ke {$recipientEmail}!",
+                    'data'    => [
+                        'target_group' => $targetGroup,
+                        'recipient'    => $recipientEmail,
+                    ],
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('Send Single Broadcast Email Error: ' . $e->getMessage());
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Gagal mengirim email: ' . $e->getMessage(),
+                ], 400);
+            }
+        }
+
+        $query = \App\Models\User::query();
+
+        if ($targetGroup === 'unapplied_students') {
             $query->where('role', 'student')
                   ->where('email_notifications_enabled', true)
                   ->whereNotNull('email')
