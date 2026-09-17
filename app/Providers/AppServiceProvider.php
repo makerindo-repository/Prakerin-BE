@@ -44,6 +44,13 @@ class AppServiceProvider extends ServiceProvider
                     'mail.mailers.smtp.password'   => $settings['smtp_password'] ?? '',
                     'mail.mailers.smtp.encryption' => $enc,
                     'mail.mailers.smtp.timeout'    => 15,
+                    'mail.mailers.smtp.context'    => [
+                        'ssl' => [
+                            'allow_self_signed' => true,
+                            'verify_peer'       => false,
+                            'verify_peer_name'  => false,
+                        ],
+                    ],
                     'mail.from.address'            => $settings['smtp_from_email'] ?? config('mail.from.address'),
                     'mail.from.name'               => $settings['smtp_from_name'] ?? config('mail.from.name'),
                 ]);
