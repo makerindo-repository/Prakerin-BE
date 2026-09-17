@@ -27,6 +27,8 @@ class AppServiceProvider extends ServiceProvider
             
             // Dynamic mail config overrides
             if (isset($settings['smtp_host']) && !empty($settings['smtp_host'])) {
+                $rawHost = trim($settings['smtp_host']);
+                $ipv4Host = gethostbyname($rawHost);
                 $port = (int) ($settings['smtp_port'] ?? 587);
                 $enc = $settings['smtp_encryption'] ?? 'tls';
                 if ($enc === 'none' || empty($enc)) {
@@ -38,7 +40,7 @@ class AppServiceProvider extends ServiceProvider
                     'mail.default'                 => 'smtp',
                     'mail.mailers.smtp.transport'  => 'smtp',
                     'mail.mailers.smtp.scheme'     => $scheme,
-                    'mail.mailers.smtp.host'       => $settings['smtp_host'],
+                    'mail.mailers.smtp.host'       => $ipv4Host,
                     'mail.mailers.smtp.port'       => $port,
                     'mail.mailers.smtp.username'   => $settings['smtp_username'] ?? '',
                     'mail.mailers.smtp.password'   => $settings['smtp_password'] ?? '',
@@ -49,6 +51,7 @@ class AppServiceProvider extends ServiceProvider
                             'allow_self_signed' => true,
                             'verify_peer'       => false,
                             'verify_peer_name'  => false,
+                            'peer_name'         => $rawHost,
                         ],
                     ],
                     'mail.from.address'            => $settings['smtp_from_email'] ?? config('mail.from.address'),

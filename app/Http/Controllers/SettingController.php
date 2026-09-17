@@ -168,13 +168,14 @@ class SettingController extends Controller
     public function testSmtp()
     {
         $this->applyMailConfig();
-        $host = config('mail.mailers.smtp.host');
+        $rawHost = \App\Models\Setting::getVal('smtp_host', config('mail.mailers.smtp.host'));
+        $host = gethostbyname($rawHost);
         $port = (int) config('mail.mailers.smtp.port', 587);
         $encryption = strtolower(config('mail.mailers.smtp.encryption', 'tls'));
         $username = config('mail.mailers.smtp.username');
         $password = config('mail.mailers.smtp.password');
 
-        if (empty($host)) {
+        if (empty($rawHost)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'SMTP Host is not configured.'
@@ -193,7 +194,7 @@ class SettingController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => "Berhasil terhubung dan terotentikasi ke server SMTP di {$host}:{$port}!"
+                'message' => "Berhasil terhubung dan terotentikasi ke server SMTP di {$rawHost}:{$port}!"
             ]);
         } catch (\Throwable $e) {
             $target = ($encryption === 'ssl' || $port === 465) ? "ssl://{$host}" : $host;
@@ -208,7 +209,7 @@ class SettingController extends Controller
 
             return response()->json([
                 'status' => 'error',
-                'message' => "Gagal terhubung ke server SMTP di {$host}:{$port}. " . $e->getMessage()
+                'message' => "Gagal terhubung ke server SMTP di {$rawHost}:{$port}. " . $e->getMessage()
             ], 400);
         }
     }
@@ -702,6 +703,8 @@ class SettingController extends Controller
     {
         $settings = Setting::all()->pluck('value', 'key');
         if (isset($settings['smtp_host']) && !empty($settings['smtp_host'])) {
+            $rawHost = trim($settings['smtp_host']);
+            $ipv4Host = gethostbyname($rawHost);
             $port = (int) ($settings['smtp_port'] ?? 587);
             $enc = $settings['smtp_encryption'] ?? 'tls';
             if ($enc === 'none' || empty($enc)) {
@@ -713,7 +716,7 @@ class SettingController extends Controller
                 'mail.default'                 => 'smtp',
                 'mail.mailers.smtp.transport'  => 'smtp',
                 'mail.mailers.smtp.scheme'     => $scheme,
-                'mail.mailers.smtp.host'       => $settings['smtp_host'],
+                'mail.mailers.smtp.host'       => $ipv4Host,
                 'mail.mailers.smtp.port'       => $port,
                 'mail.mailers.smtp.username'   => $settings['smtp_username'] ?? '',
                 'mail.mailers.smtp.password'   => $settings['smtp_password'] ?? '',
@@ -724,6 +727,7 @@ class SettingController extends Controller
                         'allow_self_signed' => true,
                         'verify_peer'       => false,
                         'verify_peer_name'  => false,
+                        'peer_name'         => $rawHost,
                     ],
                 ],
                 'mail.from.address'            => $settings['smtp_from_email'] ?? config('mail.from.address'),
