@@ -167,7 +167,10 @@ class SettingController extends Controller
     public function testSmtp()
     {
         $host = config('mail.mailers.smtp.host');
-        $port = config('mail.mailers.smtp.port');
+        $port = (int) config('mail.mailers.smtp.port', 587);
+        $encryption = strtolower(config('mail.mailers.smtp.encryption', 'tls'));
+        $username = config('mail.mailers.smtp.username');
+        $password = config('mail.mailers.smtp.password');
 
         if (empty($host)) {
             return response()->json([
@@ -176,20 +179,36 @@ class SettingController extends Controller
             ], 400);
         }
 
-        // 5 second timeout socket check
-        $connection = @fsockopen($host, $port, $errno, $errstr, 5);
-        if (is_resource($connection)) {
-            fclose($connection);
+        try {
+            $isImplicitTls = ($encryption === 'ssl' || $port === 465);
+            $transport = new \Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport($host, $port, $isImplicitTls);
+            if (!empty($username)) {
+                $transport->setUsername($username);
+                $transport->setPassword($password ?? '');
+            }
+            $transport->start();
+            $transport->stop();
+
             return response()->json([
                 'status' => 'success',
-                'message' => "Successfully connected to SMTP server at {$host}:{$port}!"
+                'message' => "Berhasil terhubung dan terotentikasi ke server SMTP di {$host}:{$port}!"
             ]);
-        }
+        } catch (\Throwable $e) {
+            $target = ($encryption === 'ssl' || $port === 465) ? "ssl://{$host}" : $host;
+            $connection = @fsockopen($target, $port, $errno, $errstr, 5);
+            if (is_resource($connection)) {
+                fclose($connection);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => "Server SMTP terjangkau di port {$port}, tetapi otentikasi gagal: " . $e->getMessage()
+                ], 400);
+            }
 
-        return response()->json([
-            'status' => 'error',
-            'message' => "Failed to reach SMTP server at {$host}:{$port}. Error: {$errstr} ({$errno})"
-        ], 400);
+            return response()->json([
+                'status' => 'error',
+                'message' => "Gagal terhubung ke server SMTP di {$host}:{$port}. " . $e->getMessage()
+            ], 400);
+        }
     }
 
     /**

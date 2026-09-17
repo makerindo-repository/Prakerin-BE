@@ -38,13 +38,17 @@ class SendEmailNotification implements ShouldQueue
             // Dynamically load fresh SMTP settings from DB in worker thread
             $settings = \App\Models\Setting::all()->pluck('value', 'key');
             if (isset($settings['smtp_host']) && !empty($settings['smtp_host'])) {
+                $enc = $settings['smtp_encryption'] ?? 'tls';
+                if ($enc === 'none' || empty($enc)) {
+                    $enc = null;
+                }
                 config([
                     'mail.default'                 => 'smtp',
                     'mail.mailers.smtp.host'       => $settings['smtp_host'],
                     'mail.mailers.smtp.port'       => (int) ($settings['smtp_port'] ?? 587),
                     'mail.mailers.smtp.username'   => $settings['smtp_username'] ?? '',
                     'mail.mailers.smtp.password'   => $settings['smtp_password'] ?? '',
-                    'mail.mailers.smtp.encryption' => $settings['smtp_encryption'] ?? 'tls',
+                    'mail.mailers.smtp.encryption' => $enc,
                     'mail.from.address'            => $settings['smtp_from_email'] ?? config('mail.from.address'),
                     'mail.from.name'               => $settings['smtp_from_name'] ?? config('mail.from.name'),
                 ]);
