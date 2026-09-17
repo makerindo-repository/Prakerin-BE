@@ -420,7 +420,7 @@ Route::prefix('v1')->group(function () {
             Route::middleware('auth:sanctum')->group(function () {
                 Route::middleware('ability:company-access,admin-access,super_admin')->group(function () {
                     Route::post('/', 'store');
-                    Route::patch('/{id}', 'update');
+                    Route::match(['patch', 'put'], '/{id}', 'update');
                     Route::delete('/{id}', 'destroy');
                 });
 

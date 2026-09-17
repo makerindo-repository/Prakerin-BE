@@ -357,6 +357,7 @@ class JobOpeningController extends Controller
         unset($jobOpening["saveJobOpening"]);
 
         $jobOpening['save_job_opening'] = $isSaved;
+        $jobOpening['tests'] = $jobOpening->test;
 
         return response()->json([
             'data' => $jobOpening,
@@ -429,6 +430,10 @@ class JobOpeningController extends Controller
             'location'    => 'sometimes|required|in:onsite,remote,hybrid',
             'qouta' => 'sometimes|required|integer|min:1',
             'is_available' => 'sometimes|required|boolean',
+            'start_date' => 'sometimes|required|date',
+            'closing_date' => 'sometimes|required|date',
+            'tests' => 'nullable|array',
+            'tests.*' => 'nullable|string|exists:tests,id',
             'poster' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ]);
 
@@ -437,6 +442,23 @@ class JobOpeningController extends Controller
         }
 
         $data = $validator->validated();
+
+        // Recalculate end_date if start_date or duration_id changed
+        if (isset($data['start_date']) || isset($data['duration_id'])) {
+            $durationId = $data['duration_id'] ?? $jobOpening->duration_id;
+            $startDateVal = $data['start_date'] ?? $jobOpening->start_date;
+            $duration = Duration::where('id', $durationId)->first();
+            if ($duration && $startDateVal) {
+                $startDate = \Carbon\Carbon::parse($startDateVal);
+                if ($duration->duration_unit == 'month') {
+                    $data['end_date'] = $startDate->copy()->addMonths($duration->duration_value)->toDateString();
+                } else if ($duration->duration_unit == 'day') {
+                    $data['end_date'] = $startDate->copy()->addDays($duration->duration_value)->toDateString();
+                } else if ($duration->duration_unit == 'year') {
+                    $data['end_date'] = $startDate->copy()->addYears($duration->duration_value)->toDateString();
+                }
+            }
+        }
 
         // Handle poster upload
         if ($request->hasFile('poster')) {
@@ -454,11 +476,15 @@ class JobOpeningController extends Controller
         $jobOpening->save();
 
         if ($request->has('tests')) {
-            $jobOpening->test()->sync($request->input('tests', []));
+            $tests = array_values(array_filter((array) $request->input('tests', []), fn($t) => !empty($t)));
+            $jobOpening->test()->sync($tests);
         }
 
+        $jobOpening->load(['test', 'company.user', 'company.cityRegency.province', 'field', 'duration']);
+        $jobOpening['tests'] = $jobOpening->test;
+
         return response()->json([
-            'data' => $jobOpening->load('tests') 
+            'data' => $jobOpening 
         ]);
     }
 

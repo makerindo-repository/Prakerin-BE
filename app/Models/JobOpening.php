@@ -61,8 +61,14 @@ class JobOpening extends Model
         return $this->belongsTo(Field::class);
     }
 
-    public function test(){
-        return $this->belongsToMany(Test::class)->select('title', 'description', 'link', 'type');
+    public function test()
+    {
+        return $this->belongsToMany(Test::class)->select('tests.id', 'tests.title', 'tests.description', 'tests.link', 'tests.type');
+    }
+
+    public function tests()
+    {
+        return $this->test();
     }
 
     public function duration()
