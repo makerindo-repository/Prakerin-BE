@@ -123,10 +123,9 @@ class AdminDashboardController extends Controller
 
         // ── Deterministic insights (zero API calls) ────────────────────────
         $unplacedStudents = Student::where('status_magang', 'not_started')->count();
-        $matchingJobCount = JobOpening::where('is_available', true)
-            ->whereDate('closing_date', '>=', now()->toDateString())
-            ->whereHas('internshipApplications')
-            ->count();
+        $matchingJobCount = JobOpening::whereHas('internshipApplications', function ($q) {
+            $q->where('status', 'in_progress');
+        })->count();
 
         $insights = [
             [
@@ -143,7 +142,7 @@ class AdminDashboardController extends Controller
                 'value'    => (string) $matchingJobCount,
                 'unit'     => 'lowongan',
                 'title'    => 'Lowongan Aktif',
-                'subtitle' => 'Dengan Pelamar Masuk',
+                'subtitle' => 'Dengan Pelamar Aktif',
                 'badge'    => 'Aktif',
                 'color'    => 'green',
             ],
