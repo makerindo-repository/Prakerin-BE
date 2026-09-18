@@ -576,22 +576,31 @@ class JobOpeningController extends Controller
         $companyId = $user->company?->id;
 
         if (!$isSuperAdmin && $user->tokenCan('company-access') && !$companyId) {
-            return response()->json(['data' => ['true' => 0, 'false' => 0, 'total' => 0]]);
+            return response()->json(['data' => ['true' => 0, 'false' => 0, 'total' => 0, 'with_active_applicants' => 0]]);
         }
 
-        $counts = JobOpening::when(!$isSuperAdmin && $user->tokenCan("company-access"), function ($query) use ($companyId) {
+        $baseQuery = JobOpening::when(!$isSuperAdmin && $user->tokenCan("company-access"), function ($query) use ($companyId) {
             $query->where("company_id", $companyId);
-        })
+        });
+
+        $counts = (clone $baseQuery)
             ->selectRaw('is_available, COUNT(*) as total')
             ->groupBy('is_available')
             ->pluck('total', 'is_available')
             ->toArray();
 
+        $withActiveApplicants = (clone $baseQuery)
+            ->whereHas('internshipApplications', function ($query) {
+                $query->where('status', 'in_progress');
+            })
+            ->count();
+
         // siapkan default biar selalu ada key true/false meskipun count = 0
         $final = [
-            'true'  => $counts[1] ?? 0, // di DB boolean biasanya 1/0
-            'false' => $counts[0] ?? 0,
-            'total' => array_sum($counts),
+            'true'                   => $counts[1] ?? 0, // di DB boolean biasanya 1/0
+            'false'                  => $counts[0] ?? 0,
+            'total'                  => array_sum($counts),
+            'with_active_applicants' => $withActiveApplicants,
         ];
         return response()->json([
             'data' => $final
